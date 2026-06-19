@@ -1,9 +1,12 @@
 # Build Docker + déploiement Cloud Run.
 # Déclencher : gcloud builds submit --config cloudbuild.yaml .
 #
+# Tag d’image : $BUILD_ID (toujours défini, y compris avec `gcloud builds submit`).
+# $SHORT_SHA n’est disponible que via un trigger Git — ne pas l’utiliser ici.
+#
 # Personnaliser via substitutions :
 #   gcloud builds submit --config cloudbuild.yaml \
-#     --substitutions=_REGION=europe-west9,_API_URL=https://...
+#     --substitutions=_REGION=europe-west1,_API_URL=https://...
 
 substitutions:
   _REGION: europe-west9
@@ -46,7 +49,7 @@ steps:
       - --build-arg
       - NEXT_PUBLIC_REQUIRE_AUTH=${_NEXT_PUBLIC_REQUIRE_AUTH}
       - -t
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:$SHORT_SHA
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:$BUILD_ID
       - -t
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:latest
       - .
@@ -66,7 +69,7 @@ steps:
       - deploy
       - ${_SERVICE}
       - --image
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:$SHORT_SHA
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:$BUILD_ID
       - --region
       - ${_REGION}
       - --platform
@@ -78,5 +81,5 @@ steps:
       - API_URL=${_API_URL}
 
 images:
-  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:$SHORT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:$BUILD_ID
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:latest
