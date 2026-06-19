@@ -5,10 +5,11 @@ import { logUnilizeEvent } from "@/lib/unilize/request-log";
 export const dynamic = "force-dynamic";
 
 function getUpstreamBase(): string {
-  return (
-    process.env.API_URL?.trim()?.replace(/\/$/, "") ??
-    UNILIZE_API_DEFAULT_URL.replace(/\/$/, "")
-  );
+  const serverUrl = process.env.API_URL?.trim();
+  if (serverUrl?.startsWith("http")) {
+    return serverUrl.replace(/\/$/, "");
+  }
+  return UNILIZE_API_DEFAULT_URL.replace(/\/$/, "");
 }
 
 async function proxy(
