@@ -3,8 +3,8 @@ export const UNILIZE_API_DEFAULT_URL =
   "https://public-api-531732557398.europe-west9.run.app";
 
 /**
- * Préfixe same-origin pour les appels navigateur (évite CORS via rewrite Next.js).
- * @see next.config.ts `rewrites`
+ * Préfixe same-origin pour les appels navigateur (évite CORS).
+ * @see app/api/unilize/[...path]/route.ts
  */
 export const UNILIZE_API_PROXY_PREFIX = "/api/unilize";
 
