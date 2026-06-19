@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+@import "tw-animate-css";
+@import "./variables.css";
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground min-h-dvh antialiased;
+  }
+}
