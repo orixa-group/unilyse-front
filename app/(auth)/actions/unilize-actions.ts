@@ -66,7 +66,6 @@ const deleteProjectSchema = z.object({
 
 const linkCampaignSchema = z.object({
   projectId: nonEmptyString,
-  id: nonEmptyString,
   name: nonEmptyString,
   customer_id: nonEmptyString,
 });
@@ -326,7 +325,6 @@ export async function linkCampaignAction(
 ): Promise<LinkCampaignActionState> {
   const parsed = linkCampaignSchema.safeParse({
     projectId: formData.get("projectId"),
-    id: formData.get("id"),
     name: formData.get("name"),
     customer_id: formData.get("customer_id"),
   });
@@ -340,7 +338,6 @@ export async function linkCampaignAction(
 
   try {
     const campaign = await linkCampaign(parsed.data.projectId, {
-      id: parsed.data.id,
       name: parsed.data.name,
       customer_id: parsed.data.customer_id,
     });

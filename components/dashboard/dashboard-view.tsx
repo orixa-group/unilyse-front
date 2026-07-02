@@ -24,6 +24,7 @@ import {
   initialLinkCampaignState,
   initialUnlinkCampaignState,
   initialUpdateProjectKeywordsState,
+  type ListCampaignsResult,
 } from "@/app/(auth)/actions/unilize-action-state";
 import { CreateProjectDialog } from "@/components/dashboard/create-project-dialog";
 import { DashboardHealthSummary } from "@/components/dashboard/dashboard-health-summary";
@@ -104,11 +105,10 @@ export function DashboardView() {
   } = useProjects(hasHydrated ? selectedClientId : null);
 
   const projects = normalizeProjectsFromQuery(projectsResult);
+  // Ne pas couper les requêtes campagnes/détails pendant un refetch projets en arrière-plan :
+  // sinon useQueries reçoit projectIds=[] et l'UI affiche « Aucune campagne liée » à tort.
   const projectsListReady =
-    Boolean(selectedClientId) &&
-    !isProjectsPending &&
-    !isProjectsFetching &&
-    !isProjectsError;
+    Boolean(selectedClientId) && !isProjectsPending && !isProjectsError;
   const projectIds = useMemo(
     () => (projectsListReady ? projects.map((project) => project.id) : []),
     [projectsListReady, projects],
@@ -376,6 +376,23 @@ export function DashboardView() {
     }
     processedLinkIdRef.current = key;
 
+    queryClient.setQueryData<ListCampaignsResult>(
+      unilizeKeys.campaigns(linkState.projectId),
+      (previous) => {
+        const projectId = linkState.projectId!;
+        const campaign = linkState.campaign!;
+        const campaigns = previous?.campaigns ?? [];
+        if (campaigns.some((c) => c.id === campaign.id)) {
+          return previous;
+        }
+        return {
+          requestUrl: previous?.requestUrl ?? "",
+          projectId,
+          campaigns: [...campaigns, campaign],
+          error: null,
+        };
+      },
+    );
     invalidateCampaigns(linkState.projectId);
     setLinkCampaignOpen(false);
     setProjectForLink(null);
@@ -395,6 +412,21 @@ export function DashboardView() {
     }
     processedUnlinkIdRef.current = key;
 
+    queryClient.setQueryData<ListCampaignsResult>(
+      unilizeKeys.campaigns(unlinkState.projectId),
+      (previous) => {
+        if (!previous) {
+          return previous;
+        }
+        return {
+          ...previous,
+          campaigns: previous.campaigns.filter(
+            (c) => c.id !== unlinkState.campaignId,
+          ),
+          error: null,
+        };
+      },
+    );
     invalidateCampaigns(unlinkState.projectId);
     setUnlinkCampaignOpen(false);
     setCampaignToUnlink(null);
@@ -647,24 +679,14 @@ export function DashboardView() {
             <form action={linkFormAction} className="space-y-4">
               <input type="hidden" name="projectId" value={projectForLink.id} />
               <div className="space-y-2">
-                <Label htmlFor="campaign-id">ID campagne Google Ads</Label>
-                <Input
-                  id="campaign-id"
-                  name="id"
-                  placeholder="123456789"
-                  required
-                  disabled={isLinkPending}
-                  autoFocus
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="campaign-name">Nom</Label>
                 <Input
                   id="campaign-name"
                   name="name"
                   placeholder="Brand awareness - FR"
                   required
-                  disabled={isLinkPending}                  
+                  disabled={isLinkPending}
+                  autoFocus
                 />
               </div>
               <div className="space-y-2">

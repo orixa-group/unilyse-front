@@ -49,7 +49,6 @@ export interface CreateProjectPayload {
 }
 
 export interface LinkCampaignPayload {
-  id: string;
   name: string;
   customer_id: string;
 }

@@ -11,13 +11,13 @@ export const METRIC_GLOSSARY: Record<string, string> = {
   quality_score: "Score qualité Google (0 = non attribué, 1–10).",
   match_type: "Type de correspondance : BROAD, PHRASE ou EXACT.",
   budget_lost_impression_share:
-    "Part d'impressions perdues faute de budget suffisant (0–100 %).",
+    "Part des impressions éligibles perdues faute de budget (Google Ads, 0–100 %). Enchères où l'annonce aurait pu s'afficher mais le budget journalier ou la répartition budgétaire l'en a empêché.",
   rank_lost_impression_share:
-    "Part d'impressions perdues faute de rang / qualité (0–100 %).",
+    "Part des impressions éligibles perdues faute de rang publicitaire (Google Ads, 0–100 %). Ad Rank insuffisant : enchère, Quality Score, pertinence de l'annonce ou page de destination.",
   potential_impressions_budget:
-    "Impressions estimées si la perte budget était nulle.",
+    "Volume d'impressions supplémentaires estimé par Google Ads si la contrainte budget était levée, le rang actuel étant conservé. Scénario « et si » distinct du potentiel rang — estimation indicative sur la période, pas un objectif garanti.",
   potential_impressions_rank:
-    "Impressions estimées si la perte de rang était nulle.",
+    "Volume d'impressions supplémentaires estimé par Google Ads si la contrainte de rang (enchère × qualité) était levée, le budget actuel étant conservé. Scénario « et si » distinct du potentiel budget — estimation indicative sur la période, pas un objectif garanti.",
   seo_impressions: "Affichages dans les résultats organiques.",
   seo_clicks: "Clics depuis la recherche organique.",
   seo_ctr: "Taux de clic organique.",

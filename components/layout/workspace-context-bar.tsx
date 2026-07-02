@@ -204,11 +204,7 @@ export function WorkspaceContextBar() {
                 selectedClientId ? "Aucun projet" : "Sélectionnez un client"
               }
               noResultsMessage="Aucun projet trouvé"
-              disabled={
-                !selectedClientId ||
-                isSelectorsLoading ||
-                projectOptions.length === 0
-              }
+              disabled={!selectedClientId || isSelectorsLoading}
               aria-label="Sélectionner un projet"
             />
 
@@ -227,11 +223,7 @@ export function WorkspaceContextBar() {
                   : "Sélectionnez un projet"
               }
               noResultsMessage="Aucune campagne trouvée"
-              disabled={
-                !selectedProjectId ||
-                isSelectorsLoading ||
-                campaignOptions.length === 0
-              }
+              disabled={!selectedProjectId || isSelectorsLoading}
               aria-label="Sélectionner une campagne"
             />
           </div>
