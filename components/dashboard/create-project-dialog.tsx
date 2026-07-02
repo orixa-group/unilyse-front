@@ -85,8 +85,8 @@ export function CreateProjectDialog({
           <DialogDescription>
             Le projet sera rattaché au client{" "}
             <span className="text-foreground font-medium">{clientName}</span>.
-            Choisissez un site Google Search Console — l’URL doit y être
-            enregistrée pour activer les métriques SEO.
+            Choisissez un site Google Search Console et renseignez le Customer
+            ID Google Ads pour lancer la collecte SEO et SEA.
           </DialogDescription>
         </DialogHeader>
         <form action={createFormAction} className="space-y-4">
@@ -102,6 +102,22 @@ export function CreateProjectDialog({
               disabled={isCreatePending}
               autoFocus
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="project-customer-id">Customer ID Google Ads</Label>
+            <Input
+              id="project-customer-id"
+              name="customer_id"
+              placeholder="1234567890"
+              required
+              disabled={isCreatePending}
+              inputMode="numeric"
+              autoComplete="off"
+            />
+            <p className="text-muted-foreground text-xs">
+              Identifiant du compte Google Ads — les métriques SEA seront
+              synchronisées pour l’ensemble du compte.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="project-site-url">Site Search Console</Label>

@@ -9,6 +9,7 @@ import {
   MoreHorizontalIcon,
 } from "@hugeicons/core-free-icons";
 import { ProjectCoverArt } from "@/components/dashboard/project-cover-art";
+import { ProjectReadinessBadge } from "@/components/dashboard/project-readiness-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +26,8 @@ import {
 } from "@/lib/api/error-messages";
 import type { useProjectsCampaigns, useProjectsDetails } from "@/hooks/use-unilize-api";
 import { isQueryInitialLoading } from "@/lib/unilize/query-display";
+import { hasCustomerId } from "@/lib/projects/project-readiness";
+import type { ProjectReadiness } from "@/lib/projects/project-readiness";
 import { cn } from "@/lib/utils/cn";
 import type { UnilizeCampaign, UnilizeProject } from "@/types/unilize";
 
@@ -185,15 +188,27 @@ function CampaignsSection({
   }
 
   if (campaigns.length === 0) {
+    const awaitingCampaign = hasCustomerId(project);
     return (
       <div className="flex flex-wrap items-center gap-1">
-        <p className="text-warning text-xs font-medium">Aucune campagne liée</p>
-        <InlineIconAction
-          label="Ajouter une campagne"
-          icon={Add01Icon}
-          disabled={isBusy}
-          onClick={() => onAddCampaign(project)}
-        />
+        <p
+          className={cn(
+            "text-xs font-medium",
+            awaitingCampaign ? "text-muted-foreground" : "text-warning",
+          )}
+        >
+          {awaitingCampaign
+            ? "Campagne en cours d’activation…"
+            : "Aucune campagne disponible"}
+        </p>
+        {!awaitingCampaign ? (
+          <InlineIconAction
+            label="Ajouter une campagne"
+            icon={Add01Icon}
+            disabled={isBusy}
+            onClick={() => onAddCampaign(project)}
+          />
+        ) : null}
       </div>
     );
   }
@@ -363,6 +378,7 @@ export function ProjectCard({
   queryIndex,
   campaignQueries,
   projectDetailsQueries,
+  readiness,
   isBusy,
   onUnlink,
   onAddCampaign,
@@ -373,6 +389,7 @@ export function ProjectCard({
   queryIndex: number;
   campaignQueries: ReturnType<typeof useProjectsCampaigns>;
   projectDetailsQueries: ReturnType<typeof useProjectsDetails>;
+  readiness: ProjectReadiness;
   isBusy: boolean;
   onUnlink: (project: UnilizeProject, campaign: UnilizeCampaign) => void;
   onAddCampaign: (project: UnilizeProject) => void;
@@ -400,24 +417,18 @@ export function ProjectCard({
   const campaigns = campaignQuery?.data?.campaigns ?? [];
   const keywords =
     detailsQuery?.data?.project?.keywords ?? project.keywords ?? [];
-  const hasNoCampaign =
-    !campaignsLoading && !campaignsError && campaigns.length === 0;
+  const showSetupBorder = readiness === "setup_required";
 
   return (
     <article
       className={cn(
         "bg-card relative flex h-full flex-col overflow-hidden rounded-xl border shadow-sm hover:translate-y-[-1px] hover:translate-x-[-1px] transition-transform duration-100",
-        hasNoCampaign && "border-warning/40",
+        showSetupBorder && "border-warning/40",
       )}
     >
-      {hasNoCampaign ? (
-        <span
-          className="bg-warning text-warning-foreground absolute top-2 right-2 z-10 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
-          title="Aucune campagne Google Ads liée"
-        >
-          Sans campagne
-        </span>
-      ) : null}
+      <div className="absolute top-2 right-2 z-10">
+        <ProjectReadinessBadge readiness={readiness} />
+      </div>
 
       <ProjectCoverArt projectId={project.id} />
 

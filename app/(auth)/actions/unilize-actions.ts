@@ -57,6 +57,7 @@ const createProjectSchema = z.object({
   clientId: nonEmptyString,
   name: nonEmptyString,
   url: z.string().trim().min(1, "Sélectionnez un site Search Console."),
+  customer_id: nonEmptyString,
 });
 
 const deleteProjectSchema = z.object({
@@ -228,15 +229,21 @@ export async function createProjectAction(
     clientId: formData.get("clientId"),
     name: formData.get("name"),
     url: formData.get("url"),
+    customer_id: formData.get("customer_id"),
   });
 
   if (!parsed.success) {
     const urlIssue = parsed.error.issues.find((i) => i.path[0] === "url");
+    const customerIssue = parsed.error.issues.find(
+      (i) => i.path[0] === "customer_id",
+    );
     return {
       success: false,
       error: urlIssue
         ? "Sélectionnez un site Search Console valide."
-        : "Le client, le nom et l’URL du projet sont requis.",
+        : customerIssue
+          ? "Le Customer ID Google Ads est requis."
+          : "Le client, le nom, l’URL et le Customer ID sont requis.",
     };
   }
 
@@ -254,6 +261,7 @@ export async function createProjectAction(
     const project = await createProject(parsed.data.clientId, {
       name: parsed.data.name,
       url: parsed.data.url,
+      customer_id: parsed.data.customer_id,
     });
     revalidateDashboard();
     return {

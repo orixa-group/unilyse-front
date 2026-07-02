@@ -1,0 +1,202 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueries } from "@tanstack/react-query";
+import { assertBffFetchOk } from "@/lib/api/bff-fetch";
+import { unilizeKeys } from "@/lib/api/unilize";
+import {
+  SYNC_PROBE_INTERVAL_MS,
+  SYNC_PROBE_TIMEOUT_MS,
+  isRecentProject,
+} from "@/lib/projects/project-readiness";
+import { logUnilizeEvent, summarizeUnilizePayload } from "@/lib/unilize/request-log";
+import type { ListPerformancesResult } from "@/types/performance";
+import type { UnilizeProject } from "@/types/unilize";
+
+export interface ProjectSyncProbeTarget {
+  project: UnilizeProject;
+  campaignId: string | null;
+  setupComplete: boolean;
+}
+
+export interface ProjectSyncProbeResult {
+  hasPerformances: boolean;
+  timedOut: boolean;
+  isProbing: boolean;
+}
+
+async function fetchPerformancesProbe(
+  projectId: string,
+  campaignId: string,
+): Promise<ListPerformancesResult> {
+  const url = `/api/bff/projects/${encodeURIComponent(projectId)}/campaigns/${encodeURIComponent(campaignId)}/performances`;
+  const startedAt = Date.now();
+  logUnilizeEvent("browser-bff", "start", "GET performances (sync probe)", {
+    projectId,
+    campaignId,
+    url,
+  });
+
+  const response = await fetch(url, { cache: "no-store" });
+  const body = (await response.json()) as ListPerformancesResult;
+
+  const result: ListPerformancesResult = {
+    requestUrl: body.requestUrl ?? "",
+    projectId: body.projectId ?? projectId,
+    campaignId: body.campaignId ?? campaignId,
+    performances: Array.isArray(body.performances) ? body.performances : [],
+    error: body.error ?? null,
+  };
+
+  const check = assertBffFetchOk(
+    response,
+    result.error,
+    "Impossible de charger les performances.",
+    "empty-on-not-found",
+  );
+
+  if (!check.ok) {
+    if (check.empty) {
+      const empty = { ...result, performances: [], error: null };
+      logUnilizeEvent("browser-bff", "success", "GET performances probe (vide)", {
+        projectId,
+        campaignId,
+        durationMs: Date.now() - startedAt,
+        response: summarizeUnilizePayload(empty),
+      });
+      return empty;
+    }
+    throw new Error(check.message);
+  }
+
+  logUnilizeEvent("browser-bff", "success", "GET performances probe", {
+    projectId,
+    campaignId,
+    durationMs: Date.now() - startedAt,
+    count: result.performances.length,
+  });
+  return result;
+}
+
+function isProbeEligible(target: ProjectSyncProbeTarget): boolean {
+  return (
+    target.setupComplete &&
+    Boolean(target.campaignId) &&
+    isRecentProject(target.project)
+  );
+}
+
+/**
+ * Sonde légère des performances pour les projets récents configurés (dashboard).
+ * Polling borné à {@link SYNC_PROBE_TIMEOUT_MS} après activation par projet.
+ */
+export function useProjectsSyncProbe(targets: ProjectSyncProbeTarget[]) {
+  const probeStartedAtRef = useRef<Map<string, number>>(new Map());
+  const [timedOutProjectIds, setTimedOutProjectIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+
+  const eligibleTargets = useMemo(
+    () => targets.filter(isProbeEligible),
+    [targets],
+  );
+
+  useEffect(() => {
+    const now = Date.now();
+    for (const target of eligibleTargets) {
+      if (!probeStartedAtRef.current.has(target.project.id)) {
+        probeStartedAtRef.current.set(target.project.id, now);
+      }
+    }
+  }, [eligibleTargets]);
+
+  useEffect(() => {
+    if (eligibleTargets.length === 0) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      const now = Date.now();
+      setTimedOutProjectIds((previous) => {
+        let changed = false;
+        const next = new Set(previous);
+
+        for (const target of eligibleTargets) {
+          if (next.has(target.project.id)) {
+            continue;
+          }
+          const startedAt =
+            probeStartedAtRef.current.get(target.project.id) ?? now;
+          if (now - startedAt >= SYNC_PROBE_TIMEOUT_MS) {
+            next.add(target.project.id);
+            changed = true;
+          }
+        }
+
+        return changed ? next : previous;
+      });
+    }, 5_000);
+
+    return () => window.clearInterval(intervalId);
+  }, [eligibleTargets]);
+
+  const queries = useQueries({
+    queries: eligibleTargets.map((target) => {
+      const projectId = target.project.id;
+      const campaignId = target.campaignId!;
+      const timedOut = timedOutProjectIds.has(projectId);
+
+      return {
+        queryKey: [...unilizeKeys.performances(projectId, campaignId), "sync-probe"],
+        queryFn: () => fetchPerformancesProbe(projectId, campaignId),
+        enabled: !timedOut,
+        refetchInterval: (query: {
+          state: { data?: ListPerformancesResult };
+        }) => {
+          if (timedOut) {
+            return false;
+          }
+          if ((query.state.data?.performances.length ?? 0) > 0) {
+            return false;
+          }
+          return SYNC_PROBE_INTERVAL_MS;
+        },
+        staleTime: 0,
+      };
+    }),
+  });
+
+  const resultsByProjectId = useMemo(() => {
+    const map = new Map<string, ProjectSyncProbeResult>();
+
+    for (const target of targets) {
+      map.set(target.project.id, {
+        hasPerformances: false,
+        timedOut: timedOutProjectIds.has(target.project.id),
+        isProbing: false,
+      });
+    }
+
+    eligibleTargets.forEach((target, index) => {
+      const query = queries[index];
+      const performances = query?.data?.performances ?? [];
+      const hasPerformances = performances.length > 0;
+      const timedOut = timedOutProjectIds.has(target.project.id);
+      const isProbing =
+        isProbeEligible(target) &&
+        !timedOut &&
+        !hasPerformances &&
+        (query?.isFetching ?? false);
+
+      map.set(target.project.id, {
+        hasPerformances,
+        timedOut,
+        isProbing,
+      });
+    });
+
+    return map;
+  }, [targets, eligibleTargets, queries, timedOutProjectIds]);
+
+  return resultsByProjectId;
+}

@@ -29,6 +29,9 @@ import {
 import { CreateProjectDialog } from "@/components/dashboard/create-project-dialog";
 import { DashboardHealthSummary } from "@/components/dashboard/dashboard-health-summary";
 import { ProjectCard } from "@/components/dashboard/project-card";
+import {
+  ProjectSetupBanner,
+} from "@/components/dashboard/project-setup-banner";
 import { EmptyState } from "@/components/common/empty-state";
 import { LoadingSkeleton } from "@/components/common/loading-skeleton";
 import { Button } from "@/components/ui/button";
@@ -48,8 +51,13 @@ import {
   toUserFacingApiError,
 } from "@/lib/api/error-messages";
 import { useClient, useProjects, useProjectsCampaigns, useProjectsDetails } from "@/hooks/use-unilize-api";
+import { useProjectsSyncProbe } from "@/hooks/use-project-sync-probe";
 import { useSelectionHydrated } from "@/hooks/use-selection-hydrated";
 import { unilizeKeys } from "@/lib/api/unilize";
+import {
+  computeProjectReadiness,
+  isProjectSetupComplete,
+} from "@/lib/projects/project-readiness";
 import {
   logUnilizeFetchSnapshot,
   summarizeCampaigns,
@@ -63,8 +71,17 @@ export function DashboardView() {
   const queryClient = useQueryClient();
   const hasHydrated = useSelectionHydrated();
   const selectedClientId = useSelectionStore((s) => s.selectedClientId);
+  const setSelectedProjectId = useSelectionStore((s) => s.setSelectedProjectId);
+  const setSelectedCampaignId = useSelectionStore((s) => s.setSelectedCampaignId);
+  const selectedCampaignId = useSelectionStore((s) => s.selectedCampaignId);
 
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
+  const [recentlyCreatedProjectId, setRecentlyCreatedProjectId] = useState<
+    string | null
+  >(null);
+  const [dismissedSetupBannerIds, setDismissedSetupBannerIds] = useState<
+    Set<string>
+  >(() => new Set());
   const [projectSearchQuery, setProjectSearchQuery] = useState("");
   const [deleteProjectOpen, setDeleteProjectOpen] = useState(false);
   const [linkCampaignOpen, setLinkCampaignOpen] = useState(false);
@@ -153,6 +170,88 @@ export function DashboardView() {
     () => new Map(projects.map((project, index) => [project.id, index])),
     [projects],
   );
+
+  const syncProbeTargets = useMemo(() => {
+    return projects.map((project, index) => {
+      const keywords =
+        projectDetailsQueries[index]?.data?.project?.keywords ??
+        project.keywords ??
+        [];
+      const campaigns = campaignQueries[index]?.data?.campaigns ?? [];
+      const keywordsFetched = projectDetailsQueries[index]?.isFetched ?? false;
+      const campaignsFetched = campaignQueries[index]?.isFetched ?? false;
+
+      return {
+        project,
+        campaignId: campaigns[0]?.id ?? null,
+        setupComplete: isProjectSetupComplete({
+          project,
+          keywords,
+          campaigns,
+          keywordsFetched,
+          campaignsFetched,
+        }),
+      };
+    });
+  }, [projects, campaignQueries, projectDetailsQueries]);
+
+  const syncProbeResults = useProjectsSyncProbe(syncProbeTargets);
+
+  const readinessByProjectId = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof computeProjectReadiness>>();
+
+    projects.forEach((project, index) => {
+      const keywords =
+        projectDetailsQueries[index]?.data?.project?.keywords ??
+        project.keywords ??
+        [];
+      const campaigns = campaignQueries[index]?.data?.campaigns ?? [];
+      const probe = syncProbeResults.get(project.id);
+
+      map.set(
+        project.id,
+        computeProjectReadiness({
+          project,
+          keywords,
+          keywordsFetched: projectDetailsQueries[index]?.isFetched ?? false,
+          campaigns,
+          campaignsFetched: campaignQueries[index]?.isFetched ?? false,
+          hasPerformances: probe?.hasPerformances ?? false,
+          syncProbeTimedOut: probe?.timedOut ?? false,
+        }),
+      );
+    });
+
+    return map;
+  }, [projects, campaignQueries, projectDetailsQueries, syncProbeResults]);
+
+  const setupBannerProject = useMemo(() => {
+    if (!recentlyCreatedProjectId) {
+      return null;
+    }
+    if (dismissedSetupBannerIds.has(recentlyCreatedProjectId)) {
+      return null;
+    }
+
+    const project = projectsEnriched.find(
+      (item) => item.id === recentlyCreatedProjectId,
+    );
+    if (!project) {
+      return null;
+    }
+
+    const readiness = readinessByProjectId.get(project.id);
+    if (readiness === "ready") {
+      return null;
+    }
+
+    return project;
+  }, [
+    recentlyCreatedProjectId,
+    dismissedSetupBannerIds,
+    projectsEnriched,
+    readinessByProjectId,
+  ]);
 
   const [deleteState, deleteFormAction, isDeletePending] = useActionState(
     deleteProjectAction,
@@ -338,10 +437,34 @@ export function DashboardView() {
       void queryClient.refetchQueries({
         queryKey: unilizeKeys.projects(result.clientId),
       });
+      setRecentlyCreatedProjectId(result.project.id);
+      setSelectedProjectId(result.project.id);
       setCreateProjectOpen(false);
     },
-    [queryClient],
+    [queryClient, setSelectedProjectId],
   );
+
+  useEffect(() => {
+    if (!recentlyCreatedProjectId || selectedCampaignId) {
+      return;
+    }
+
+    const queryIndex = projectQueryIndexById.get(recentlyCreatedProjectId);
+    if (queryIndex === undefined) {
+      return;
+    }
+
+    const campaigns = campaignQueries[queryIndex]?.data?.campaigns ?? [];
+    if (campaigns.length > 0) {
+      setSelectedCampaignId(campaigns[0].id);
+    }
+  }, [
+    recentlyCreatedProjectId,
+    selectedCampaignId,
+    projectQueryIndexById,
+    campaignQueries,
+    setSelectedCampaignId,
+  ]);
 
   useEffect(() => {
     if (
@@ -486,6 +609,48 @@ export function DashboardView() {
     <div className="space-y-6">
       <DashboardHealthSummary {...healthStats} />
 
+      {setupBannerProject ? (
+        <ProjectSetupBanner
+          project={setupBannerProject}
+          keywords={
+            projectDetailsQueries[
+              projectQueryIndexById.get(setupBannerProject.id) ?? 0
+            ]?.data?.project?.keywords ??
+            setupBannerProject.keywords ??
+            []
+          }
+          keywordsFetched={
+            projectDetailsQueries[
+              projectQueryIndexById.get(setupBannerProject.id) ?? 0
+            ]?.isFetched ?? false
+          }
+          campaigns={
+            campaignQueries[
+              projectQueryIndexById.get(setupBannerProject.id) ?? 0
+            ]?.data?.campaigns ?? []
+          }
+          campaignsFetched={
+            campaignQueries[
+              projectQueryIndexById.get(setupBannerProject.id) ?? 0
+            ]?.isFetched ?? false
+          }
+          readiness={
+            readinessByProjectId.get(setupBannerProject.id) ?? "setup_required"
+          }
+          onDismiss={() => {
+            setDismissedSetupBannerIds((previous) => {
+              const next = new Set(previous);
+              next.add(setupBannerProject.id);
+              return next;
+            });
+          }}
+          onEditKeywords={() => {
+            setProjectForKeywords(setupBannerProject);
+            setKeywordsOpen(true);
+          }}
+        />
+      ) : null}
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-muted-foreground text-sm">
           {client?.name ? (
@@ -548,6 +713,8 @@ export function DashboardView() {
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {filteredProjects.map((project) => {
               const queryIndex = projectQueryIndexById.get(project.id) ?? 0;
+              const readiness =
+                readinessByProjectId.get(project.id) ?? "setup_required";
 
               return (
                 <ProjectCard
@@ -556,6 +723,7 @@ export function DashboardView() {
                   queryIndex={queryIndex}
                   campaignQueries={campaignQueries}
                   projectDetailsQueries={projectDetailsQueries}
+                  readiness={readiness}
                   isBusy={isBusy}
                   onUnlink={(p, campaign) => {
                     setCampaignToUnlink({ project: p, campaign });

@@ -9,6 +9,8 @@ export interface UnilizeClient {
 export interface UnilizeProject {
   id: string;
   name: string;
+  /** Google Ads customer ID lié au projet (sync SEA au niveau compte). */
+  customer_id?: string;
   created_at: string;
   updated_at: string;
   /** Présent après mise à jour des mots-clés ou selon réponse API. */
@@ -46,6 +48,8 @@ export interface CreateProjectPayload {
   name: string;
   /** URL du site associé au projet (requis par l’API). */
   url: string;
+  /** Google Ads customer ID — déclenche la sync SEA à la création. */
+  customer_id: string;
 }
 
 export interface LinkCampaignPayload {
