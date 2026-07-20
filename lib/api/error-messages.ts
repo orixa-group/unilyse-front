@@ -89,6 +89,12 @@ export function toUserFacingApiError(
   if (isTechnicalDatabaseError(msg)) {
     return fallback;
   }
+  if (/invalid_grant/i.test(msg)) {
+    return "La connexion Google Search Console a expiré côté API. Demandez à l'équipe technique de renouveler l'autorisation Google.";
+  }
+  if (/searchconsole\.googleapis\.com/i.test(msg)) {
+    return "Impossible d'accéder à Google Search Console via l'API. Vérifiez l'autorisation OAuth côté backend.";
+  }
   return msg;
 }
 
@@ -100,7 +106,13 @@ export function resolveListFetchError(
 ): { shouldThrow: boolean; message: string } {
   if (mode === "strict") {
     if (!message?.trim()) {
-      return { shouldThrow: true, message: fallback };
+      const statusHint =
+        status && status >= 500
+          ? ` (HTTP ${status}, réponse sans détail)`
+          : status
+            ? ` (HTTP ${status})`
+            : "";
+      return { shouldThrow: true, message: `${fallback}${statusHint}` };
     }
     return {
       shouldThrow: true,
@@ -110,6 +122,15 @@ export function resolveListFetchError(
 
   if (isEmptyResourceApiError(message, status)) {
     return { shouldThrow: false, message: "" };
+  }
+  if (!message?.trim()) {
+    const statusHint =
+      status && status >= 500
+        ? ` (HTTP ${status}, réponse sans détail)`
+        : status
+          ? ` (HTTP ${status})`
+          : "";
+    return { shouldThrow: true, message: `${fallback}${statusHint}` };
   }
   return {
     shouldThrow: true,

@@ -1,9 +1,9 @@
 "use client";
 
+import { BffErrorAlert } from "@/components/common/bff-error-alert";
 import { LoadingSkeleton } from "@/components/common/loading-skeleton";
 import { MonitoringResultsTable } from "@/components/monitoring/monitoring-results-table";
 import { MonitoringSummary } from "@/components/monitoring/monitoring-summary";
-import { toUserFacingApiError } from "@/lib/api/error-messages";
 import { useMonitoring } from "@/hooks/use-monitoring-api";
 import { useProjectContext } from "@/hooks/use-project-context";
 
@@ -38,11 +38,11 @@ export function MonitoringView() {
 
   if (isMonitoringError) {
     return (
-      <p className="text-destructive text-sm" role="alert">
-        {toUserFacingApiError(monitoringError?.message, {
-          fallback: "Impossible de charger le monitoring.",
-        })}
-      </p>
+      <BffErrorAlert
+        error={monitoringError}
+        fallback="Impossible de charger le monitoring."
+        title="Monitoring indisponible"
+      />
     );
   }
 

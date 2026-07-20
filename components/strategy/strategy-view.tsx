@@ -10,7 +10,7 @@ import { StrategyNetlinkingTable } from "@/components/strategy/strategy-netlinki
 import { StrategyOpportunityMatrix } from "@/components/strategy/strategy-opportunity-matrix";
 import { StrategySemanticGapsTable } from "@/components/strategy/strategy-semantic-gaps-table";
 import { StatCard } from "@/components/ui/stat-card";
-import { toUserFacingApiError } from "@/lib/api/error-messages";
+import { BffErrorAlert } from "@/components/common/bff-error-alert";
 import { computeExpectedTotalTraffic } from "@/lib/strategy/compute-summary";
 import {
   computeHybridInsights,
@@ -74,11 +74,11 @@ export function StrategyView() {
 
   if (isStrategyError) {
     return (
-      <p className="text-destructive text-sm" role="alert">
-        {toUserFacingApiError(strategyError?.message, {
-          fallback: "Impossible de charger la stratégie.",
-        })}
-      </p>
+      <BffErrorAlert
+        error={strategyError}
+        fallback="Impossible de charger la stratégie."
+        title="Stratégie indisponible"
+      />
     );
   }
 

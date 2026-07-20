@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueries } from "@tanstack/react-query";
-import { assertBffFetchOk } from "@/lib/api/bff-fetch";
+import { fetchBffJson } from "@/lib/api/bff-fetch";
 import { unilizeKeys } from "@/lib/api/unilize";
 import {
   SYNC_PROBE_INTERVAL_MS,
@@ -34,34 +34,28 @@ async function fetchPerformancesProbe(
     url,
   });
 
-  const response = await fetch(url, { cache: "no-store" });
-  const body = (await response.json()) as ListPerformancesResult;
+  const { body, treatedAsEmpty } = await fetchBffJson<ListPerformancesResult>(
+    url,
+    {
+      fallback: "Impossible de charger les performances.",
+      mode: "empty-on-not-found",
+    },
+  );
 
   const result: ListPerformancesResult = {
     requestUrl: body.requestUrl ?? "",
     projectId: body.projectId ?? projectId,
     performances: Array.isArray(body.performances) ? body.performances : [],
-    error: body.error ?? null,
+    error: null,
   };
 
-  const check = assertBffFetchOk(
-    response,
-    result.error,
-    "Impossible de charger les performances.",
-    "empty-on-not-found",
-  );
-
-  if (!check.ok) {
-    if (check.empty) {
-      const empty = { ...result, performances: [], error: null };
-      logUnilizeEvent("browser-bff", "success", "GET performances probe (vide)", {
-        projectId,
-        durationMs: Date.now() - startedAt,
-        response: summarizeUnilizePayload(empty),
-      });
-      return empty;
-    }
-    throw new Error(check.message);
+  if (treatedAsEmpty) {
+    logUnilizeEvent("browser-bff", "success", "GET performances probe (vide)", {
+      projectId,
+      durationMs: Date.now() - startedAt,
+      response: summarizeUnilizePayload(result),
+    });
+    return result;
   }
 
   logUnilizeEvent("browser-bff", "success", "GET performances probe", {

@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery, type UseQueryOptions } from "@tanstack/react-query";
-import { assertBffFetchOk } from "@/lib/api/bff-fetch";
+import { fetchBffJson } from "@/lib/api/bff-fetch";
 import { unilizeKeys } from "@/lib/api/unilize";
 import { logUnilizeEvent, summarizeUnilizePayload } from "@/lib/unilize/request-log";
 import type { GetStrategyResult } from "@/types/strategy";
@@ -25,45 +25,30 @@ async function fetchStrategy(
   const startedAt = Date.now();
   logUnilizeEvent("browser-bff", "start", "GET strategy", { projectId, url });
 
-  const response = await fetch(url, { cache: "no-store" });
-  const body = (await response.json()) as GetStrategyResult;
+  const { body, treatedAsEmpty } = await fetchBffJson<GetStrategyResult>(url, {
+    fallback: "Impossible de charger la stratégie.",
+    mode: "empty-on-not-found",
+  });
 
   const result: GetStrategyResult = {
     requestUrl: body.requestUrl ?? "",
     projectId: body.projectId ?? projectId,
     strategy: body.strategy ?? null,
-    error: body.error ?? null,
+    error: null,
   };
 
-  const strategyCheck = assertBffFetchOk(
-    response,
-    result.error,
-    "Impossible de charger la stratégie.",
-    "empty-on-not-found",
-  );
-  if (!strategyCheck.ok) {
-    if (strategyCheck.empty) {
-      const empty = { ...result, strategy: null, error: null };
-      logUnilizeEvent("browser-bff", "success", "GET strategy (vide)", {
-        projectId,
-        durationMs: Date.now() - startedAt,
-        response: summarizeUnilizePayload(empty),
-      });
-      return empty;
-    }
-    logUnilizeEvent("browser-bff", "error", "GET strategy", {
+  if (treatedAsEmpty) {
+    logUnilizeEvent("browser-bff", "success", "GET strategy (vide)", {
       projectId,
       durationMs: Date.now() - startedAt,
-      status: response.status,
-      error: strategyCheck.message,
+      response: summarizeUnilizePayload(result),
     });
-    throw new Error(strategyCheck.message);
+    return result;
   }
 
   logUnilizeEvent("browser-bff", "success", "GET strategy", {
     projectId,
     durationMs: Date.now() - startedAt,
-    status: response.status,
     keywords: result.strategy?.keyword_comparisons.length ?? 0,
     response: summarizeUnilizePayload(result),
   });

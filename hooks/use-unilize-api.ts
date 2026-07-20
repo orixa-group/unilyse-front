@@ -14,7 +14,7 @@ import type {
   GetProjectResult,
   ListProjectsActionResult,
 } from "@/app/(auth)/actions/unilize-action-state";
-import { assertBffFetchOk } from "@/lib/api/bff-fetch";
+import { fetchBffJson } from "@/lib/api/bff-fetch";
 import { unilizeListQueryRetry } from "@/lib/api/retryable-error";
 import {
   logUnilizeEvent,
@@ -101,40 +101,25 @@ async function fetchProjectsForClient(
   const startedAt = Date.now();
   logUnilizeEvent("browser-bff", "start", "GET projects", { clientId, url });
 
-  const response = await fetch(url, { cache: "no-store" });
+  const { body, treatedAsEmpty } =
+    await fetchBffJson<ListProjectsActionResult>(url, {
+      fallback: "Impossible de charger les projets.",
+      mode: "strict",
+    });
 
-  const body = (await response.json()) as ListProjectsActionResult;
-
-  const projectsCheck = assertBffFetchOk(
-    response,
-    body.error,
-    "Impossible de charger les projets.",
-    "strict",
-  );
-  if (!projectsCheck.ok) {
-    if (projectsCheck.empty) {
-      const empty = {
-        requestUrl: body.requestUrl ?? "",
-        projects: [],
-        error: null,
-      };
-      logUnilizeEvent("browser-bff", "success", "GET projects (vide)", {
-        clientId,
-        url,
-        durationMs: Date.now() - startedAt,
-        status: response.status,
-        response: summarizeUnilizePayload(empty),
-      });
-      return empty;
-    }
-    logUnilizeEvent("browser-bff", "error", "GET projects", {
+  if (treatedAsEmpty) {
+    const empty = {
+      requestUrl: body.requestUrl ?? "",
+      projects: [],
+      error: null,
+    };
+    logUnilizeEvent("browser-bff", "success", "GET projects (vide)", {
       clientId,
       url,
       durationMs: Date.now() - startedAt,
-      status: response.status,
-      error: projectsCheck.message,
+      response: summarizeUnilizePayload(empty),
     });
-    throw new Error(projectsCheck.message);
+    return empty;
   }
 
   const envelope = body as ListProjectsActionResult & { data?: UnilizeProject[] };
@@ -153,7 +138,6 @@ async function fetchProjectsForClient(
     clientId,
     url,
     durationMs: Date.now() - startedAt,
-    status: response.status,
     response: summarizeUnilizePayload(result),
   });
   return result;
@@ -166,62 +150,45 @@ async function fetchProjectDetails(
   const startedAt = Date.now();
   logUnilizeEvent("browser-bff", "start", "GET project details", { projectId, url });
 
-  const response = await fetch(url, { cache: "no-store" });
-
-  const body = (await response.json()) as GetProjectResult;
+  const { body, treatedAsEmpty } = await fetchBffJson<GetProjectResult>(url, {
+    fallback: "Impossible de charger le projet.",
+    mode: "empty-on-not-found",
+  });
 
   const result: GetProjectResult = {
     requestUrl: body.requestUrl ?? "",
     projectId: body.projectId ?? projectId,
     project: body.project ?? null,
-    error: body.error ?? null,
+    error: null,
   };
 
-  const projectCheck = assertBffFetchOk(
-    response,
-    result.error,
-    "Impossible de charger le projet.",
-    "empty-on-not-found",
-  );
-  if (!projectCheck.ok) {
-    if (projectCheck.empty) {
-      const empty = {
-        ...result,
-        project: result.project ?? {
-          id: projectId,
-          name: "",
-          url: "",
-          customer_id: "",
-          created_at: "",
-          updated_at: "",
-          keywords: [],
-        },
-        error: null,
-      };
-      logUnilizeEvent("browser-bff", "success", "GET project details (vide)", {
-        projectId,
-        url,
-        durationMs: Date.now() - startedAt,
-        status: response.status,
-        response: summarizeUnilizePayload(empty),
-      });
-      return empty;
-    }
-    logUnilizeEvent("browser-bff", "error", "GET project details", {
+  if (treatedAsEmpty) {
+    const empty = {
+      ...result,
+      project: result.project ?? {
+        id: projectId,
+        name: "",
+        url: "",
+        customer_id: "",
+        created_at: "",
+        updated_at: "",
+        keywords: [],
+      },
+      error: null,
+    };
+    logUnilizeEvent("browser-bff", "success", "GET project details (vide)", {
       projectId,
       url,
       durationMs: Date.now() - startedAt,
-      status: response.status,
-      error: projectCheck.message,
+      response: summarizeUnilizePayload(empty),
     });
-    throw new Error(projectCheck.message);
+    return empty;
   }
 
   logUnilizeEvent("browser-bff", "success", "GET project details", {
     projectId,
     url,
     durationMs: Date.now() - startedAt,
-    status: response.status,
     response: summarizeUnilizePayload(result),
   });
   return result;

@@ -1,10 +1,10 @@
 "use client";
 
+import { BffErrorAlert } from "@/components/common/bff-error-alert";
 import { LoadingSkeleton } from "@/components/common/loading-skeleton";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PerformanceResultsTable } from "@/components/performances/performance-results-table";
 import { PerformanceSummary } from "@/components/performances/performance-summary";
-import { toUserFacingApiError } from "@/lib/api/error-messages";
 import { usePerformances } from "@/hooks/use-performances-api";
 import { useMonitoring } from "@/hooks/use-monitoring-api";
 import { useProjectContext } from "@/hooks/use-project-context";
@@ -46,11 +46,11 @@ export function PerformancesView() {
 
   if (isPerformancesError) {
     return (
-      <p className="text-destructive text-sm" role="alert">
-        {toUserFacingApiError(performancesError?.message, {
-          fallback: "Impossible de charger les performances.",
-        })}
-      </p>
+      <BffErrorAlert
+        error={performancesError}
+        fallback="Impossible de charger les performances."
+        title="Performances indisponibles"
+      />
     );
   }
 

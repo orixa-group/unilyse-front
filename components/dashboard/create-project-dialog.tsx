@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BffErrorAlert } from "@/components/common/bff-error-alert";
 import { LoadingSkeleton } from "@/components/common/loading-skeleton";
 import { useSearchConsoleSites } from "@/hooks/use-sites-api";
 import { formatGscSiteOptionLabel } from "@/lib/sites/format-gsc-site";
@@ -141,7 +142,13 @@ export function CreateProjectDialog({
               Seuls les sites de votre compte Google Search Console connecté
               sont listés.
             </p>
-            {sitesLoadError ? (
+            {isSitesError ? (
+              <BffErrorAlert
+                error={sitesError}
+                fallback="Impossible de charger les sites Search Console."
+                title="Sites Search Console indisponibles"
+              />
+            ) : sitesLoadError ? (
               <p className="text-destructive text-sm" role="alert">
                 {sitesLoadError}
               </p>

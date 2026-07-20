@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery, type UseQueryOptions } from "@tanstack/react-query";
-import { assertBffFetchOk } from "@/lib/api/bff-fetch";
+import { fetchBffJson } from "@/lib/api/bff-fetch";
 import { unilizeKeys } from "@/lib/api/unilize";
 import { logUnilizeEvent, summarizeUnilizePayload } from "@/lib/unilize/request-log";
 import type { ListMonitoringResult } from "@/types/monitoring";
@@ -25,45 +25,30 @@ async function fetchMonitoring(
   const startedAt = Date.now();
   logUnilizeEvent("browser-bff", "start", "GET monitoring", { projectId, url });
 
-  const response = await fetch(url, { cache: "no-store" });
-  const body = (await response.json()) as ListMonitoringResult;
+  const { body, treatedAsEmpty } = await fetchBffJson<ListMonitoringResult>(url, {
+    fallback: "Impossible de charger le monitoring.",
+    mode: "empty-on-not-found",
+  });
 
   const result: ListMonitoringResult = {
     requestUrl: body.requestUrl ?? "",
     projectId: body.projectId ?? projectId,
     monitoring: Array.isArray(body.monitoring) ? body.monitoring : [],
-    error: body.error ?? null,
+    error: null,
   };
 
-  const monitoringCheck = assertBffFetchOk(
-    response,
-    result.error,
-    "Impossible de charger le monitoring.",
-    "empty-on-not-found",
-  );
-  if (!monitoringCheck.ok) {
-    if (monitoringCheck.empty) {
-      const empty = { ...result, monitoring: [], error: null };
-      logUnilizeEvent("browser-bff", "success", "GET monitoring (vide)", {
-        projectId,
-        durationMs: Date.now() - startedAt,
-        response: summarizeUnilizePayload(empty),
-      });
-      return empty;
-    }
-    logUnilizeEvent("browser-bff", "error", "GET monitoring", {
+  if (treatedAsEmpty) {
+    logUnilizeEvent("browser-bff", "success", "GET monitoring (vide)", {
       projectId,
       durationMs: Date.now() - startedAt,
-      status: response.status,
-      error: monitoringCheck.message,
+      response: summarizeUnilizePayload(result),
     });
-    throw new Error(monitoringCheck.message);
+    return result;
   }
 
   logUnilizeEvent("browser-bff", "success", "GET monitoring", {
     projectId,
     durationMs: Date.now() - startedAt,
-    status: response.status,
     count: result.monitoring.length,
     response: summarizeUnilizePayload(result),
   });

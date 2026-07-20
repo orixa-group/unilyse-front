@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
-import { assertBffFetchOk } from "@/lib/api/bff-fetch";
+import { fetchBffJson } from "@/lib/api/bff-fetch";
 import { unilizeKeys } from "@/lib/api/unilize";
 import { logUnilizeEvent, summarizeUnilizePayload } from "@/lib/unilize/request-log";
 import type { ListSitesResult } from "@/types/sites";
@@ -11,36 +11,23 @@ async function fetchSearchConsoleSites(): Promise<ListSitesResult> {
   const startedAt = Date.now();
   logUnilizeEvent("browser-bff", "start", "GET sites", { url });
 
-  const response = await fetch(url, { cache: "no-store" });
-  const body = (await response.json()) as ListSitesResult;
+  const { body, treatedAsEmpty } = await fetchBffJson<ListSitesResult>(url, {
+    fallback: "Impossible de charger les sites Search Console.",
+    mode: "strict",
+  });
 
   const result: ListSitesResult = {
     requestUrl: body.requestUrl ?? "",
     sites: Array.isArray(body.sites) ? body.sites : [],
-    error: body.error ?? null,
+    error: null,
   };
 
-  const sitesCheck = assertBffFetchOk(
-    response,
-    result.error,
-    "Impossible de charger les sites Search Console.",
-    "strict",
-  );
-  if (!sitesCheck.ok) {
-    if (sitesCheck.empty) {
-      const empty = { ...result, sites: [], error: null };
-      logUnilizeEvent("browser-bff", "success", "GET sites (vide)", {
-        durationMs: Date.now() - startedAt,
-        response: summarizeUnilizePayload(empty),
-      });
-      return empty;
-    }
-    logUnilizeEvent("browser-bff", "error", "GET sites", {
+  if (treatedAsEmpty) {
+    logUnilizeEvent("browser-bff", "success", "GET sites (vide)", {
       durationMs: Date.now() - startedAt,
-      status: response.status,
-      error: sitesCheck.message,
+      response: summarizeUnilizePayload(result),
     });
-    throw new Error(sitesCheck.message);
+    return result;
   }
 
   logUnilizeEvent("browser-bff", "success", "GET sites", {
