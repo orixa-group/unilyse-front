@@ -25,8 +25,8 @@ export function FirebaseAuthForm() {
       <div className="text-muted-foreground max-w-md space-y-3 text-center text-sm">
         <p>Firebase n&apos;est pas configuré.</p>
         <p>
-          Renseignez les variables <code>NEXT_PUBLIC_FIREBASE_*</code> dans{" "}
-          <code>.env.local</code>.
+          Vérifiez <code>config/firebase.public.json</code> ou les variables{" "}
+          <code>NEXT_PUBLIC_FIREBASE_*</code> en local.
         </p>
       </div>
     );
