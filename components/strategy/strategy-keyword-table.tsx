@@ -56,15 +56,6 @@ import type {
 } from "@/types/strategy";
 import type { AnalysisLens } from "@/types/workspace";
 
-const RECOMMENDATION_KIND: Record<
-  string,
-  "seo" | "sea" | "hybrid"
-> = {
-  seo: "seo",
-  sea: "sea",
-  hybrid: "hybrid",
-};
-
 function formatNullablePercent(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) {
     return "—";
@@ -109,11 +100,7 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
         if (!rec) {
           return "—";
         }
-        const normalized = rec.toLowerCase();
-        if (!RECOMMENDATION_KIND[normalized]) {
-          return formatStrategyRecommendation(rec);
-        }
-        return <StrategyRecommendationBadge recommendation={normalized} />;
+        return <StrategyRecommendationBadge recommendation={rec} />;
       },
     },
     {
@@ -212,11 +199,11 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
         formatNullablePercent(getValue() as number | null),
     },
     {
-      id: "authority_score",
+      id: "authority_status",
       accessorFn: (row) => resolveStrategyAuthorityLabel(row.seo),
       header: () => (
         <MetricHeader
-          label={STRATEGY_COLUMN_LABELS.authority_score}
+          label={STRATEGY_COLUMN_LABELS.authority_status}
           metricId="seo_bas"
         />
       ),
@@ -229,11 +216,11 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
       },
     },
     {
-      id: "semantic_score",
+      id: "semantic_status",
       accessorFn: (row) => resolveStrategySemanticLabel(row.seo),
       header: () => (
         <MetricHeader
-          label={STRATEGY_COLUMN_LABELS.semantic_score}
+          label={STRATEGY_COLUMN_LABELS.semantic_status}
           metricId="semantic_score"
         />
       ),
@@ -305,8 +292,8 @@ function isNumericColumn(columnId: string): boolean {
   return (
     columnId !== "keyword" &&
     columnId !== "recommendation" &&
-    columnId !== "authority_score" &&
-    columnId !== "semantic_score" &&
+    columnId !== "authority_status" &&
+    columnId !== "semantic_status" &&
     columnId !== "ad_relevance" &&
     columnId !== "expected_ctr" &&
     columnId !== "landing_page_ux" &&

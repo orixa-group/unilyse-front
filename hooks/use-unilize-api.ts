@@ -12,7 +12,6 @@ import { getClientAction } from "@/app/(auth)/actions/unilize-actions";
 import type {
   GetClientActionResult,
   GetProjectResult,
-  ListCampaignsResult,
   ListProjectsActionResult,
 } from "@/app/(auth)/actions/unilize-action-state";
 import { assertBffFetchOk } from "@/lib/api/bff-fetch";
@@ -26,19 +25,14 @@ import {
   createProject,
   deleteClient,
   deleteProject,
-  getCampaign,
   getProject,
-  linkCampaign,
   listClients,
   unilizeKeys,
-  unlinkCampaign,
   updateProjectKeywords,
 } from "@/lib/api/unilize";
 import type {
   CreateClientPayload,
   CreateProjectPayload,
-  LinkCampaignPayload,
-  UnilizeCampaign,
   UnilizeClient,
   UnilizeProject,
 } from "@/types/unilize";
@@ -196,6 +190,8 @@ async function fetchProjectDetails(
         project: result.project ?? {
           id: projectId,
           name: "",
+          url: "",
+          customer_id: "",
           created_at: "",
           updated_at: "",
           keywords: [],
@@ -231,62 +227,6 @@ async function fetchProjectDetails(
   return result;
 }
 
-async function fetchCampaignsForProject(
-  projectId: string,
-): Promise<ListCampaignsResult> {
-  const url = `/api/bff/projects/${encodeURIComponent(projectId)}/campaigns`;
-  const startedAt = Date.now();
-  logUnilizeEvent("browser-bff", "start", "GET campaigns", { projectId, url });
-
-  const response = await fetch(url, { cache: "no-store" });
-
-  const body = (await response.json()) as ListCampaignsResult;
-
-  const result: ListCampaignsResult = {
-    requestUrl: body.requestUrl ?? "",
-    projectId: body.projectId ?? projectId,
-    campaigns: Array.isArray(body.campaigns) ? body.campaigns : [],
-    error: body.error ?? null,
-  };
-
-  const campaignsCheck = assertBffFetchOk(
-    response,
-    result.error,
-    "Impossible de charger les campagnes.",
-    "strict",
-  );
-  if (!campaignsCheck.ok) {
-    if (campaignsCheck.empty) {
-      const empty = { ...result, campaigns: [], error: null };
-      logUnilizeEvent("browser-bff", "success", "GET campaigns (vide)", {
-        projectId,
-        url,
-        durationMs: Date.now() - startedAt,
-        status: response.status,
-        response: summarizeUnilizePayload(empty),
-      });
-      return empty;
-    }
-    logUnilizeEvent("browser-bff", "error", "GET campaigns", {
-      projectId,
-      url,
-      durationMs: Date.now() - startedAt,
-      status: response.status,
-      error: campaignsCheck.message,
-    });
-    throw new Error(campaignsCheck.message);
-  }
-
-  logUnilizeEvent("browser-bff", "success", "GET campaigns", {
-    projectId,
-    url,
-    durationMs: Date.now() - startedAt,
-    status: response.status,
-    response: summarizeUnilizePayload(result),
-  });
-  return result;
-}
-
 export function useProjects(
   clientId: string | null,
   options?: Omit<
@@ -302,23 +242,6 @@ export function useProjects(
     placeholderData: keepPreviousData,
     ...unilizeListQueryRetry,
     ...options,
-  });
-}
-
-export function useProjectsCampaigns(
-  projectIds: string[],
-  options?: { enabled?: boolean },
-) {
-  const queriesEnabled = options?.enabled !== false;
-  return useQueries({
-    queries: projectIds.map((projectId) => ({
-      queryKey: unilizeKeys.campaigns(projectId),
-      queryFn: () => fetchCampaignsForProject(projectId),
-      enabled: queriesEnabled && Boolean(projectId),
-      staleTime: 30_000,
-      placeholderData: keepPreviousData,
-      ...unilizeListQueryRetry,
-    })),
   });
 }
 
@@ -350,40 +273,6 @@ export function useProject(
     queryKey: unilizeKeys.project(id ?? ""),
     queryFn: () => getProject(id!),
     enabled: Boolean(id),
-    ...options,
-  });
-}
-
-export function useCampaigns(
-  projectId: string | null,
-  options?: Omit<
-    UseQueryOptions<ListCampaignsResult, Error>,
-    "queryKey" | "queryFn"
-  >,
-) {
-  return useQuery({
-    queryKey: unilizeKeys.campaigns(projectId ?? ""),
-    queryFn: () => fetchCampaignsForProject(projectId!),
-    enabled: Boolean(projectId),
-    staleTime: 30_000,
-    placeholderData: keepPreviousData,
-    ...unilizeListQueryRetry,
-    ...options,
-  });
-}
-
-export function useCampaign(
-  projectId: string | null,
-  campaignId: string | null,
-  options?: Omit<
-    UseQueryOptions<UnilizeCampaign, Error>,
-    "queryKey" | "queryFn"
-  >,
-) {
-  return useQuery({
-    queryKey: unilizeKeys.campaign(projectId ?? "", campaignId ?? ""),
-    queryFn: () => getCampaign(projectId!, campaignId!),
-    enabled: Boolean(projectId && campaignId),
     ...options,
   });
 }
@@ -454,27 +343,3 @@ export function useUpdateProjectKeywordsMutation(projectId: string) {
   });
 }
 
-export function useLinkCampaignMutation(projectId: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: LinkCampaignPayload) =>
-      linkCampaign(projectId, payload),
-    onSuccess: () => {
-      void qc.invalidateQueries({
-        queryKey: unilizeKeys.campaigns(projectId),
-      });
-    },
-  });
-}
-
-export function useUnlinkCampaignMutation(projectId: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (campaignId: string) => unlinkCampaign(projectId, campaignId),
-    onSuccess: () => {
-      void qc.invalidateQueries({
-        queryKey: unilizeKeys.campaigns(projectId),
-      });
-    },
-  });
-}

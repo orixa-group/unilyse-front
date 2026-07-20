@@ -1,8 +1,4 @@
-import type {
-  UnilizeCampaign,
-  UnilizeClient,
-  UnilizeProject,
-} from "@/types/unilize";
+import type { UnilizeClient, UnilizeProject } from "@/types/unilize";
 
 export type CreateClientActionState = {
   success: boolean;
@@ -36,13 +32,6 @@ export type ListProjectsActionResult = {
   error: string | null;
 };
 
-export type ListCampaignsResult = {
-  requestUrl: string;
-  projectId: string;
-  campaigns: UnilizeCampaign[];
-  error: string | null;
-};
-
 export type GetProjectResult = {
   requestUrl: string;
   projectId: string;
@@ -69,28 +58,6 @@ export type DeleteProjectActionState = {
 };
 
 export const initialDeleteProjectState: DeleteProjectActionState = {
-  success: false,
-};
-
-export type LinkCampaignActionState = {
-  success: boolean;
-  error?: string;
-  campaign?: UnilizeCampaign;
-  projectId?: string;
-};
-
-export const initialLinkCampaignState: LinkCampaignActionState = {
-  success: false,
-};
-
-export type UnlinkCampaignActionState = {
-  success: boolean;
-  error?: string;
-  projectId?: string;
-  campaignId?: string;
-};
-
-export const initialUnlinkCampaignState: UnlinkCampaignActionState = {
   success: false,
 };
 

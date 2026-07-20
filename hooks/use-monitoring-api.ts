@@ -5,27 +5,32 @@ import { assertBffFetchOk } from "@/lib/api/bff-fetch";
 import { unilizeKeys } from "@/lib/api/unilize";
 import { logUnilizeEvent, summarizeUnilizePayload } from "@/lib/unilize/request-log";
 import type { ListMonitoringResult } from "@/types/monitoring";
+import type { UnilizePeriodQuery } from "@/types/unilize";
+
+function buildUrl(projectId: string, period?: UnilizePeriodQuery): string {
+  const url = new URL(
+    `/api/bff/projects/${encodeURIComponent(projectId)}/monitoring`,
+    typeof window !== "undefined" ? window.location.origin : "http://localhost",
+  );
+  if (period?.from) url.searchParams.set("from", period.from);
+  if (period?.to) url.searchParams.set("to", period.to);
+  return `${url.pathname}${url.search}`;
+}
 
 async function fetchMonitoring(
   projectId: string,
-  campaignId: string,
+  period?: UnilizePeriodQuery,
 ): Promise<ListMonitoringResult> {
-  const url = `/api/bff/projects/${encodeURIComponent(projectId)}/campaigns/${encodeURIComponent(campaignId)}/monitoring`;
+  const url = buildUrl(projectId, period);
   const startedAt = Date.now();
-  logUnilizeEvent("browser-bff", "start", "GET monitoring", {
-    projectId,
-    campaignId,
-    url,
-  });
+  logUnilizeEvent("browser-bff", "start", "GET monitoring", { projectId, url });
 
   const response = await fetch(url, { cache: "no-store" });
-
   const body = (await response.json()) as ListMonitoringResult;
 
   const result: ListMonitoringResult = {
     requestUrl: body.requestUrl ?? "",
     projectId: body.projectId ?? projectId,
-    campaignId: body.campaignId ?? campaignId,
     monitoring: Array.isArray(body.monitoring) ? body.monitoring : [],
     error: body.error ?? null,
   };
@@ -41,7 +46,6 @@ async function fetchMonitoring(
       const empty = { ...result, monitoring: [], error: null };
       logUnilizeEvent("browser-bff", "success", "GET monitoring (vide)", {
         projectId,
-        campaignId,
         durationMs: Date.now() - startedAt,
         response: summarizeUnilizePayload(empty),
       });
@@ -49,7 +53,6 @@ async function fetchMonitoring(
     }
     logUnilizeEvent("browser-bff", "error", "GET monitoring", {
       projectId,
-      campaignId,
       durationMs: Date.now() - startedAt,
       status: response.status,
       error: monitoringCheck.message,
@@ -59,7 +62,6 @@ async function fetchMonitoring(
 
   logUnilizeEvent("browser-bff", "success", "GET monitoring", {
     projectId,
-    campaignId,
     durationMs: Date.now() - startedAt,
     status: response.status,
     count: result.monitoring.length,
@@ -70,16 +72,16 @@ async function fetchMonitoring(
 
 export function useMonitoring(
   projectId: string | null,
-  campaignId: string | null,
+  period?: UnilizePeriodQuery,
   options?: Omit<
     UseQueryOptions<ListMonitoringResult, Error>,
     "queryKey" | "queryFn"
   >,
 ) {
   return useQuery({
-    queryKey: unilizeKeys.monitoring(projectId ?? "", campaignId ?? ""),
-    queryFn: () => fetchMonitoring(projectId!, campaignId!),
-    enabled: Boolean(projectId && campaignId),
+    queryKey: unilizeKeys.monitoring(projectId ?? "", period),
+    queryFn: () => fetchMonitoring(projectId!, period),
+    enabled: Boolean(projectId),
     placeholderData: keepPreviousData,
     ...options,
   });

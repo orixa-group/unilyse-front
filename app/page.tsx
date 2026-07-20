@@ -11,9 +11,6 @@ export default function HomePage() {
         <div className="mb-6 flex justify-center">
           <AppLogo className="justify-center [&_img]:max-h-12 [&_img]:max-w-[15rem]" />
         </div>
-        {/* <h1 className="text-3xl font-semibold tracking-tight">
-          {siteConfig.name}
-        </h1> */}
         <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
           {siteConfig.description}
         </p>
@@ -21,9 +18,6 @@ export default function HomePage() {
       <div className="flex flex-wrap items-center justify-center gap-3">
         <Button variant="default" asChild>
           <Link href={ROUTES.SIGN_IN}>Se connecter</Link>
-        </Button>
-        <Button variant="outline" asChild>
-          <Link href={ROUTES.DASHBOARD}>Tableau de bord</Link>
         </Button>
       </div>
     </div>

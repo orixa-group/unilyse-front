@@ -1,14 +1,20 @@
 import {
+  MutationCache,
+  QueryCache,
   QueryClient,
   type QueryClientConfig,
   type DefaultOptions,
 } from "@tanstack/react-query";
+import {
+  isUnauthorizedError,
+  redirectToSignIn,
+} from "@/lib/auth/handle-unauthorized";
 
 const defaultQueryOptions: DefaultOptions["queries"] = {
   staleTime: 60 * 1000,
   gcTime: 5 * 60 * 1000,
   retry: (failureCount, error) => {
-    if (error instanceof Error && error.message.includes("401")) {
+    if (isUnauthorizedError(error)) {
       return false;
     }
     return failureCount < 2;
@@ -20,11 +26,23 @@ const defaultMutationOptions: DefaultOptions["mutations"] = {
   retry: 0,
 };
 
+function handleGlobalAuthError(error: unknown) {
+  if (isUnauthorizedError(error)) {
+    redirectToSignIn();
+  }
+}
+
 export function createQueryClient(
   overrides?: QueryClientConfig,
 ): QueryClient {
   return new QueryClient({
     ...overrides,
+    queryCache: new QueryCache({
+      onError: handleGlobalAuthError,
+    }),
+    mutationCache: new MutationCache({
+      onError: handleGlobalAuthError,
+    }),
     defaultOptions: {
       ...overrides?.defaultOptions,
       queries: {

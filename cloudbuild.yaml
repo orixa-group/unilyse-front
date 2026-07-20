@@ -1,58 +1,53 @@
 # Build Docker + déploiement Cloud Run.
 # Déclencher : gcloud builds submit --config cloudbuild.yaml .
 #
-# Tag d’image : $BUILD_ID (toujours défini, y compris avec `gcloud builds submit`).
-# $SHORT_SHA n’est disponible que via un trigger Git — ne pas l’utiliser ici.
-#
-# Personnaliser via substitutions :
-#   gcloud builds submit --config cloudbuild.yaml \
-#     --substitutions=_REGION=europe-west1,_API_URL=https://...
+# Config Firebase publique (commitée) : config/firebase.public.json
+# Surcharger l’URL API : --substitutions=_API_URL=https://...
 
 substitutions:
   _REGION: europe-west9
   _REPOSITORY: unilyse-admin
   _SERVICE: unilyse-admin
   _API_URL: https://public-api-531732557398.europe-west9.run.app
-  _NEXT_PUBLIC_FIREBASE_API_KEY: ""
-  _NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ""
-  _NEXT_PUBLIC_FIREBASE_PROJECT_ID: ""
-  _NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ""
-  _NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ""
-  _NEXT_PUBLIC_FIREBASE_APP_ID: ""
-  _NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ""
-  _NEXT_PUBLIC_REQUIRE_AUTH: "false"
+  _NEXT_PUBLIC_REQUIRE_AUTH: "true"
 
 options:
   logging: CLOUD_LOGGING_ONLY
 
 steps:
+  - id: prepare-firebase-env
+    name: node:22-alpine
+    entrypoint: sh
+    args:
+      - -c
+      - node scripts/firebase-build-args.mjs --write-env firebase.build.env
+
   - id: build
     name: gcr.io/cloud-builders/docker
+    entrypoint: bash
     args:
-      - build
-      - --build-arg
-      - API_URL=${_API_URL}
-      - --build-arg
-      - NEXT_PUBLIC_FIREBASE_API_KEY=${_NEXT_PUBLIC_FIREBASE_API_KEY}
-      - --build-arg
-      - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}
-      - --build-arg
-      - NEXT_PUBLIC_FIREBASE_PROJECT_ID=${_NEXT_PUBLIC_FIREBASE_PROJECT_ID}
-      - --build-arg
-      - NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}
-      - --build-arg
-      - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}
-      - --build-arg
-      - NEXT_PUBLIC_FIREBASE_APP_ID=${_NEXT_PUBLIC_FIREBASE_APP_ID}
-      - --build-arg
-      - NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=${_NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID}
-      - --build-arg
-      - NEXT_PUBLIC_REQUIRE_AUTH=${_NEXT_PUBLIC_REQUIRE_AUTH}
-      - -t
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:$BUILD_ID
-      - -t
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:latest
-      - .
+      - -c
+      - |
+        set -euo pipefail
+        set -a
+        # shellcheck disable=SC1091
+        source firebase.build.env
+        set +a
+        export API_URL=${_API_URL}
+        export NEXT_PUBLIC_REQUIRE_AUTH=${_NEXT_PUBLIC_REQUIRE_AUTH}
+        docker build \
+          --build-arg API_URL="$$API_URL" \
+          --build-arg NEXT_PUBLIC_FIREBASE_API_KEY="$$NEXT_PUBLIC_FIREBASE_API_KEY" \
+          --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="$$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN" \
+          --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID="$$NEXT_PUBLIC_FIREBASE_PROJECT_ID" \
+          --build-arg NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="$$NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET" \
+          --build-arg NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="$$NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID" \
+          --build-arg NEXT_PUBLIC_FIREBASE_APP_ID="$$NEXT_PUBLIC_FIREBASE_APP_ID" \
+          --build-arg NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID="$$NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID" \
+          --build-arg NEXT_PUBLIC_REQUIRE_AUTH="$$NEXT_PUBLIC_REQUIRE_AUTH" \
+          -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:$BUILD_ID \
+          -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:latest \
+          .
 
   - id: push
     name: gcr.io/cloud-builders/docker

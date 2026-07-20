@@ -5,11 +5,11 @@ import { MonitoringResultsTable } from "@/components/monitoring/monitoring-resul
 import { MonitoringSummary } from "@/components/monitoring/monitoring-summary";
 import { toUserFacingApiError } from "@/lib/api/error-messages";
 import { useMonitoring } from "@/hooks/use-monitoring-api";
-import { useProjectCampaignContext } from "@/hooks/use-project-campaign-context";
+import { useProjectContext } from "@/hooks/use-project-context";
 
 export function MonitoringView() {
-  const { canFetchMetrics, selectedProjectId, selectedCampaignId } =
-    useProjectCampaignContext();
+  const { canFetchMetrics, selectedProjectId, period } =
+    useProjectContext();
 
   const {
     data: monitoringResult,
@@ -18,7 +18,7 @@ export function MonitoringView() {
     error: monitoringError,
   } = useMonitoring(
     canFetchMetrics ? selectedProjectId : null,
-    canFetchMetrics ? selectedCampaignId : null,
+    period,
   );
 
   const monitoring = monitoringResult?.monitoring ?? [];

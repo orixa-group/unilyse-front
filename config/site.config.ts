@@ -38,7 +38,7 @@ export const siteConfig = {
           title: "Performances",
           description:
             "Métriques Google Ads par mot-clé : impressions, dépenses, ROAS et potentiel budgétaire.",
-          requiresContext: "project-campaign",
+          requiresContext: "project",
         },
         {
           label: "Stratégie",
@@ -50,7 +50,7 @@ export const siteConfig = {
             sea: "Parts d'impressions perdues et indicateurs qualité annonce.",
             seo: "Gaps sémantiques, netlinking, matrice d'opportunités et BAS.",
           },
-          requiresContext: "project-campaign",
+          requiresContext: "project",
           lensAffinity: ["sea", "seo"],
         },
         {
@@ -59,7 +59,7 @@ export const siteConfig = {
           title: "Monitoring",
           description:
             "Surveillance concurrentielle Google Ads : volume, annonceurs actifs et mots-clés à cibler.",
-          requiresContext: "project-campaign",
+          requiresContext: "project",
         },
       ],
     },

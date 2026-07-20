@@ -15,7 +15,6 @@ import type { UnilizeProject } from "@/types/unilize";
 
 export interface ProjectSyncProbeTarget {
   project: UnilizeProject;
-  campaignId: string | null;
   setupComplete: boolean;
 }
 
@@ -27,13 +26,11 @@ export interface ProjectSyncProbeResult {
 
 async function fetchPerformancesProbe(
   projectId: string,
-  campaignId: string,
 ): Promise<ListPerformancesResult> {
-  const url = `/api/bff/projects/${encodeURIComponent(projectId)}/campaigns/${encodeURIComponent(campaignId)}/performances`;
+  const url = `/api/bff/projects/${encodeURIComponent(projectId)}/performances`;
   const startedAt = Date.now();
   logUnilizeEvent("browser-bff", "start", "GET performances (sync probe)", {
     projectId,
-    campaignId,
     url,
   });
 
@@ -43,7 +40,6 @@ async function fetchPerformancesProbe(
   const result: ListPerformancesResult = {
     requestUrl: body.requestUrl ?? "",
     projectId: body.projectId ?? projectId,
-    campaignId: body.campaignId ?? campaignId,
     performances: Array.isArray(body.performances) ? body.performances : [],
     error: body.error ?? null,
   };
@@ -60,7 +56,6 @@ async function fetchPerformancesProbe(
       const empty = { ...result, performances: [], error: null };
       logUnilizeEvent("browser-bff", "success", "GET performances probe (vide)", {
         projectId,
-        campaignId,
         durationMs: Date.now() - startedAt,
         response: summarizeUnilizePayload(empty),
       });
@@ -71,7 +66,6 @@ async function fetchPerformancesProbe(
 
   logUnilizeEvent("browser-bff", "success", "GET performances probe", {
     projectId,
-    campaignId,
     durationMs: Date.now() - startedAt,
     count: result.performances.length,
   });
@@ -79,11 +73,7 @@ async function fetchPerformancesProbe(
 }
 
 function isProbeEligible(target: ProjectSyncProbeTarget): boolean {
-  return (
-    target.setupComplete &&
-    Boolean(target.campaignId) &&
-    isRecentProject(target.project)
-  );
+  return target.setupComplete && isRecentProject(target.project);
 }
 
 /**
@@ -143,12 +133,11 @@ export function useProjectsSyncProbe(targets: ProjectSyncProbeTarget[]) {
   const queries = useQueries({
     queries: eligibleTargets.map((target) => {
       const projectId = target.project.id;
-      const campaignId = target.campaignId!;
       const timedOut = timedOutProjectIds.has(projectId);
 
       return {
-        queryKey: [...unilizeKeys.performances(projectId, campaignId), "sync-probe"],
-        queryFn: () => fetchPerformancesProbe(projectId, campaignId),
+        queryKey: [...unilizeKeys.performances(projectId), "sync-probe"],
+        queryFn: () => fetchPerformancesProbe(projectId),
         enabled: !timedOut,
         refetchInterval: (query: {
           state: { data?: ListPerformancesResult };

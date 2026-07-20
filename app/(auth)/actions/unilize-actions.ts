@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { runAuthenticatedServerAction } from "@/lib/auth/server-action-auth";
 import { ApiClientError } from "@/lib/api/client";
 import { toUserFacingApiError } from "@/lib/api/error-messages";
 import {
@@ -14,10 +15,8 @@ import {
   deleteClient,
   deleteProject,
   getClient,
-  linkCampaign,
   listProjects,
   listSearchConsoleSites,
-  unlinkCampaign,
   updateProjectKeywords,
 } from "@/lib/api/unilize";
 import {
@@ -31,9 +30,7 @@ import type {
   DeleteClientActionState,
   DeleteProjectActionState,
   GetClientActionResult,
-  LinkCampaignActionState,
   ListProjectsActionResult,
-  UnlinkCampaignActionState,
   UpdateProjectKeywordsActionState,
 } from "./unilize-action-state";
 
@@ -63,17 +60,6 @@ const createProjectSchema = z.object({
 const deleteProjectSchema = z.object({
   clientId: nonEmptyString,
   projectId: nonEmptyString,
-});
-
-const linkCampaignSchema = z.object({
-  projectId: nonEmptyString,
-  name: nonEmptyString,
-  customer_id: nonEmptyString,
-});
-
-const unlinkCampaignSchema = z.object({
-  projectId: nonEmptyString,
-  campaignId: nonEmptyString,
 });
 
 const updateProjectKeywordsSchema = z.object({
@@ -139,6 +125,7 @@ function mapUnilizeActionError(error: unknown, fallback: string): string {
 export async function getClientAction(
   clientId: string,
 ): Promise<GetClientActionResult> {
+  return runAuthenticatedServerAction(async () => {
   const startedAt = Date.now();
   logUnilizeEvent("server-action", "start", "getClientAction", { clientId });
 
@@ -187,11 +174,17 @@ export async function getClientAction(
     });
     return result;
   }
+  }, () => ({
+    requestUrl: "",
+    client: null,
+    error: "Non authentifié.",
+  }));
 }
 
 export async function listProjectsAction(
   clientId: string,
 ): Promise<ListProjectsActionResult> {
+  return runAuthenticatedServerAction(async () => {
   const parsed = listProjectsSchema.safeParse({ clientId });
 
   if (!parsed.success) {
@@ -219,12 +212,18 @@ export async function listProjectsAction(
       ),
     };
   }
+  }, () => ({
+    requestUrl: "",
+    projects: [],
+    error: "Non authentifié.",
+  }));
 }
 
 export async function createProjectAction(
   _prevState: CreateProjectActionState,
   formData: FormData,
 ): Promise<CreateProjectActionState> {
+  return runAuthenticatedServerAction(async () => {
   const parsed = createProjectSchema.safeParse({
     clientId: formData.get("clientId"),
     name: formData.get("name"),
@@ -284,12 +283,17 @@ export async function createProjectAction(
       error: "Une erreur inattendue est survenue.",
     };
   }
+  }, () => ({
+    success: false,
+    error: "Non authentifié.",
+  }));
 }
 
 export async function deleteProjectAction(
   _prevState: DeleteProjectActionState,
   formData: FormData,
 ): Promise<DeleteProjectActionState> {
+  return runAuthenticatedServerAction(async () => {
   const parsed = deleteProjectSchema.safeParse({
     clientId: formData.get("clientId"),
     projectId: formData.get("projectId"),
@@ -325,98 +329,17 @@ export async function deleteProjectAction(
       error: "Une erreur inattendue est survenue.",
     };
   }
-}
-
-export async function linkCampaignAction(
-  _prevState: LinkCampaignActionState,
-  formData: FormData,
-): Promise<LinkCampaignActionState> {
-  const parsed = linkCampaignSchema.safeParse({
-    projectId: formData.get("projectId"),
-    name: formData.get("name"),
-    customer_id: formData.get("customer_id"),
-  });
-
-  if (!parsed.success) {
-    return {
-      success: false,
-      error: "Tous les champs de la campagne sont requis.",
-    };
-  }
-
-  try {
-    const campaign = await linkCampaign(parsed.data.projectId, {
-      name: parsed.data.name,
-      customer_id: parsed.data.customer_id,
-    });
-    revalidateDashboard();
-    return {
-      success: true,
-      campaign,
-      projectId: parsed.data.projectId,
-    };
-  } catch (error) {
-    if (error instanceof ApiClientError) {
-      return {
-        success: false,
-        error: mapUnilizeActionError(
-          error,
-          "Impossible de lier la campagne.",
-        ),
-      };
-    }
-    return {
-      success: false,
-      error: "Une erreur inattendue est survenue.",
-    };
-  }
-}
-
-export async function unlinkCampaignAction(
-  _prevState: UnlinkCampaignActionState,
-  formData: FormData,
-): Promise<UnlinkCampaignActionState> {
-  const parsed = unlinkCampaignSchema.safeParse({
-    projectId: formData.get("projectId"),
-    campaignId: formData.get("campaignId"),
-  });
-
-  if (!parsed.success) {
-    return {
-      success: false,
-      error: "Projet ou campagne invalide.",
-    };
-  }
-
-  try {
-    await unlinkCampaign(parsed.data.projectId, parsed.data.campaignId);
-    revalidateDashboard();
-    return {
-      success: true,
-      projectId: parsed.data.projectId,
-      campaignId: parsed.data.campaignId,
-    };
-  } catch (error) {
-    if (error instanceof ApiClientError) {
-      return {
-        success: false,
-        error: mapUnilizeActionError(
-          error,
-          "Impossible de délier la campagne.",
-        ),
-      };
-    }
-    return {
-      success: false,
-      error: "Une erreur inattendue est survenue.",
-    };
-  }
+  }, () => ({
+    success: false,
+    error: "Non authentifié.",
+  }));
 }
 
 export async function updateProjectKeywordsAction(
   _prevState: UpdateProjectKeywordsActionState,
   formData: FormData,
 ): Promise<UpdateProjectKeywordsActionState> {
+  return runAuthenticatedServerAction(async () => {
   const parsed = updateProjectKeywordsSchema.safeParse({
     projectId: formData.get("projectId"),
     keywordsRaw: formData.get("keywordsRaw"),
@@ -464,12 +387,17 @@ export async function updateProjectKeywordsAction(
       error: "Une erreur inattendue est survenue.",
     };
   }
+  }, () => ({
+    success: false,
+    error: "Non authentifié.",
+  }));
 }
 
 export async function createClientAction(
   _prevState: CreateClientActionState,
   formData: FormData,
 ): Promise<CreateClientActionState> {
+  return runAuthenticatedServerAction(async () => {
   const parsed = createClientSchema.safeParse({
     name: formData.get("name"),
   });
@@ -500,12 +428,17 @@ export async function createClientAction(
       error: "Une erreur inattendue est survenue.",
     };
   }
+  }, () => ({
+    success: false,
+    error: "Non authentifié.",
+  }));
 }
 
 export async function deleteClientAction(
   _prevState: DeleteClientActionState,
   formData: FormData,
 ): Promise<DeleteClientActionState> {
+  return runAuthenticatedServerAction(async () => {
   const parsed = deleteClientSchema.safeParse({
     clientId: formData.get("clientId"),
   });
@@ -536,4 +469,8 @@ export async function deleteClientAction(
       error: "Une erreur inattendue est survenue.",
     };
   }
+  }, () => ({
+    success: false,
+    error: "Non authentifié.",
+  }));
 }

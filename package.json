@@ -7,7 +7,9 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "env:from-firebase": "node scripts/sync-env-from-firebase.mjs",
+    "docker:build": "bash scripts/docker-build-prod.sh"
   },
   "dependencies": {
     "@dicebear/collection": "^9.4.2",

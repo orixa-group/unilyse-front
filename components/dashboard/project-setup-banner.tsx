@@ -16,7 +16,7 @@ import {
   type ProjectReadiness,
 } from "@/lib/projects/project-readiness";
 import { cn } from "@/lib/utils/cn";
-import type { UnilizeCampaign, UnilizeProject } from "@/types/unilize";
+import type { UnilizeProject } from "@/types/unilize";
 
 function ChecklistItem({
   done,
@@ -62,8 +62,6 @@ export function ProjectSetupBanner({
   project,
   keywords,
   keywordsFetched,
-  campaigns,
-  campaignsFetched,
   readiness,
   onDismiss,
   onEditKeywords,
@@ -71,18 +69,15 @@ export function ProjectSetupBanner({
   project: UnilizeProject;
   keywords: string[];
   keywordsFetched: boolean;
-  campaigns: UnilizeCampaign[];
-  campaignsFetched: boolean;
   readiness: ProjectReadiness;
   onDismiss: () => void;
   onEditKeywords: () => void;
 }) {
   const meta = getProjectReadinessMeta(readiness);
-  const missing = getSetupMissingReasons({ project, keywords, campaigns });
+  const missing = getSetupMissingReasons({ project, keywords });
   const gscDone = true;
   const customerDone = !missing.includes("customer_id");
   const keywordsDone = !missing.includes("keywords");
-  const campaignDone = !missing.includes("campaign");
   const syncInProgress = readiness === "awaiting_first_sync";
   const syncDone = readiness === "ready";
 
@@ -122,15 +117,13 @@ export function ProjectSetupBanner({
           done={keywordsDone}
           label={getSetupReasonLabel("keywords")}
         />
-        {!keywordsFetched || !campaignsFetched ? (
+        {!keywordsFetched ? (
           <ChecklistItem
             done={false}
             inProgress
             label="Chargement de la configuration…"
           />
-        ) : (
-          <ChecklistItem done={campaignDone} label={getSetupReasonLabel("campaign")} />
-        )}
+        ) : null}
         <ChecklistItem
           done={syncDone}
           inProgress={syncInProgress}
@@ -151,8 +144,6 @@ export function buildProjectReadinessForBanner(input: {
   project: UnilizeProject;
   keywords: string[];
   keywordsFetched: boolean;
-  campaigns: UnilizeCampaign[];
-  campaignsFetched: boolean;
   hasPerformances: boolean;
   syncProbeTimedOut: boolean;
 }): ProjectReadiness {
@@ -160,8 +151,6 @@ export function buildProjectReadinessForBanner(input: {
     project: input.project,
     keywords: input.keywords,
     keywordsFetched: input.keywordsFetched,
-    campaigns: input.campaigns,
-    campaignsFetched: input.campaignsFetched,
     hasPerformances: input.hasPerformances,
     syncProbeTimedOut: input.syncProbeTimedOut,
   });

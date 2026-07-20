@@ -1,7 +1,4 @@
-import type {
-  UnilizeBasStatusCode,
-  UnilizeOptimizationStatus,
-} from "@/types/strategy";
+import type { UnilizeOptimizationStatus } from "@/types/strategy";
 
 const OPTIMIZED_LABEL = "Optimisé";
 const UNDER_OPTIMIZED_LABEL = "Sous-optimisé";
@@ -14,17 +11,15 @@ function normalizeStatusText(value: string): string {
     .trim();
 }
 
-function legacyBasStatusFromCode(code: UnilizeBasStatusCode): string {
-  return code === "optimized" ? OPTIMIZED_LABEL : UNDER_OPTIMIZED_LABEL;
-}
-
 function statusFromString(value: string): string | null {
   const normalized = normalizeStatusText(value);
 
   if (
     normalized === "optimized" ||
     normalized === "optimise" ||
-    (normalized.includes("optimise") && !normalized.includes("sous") && !normalized.includes("not"))
+    (normalized.includes("optimise") &&
+      !normalized.includes("sous") &&
+      !normalized.includes("not"))
   ) {
     return OPTIMIZED_LABEL;
   }
@@ -58,43 +53,8 @@ export function formatOptimizationStatus(
   return statusFromString(value);
 }
 
-/**
- * Affiche le BAS / score d’autorité en « Optimisé » / « Sous-optimisé ».
- * Accepte les anciennes formes numériques ou `bas_status` pour rétrocompatibilité.
- */
-export function formatBasStatus(
-  bas: number | string | null | undefined,
-  basStatus?: UnilizeBasStatusCode | null,
-): string | null {
-  if (basStatus) {
-    return legacyBasStatusFromCode(basStatus);
-  }
-
-  if (bas === null || bas === undefined) {
-    return null;
-  }
-
-  if (typeof bas === "string") {
-    return statusFromString(bas);
-  }
-
-  if (bas >= 1) {
-    return OPTIMIZED_LABEL;
-  }
-  if (bas <= 0) {
-    return UNDER_OPTIMIZED_LABEL;
-  }
-
-  return bas >= 0.5 ? OPTIMIZED_LABEL : UNDER_OPTIMIZED_LABEL;
-}
-
 export function formatAuthorityScoreLabel(
-  authorityScore: UnilizeOptimizationStatus | string | null | undefined,
-  legacyBas?: number | string | null,
-  legacyBasStatus?: UnilizeBasStatusCode | null,
+  authorityStatus: UnilizeOptimizationStatus | string | null | undefined,
 ): string | null {
-  return (
-    formatOptimizationStatus(authorityScore) ??
-    formatBasStatus(legacyBas, legacyBasStatus)
-  );
+  return formatOptimizationStatus(authorityStatus);
 }

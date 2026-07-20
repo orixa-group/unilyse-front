@@ -35,5 +35,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-#local exemples
+# firebase.build.env est généré par scripts/firebase-build-args.mjs (build Docker / Cloud Build)
+firebase.build.env
+
+# local exemples
 app/exemples/

@@ -3,14 +3,10 @@ import {
   API,
   UNILIZE_API_DEFAULT_URL,
 } from "@/lib/constants/api-endpoints";
+import { withBffAuth } from "@/lib/api/bff-auth";
 import { mapWithConcurrency, withRetry } from "@/lib/api/async-utils";
 import { getApiErrorMessage, bffRouteErrorResponse } from "@/lib/api/bff-route-utils";
-import {
-  getClient,
-  getProject,
-  listCampaigns,
-  listProjects,
-} from "@/lib/api/unilize";
+import { getClient, getProject, listProjects } from "@/lib/api/unilize";
 import type { UnilizeDashboardPayload } from "@/types/unilize-dashboard";
 
 export const dynamic = "force-dynamic";
@@ -39,24 +35,12 @@ function jsonResponse(body: UnilizeDashboardPayload, status = 200): NextResponse
 async function loadProjectRow(
   project: Awaited<ReturnType<typeof listProjects>>[number],
 ): Promise<UnilizeDashboardPayload["rows"][number]> {
-  let campaigns: Awaited<ReturnType<typeof listCampaigns>> = [];
-  let campaignsError: string | null = null;
-  try {
-    campaigns = await withRetry(
-      () => listCampaigns(project.id),
-      { attempts: UPSTREAM_RETRY_ATTEMPTS },
-    );
-  } catch (error) {
-    campaignsError = getApiErrorMessage(error);
-  }
-
   let keywords: string[] = [];
   let keywordsError: string | null = null;
   try {
-    const detail = await withRetry(
-      () => getProject(project.id),
-      { attempts: UPSTREAM_RETRY_ATTEMPTS },
-    );
+    const detail = await withRetry(() => getProject(project.id), {
+      attempts: UPSTREAM_RETRY_ATTEMPTS,
+    });
     keywords = detail.keywords ?? [];
   } catch (error) {
     keywordsError = getApiErrorMessage(error);
@@ -67,107 +51,111 @@ async function loadProjectRow(
       ...project,
       keywords,
     },
-    campaigns,
     keywords,
-    campaignsError,
     keywordsError,
   };
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ clientId: string }> },
 ) {
-  const { clientId } = await context.params;
-  const requestUrl = getDashboardRequestUrl(clientId);
+  const authResult = await withBffAuth(request, async () => {
+    const { clientId } = await context.params;
+    const requestUrl = getDashboardRequestUrl(clientId);
 
-  if (!clientId?.trim()) {
-    return jsonResponse(
-      {
-        requestUrl: "",
-        clientId: clientId ?? "",
-        client: null,
-        clientError: "Client invalide.",
-        rows: [],
-        error: "Client invalide.",
-      },
-      400,
-    );
-  }
-
-  try {
-    const [clientSettled, projectsSettled] = await Promise.allSettled([
-      withRetry(() => getClient(clientId), { attempts: UPSTREAM_RETRY_ATTEMPTS }),
-      withRetry(() => listProjects(clientId), { attempts: UPSTREAM_RETRY_ATTEMPTS }),
-    ]);
-
-    let client: UnilizeDashboardPayload["client"] = null;
-    let clientError: string | null = null;
-    if (clientSettled.status === "fulfilled") {
-      client = clientSettled.value;
-    } else {
-      clientError = getApiErrorMessage(clientSettled.reason);
+    if (!clientId?.trim()) {
+      return jsonResponse(
+        {
+          requestUrl: "",
+          clientId: clientId ?? "",
+          client: null,
+          clientError: "Client invalide.",
+          rows: [],
+          error: "Client invalide.",
+        },
+        400,
+      );
     }
 
-    if (projectsSettled.status === "rejected") {
+    try {
+      const [clientSettled, projectsSettled] = await Promise.allSettled([
+        withRetry(() => getClient(clientId), { attempts: UPSTREAM_RETRY_ATTEMPTS }),
+        withRetry(() => listProjects(clientId), {
+          attempts: UPSTREAM_RETRY_ATTEMPTS,
+        }),
+      ]);
+
+      let client: UnilizeDashboardPayload["client"] = null;
+      let clientError: string | null = null;
+      if (clientSettled.status === "fulfilled") {
+        client = clientSettled.value;
+      } else {
+        clientError = getApiErrorMessage(clientSettled.reason);
+      }
+
+      if (projectsSettled.status === "rejected") {
+        return bffRouteErrorResponse(
+          projectsSettled.reason,
+          {
+            requestUrl,
+            clientId,
+            client,
+            clientError,
+            rows: [],
+          },
+          (message) => ({
+            requestUrl,
+            clientId,
+            client,
+            clientError,
+            rows: [],
+            error: message,
+          }),
+          { treatNotFoundAsEmpty: false },
+        );
+      }
+
+      const projects = [...projectsSettled.value].sort((a, b) =>
+        a.name.localeCompare(b.name, "fr"),
+      );
+
+      const rows = await mapWithConcurrency(
+        projects,
+        PROJECT_ROW_CONCURRENCY,
+        (project) => loadProjectRow(project),
+      );
+
+      return jsonResponse({
+        requestUrl,
+        clientId,
+        client,
+        clientError,
+        rows,
+        error: null,
+      });
+    } catch (error) {
       return bffRouteErrorResponse(
-        projectsSettled.reason,
+        error,
         {
           requestUrl,
           clientId,
-          client,
-          clientError,
+          client: null,
+          clientError: null,
           rows: [],
         },
         (message) => ({
           requestUrl,
           clientId,
-          client,
-          clientError,
+          client: null,
+          clientError: null,
           rows: [],
           error: message,
         }),
         { treatNotFoundAsEmpty: false },
       );
     }
+  });
 
-    const projects = [...projectsSettled.value].sort((a, b) =>
-      a.name.localeCompare(b.name, "fr"),
-    );
-
-    const rows = await mapWithConcurrency(
-      projects,
-      PROJECT_ROW_CONCURRENCY,
-      (project) => loadProjectRow(project),
-    );
-
-    return jsonResponse({
-      requestUrl,
-      clientId,
-      client,
-      clientError,
-      rows,
-      error: null,
-    });
-  } catch (error) {
-    return bffRouteErrorResponse(
-      error,
-      {
-        requestUrl,
-        clientId,
-        client: null,
-        clientError: null,
-        rows: [],
-      },
-      (message) => ({
-        requestUrl,
-        clientId,
-        client: null,
-        clientError: null,
-        rows: [],
-        error: message,
-      }),
-      { treatNotFoundAsEmpty: false },
-    );
-  }
+  return authResult;
 }

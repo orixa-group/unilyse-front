@@ -1,25 +1,20 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-} from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toFirebaseAuthErrorMessage } from "@/lib/auth/firebase-errors";
+import { syncAuthSession } from "@/lib/auth/session-client";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { ROUTES } from "@/lib/constants/routes";
 
-type FirebaseAuthFormProps = {
-  mode: "sign-in" | "sign-up";
-};
-
-export function FirebaseAuthForm({ mode }: FirebaseAuthFormProps) {
+export function FirebaseAuthForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -28,15 +23,11 @@ export function FirebaseAuthForm({ mode }: FirebaseAuthFormProps) {
   if (!isFirebaseConfigured()) {
     return (
       <div className="text-muted-foreground max-w-md space-y-3 text-center text-sm">
+        <p>Firebase n&apos;est pas configuré.</p>
         <p>
-          Firebase n&apos;est pas encore activé.
+          Renseignez les variables <code>NEXT_PUBLIC_FIREBASE_*</code> dans{" "}
+          <code>.env.local</code>.
         </p>
-        <p>
-          L&apos;application reste accessible sans connexion.
-        </p>
-        <Button variant="outline" asChild>
-          <Link href={ROUTES.DASHBOARD}>Continuer sans connexion</Link>
-        </Button>
       </div>
     );
   }
@@ -54,34 +45,34 @@ export function FirebaseAuthForm({ mode }: FirebaseAuthFormProps) {
     }
 
     try {
-      if (mode === "sign-in") {
-        await signInWithEmailAndPassword(auth, email.trim(), password);
-      } else {
-        await createUserWithEmailAndPassword(auth, email.trim(), password);
+      await signInWithEmailAndPassword(auth, email.trim(), password);
+
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        throw new Error("Impossible de récupérer le token de session.");
       }
-      router.push(ROUTES.DASHBOARD);
+      await syncAuthSession(token);
+
+      const next = searchParams.get("next");
+      const destination =
+        next?.startsWith("/") && !next.startsWith("//")
+          ? next
+          : ROUTES.DASHBOARD;
+      router.push(destination);
       router.refresh();
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Erreur d'authentification";
-      setError(message);
+      setError(toFirebaseAuthErrorMessage(err));
     } finally {
       setPending(false);
     }
   }
 
-  const title = mode === "sign-in" ? "Connexion" : "Créer un compte";
-  const alternate =
-    mode === "sign-in"
-      ? { href: ROUTES.SIGN_UP, label: "Créer un compte" }
-      : { href: ROUTES.SIGN_IN, label: "Se connecter" };
-
   return (
     <div className="w-full max-w-sm space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Connexion</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Firebase Authentication (optionnel)
+          Authentification requise pour accéder à l&apos;application
         </p>
       </div>
 
@@ -102,9 +93,7 @@ export function FirebaseAuthForm({ mode }: FirebaseAuthFormProps) {
           <Input
             id="password"
             type="password"
-            autoComplete={
-              mode === "sign-in" ? "current-password" : "new-password"
-            }
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -117,19 +106,9 @@ export function FirebaseAuthForm({ mode }: FirebaseAuthFormProps) {
           </p>
         ) : null}
         <Button type="submit" className="w-full" disabled={pending}>
-          {pending ? "Chargement…" : title}
+          {pending ? "Chargement…" : "Connexion"}
         </Button>
       </form>
-
-      <p className="text-muted-foreground text-center text-sm">
-        <Link href={alternate.href} className="text-foreground underline">
-          {alternate.label}
-        </Link>
-        {" · "}
-        <Link href={ROUTES.DASHBOARD} className="underline">
-          Accès sans connexion
-        </Link>
-      </p>
     </div>
   );
 }

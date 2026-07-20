@@ -11,7 +11,6 @@ export interface UnilizeKeywordMonitoring {
 export type ListMonitoringResult = {
   requestUrl: string;
   projectId: string;
-  campaignId: string;
   monitoring: UnilizeKeywordMonitoring[];
   error: string | null;
 };

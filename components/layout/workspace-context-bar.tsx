@@ -26,7 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingSkeleton } from "@/components/common/loading-skeleton";
 import { useClients } from "@/hooks/use-unilize-api";
-import { useProjectCampaignContext } from "@/hooks/use-project-campaign-context";
+import { useProjectContext } from "@/hooks/use-project-context";
 import { toUserFacingApiError } from "@/lib/api/error-messages";
 import { unilizeKeys } from "@/lib/api/unilize";
 import { useSelectionStore } from "@/stores/selection.store";
@@ -63,14 +63,15 @@ export function WorkspaceContextBar() {
   const {
     hasHydrated,
     selectedProjectId,
-    selectedCampaignId,
     setSelectedProjectId,
-    setSelectedCampaignId,
     projectOptions,
-    campaignOptions,
     isSelectorsLoading,
     isContextFetching,
-  } = useProjectCampaignContext();
+  } = useProjectContext();
+
+  const periodFrom = useSelectionStore((s) => s.periodFrom);
+  const periodTo = useSelectionStore((s) => s.periodTo);
+  const setPeriod = useSelectionStore((s) => s.setPeriod);
 
   const [createState, createFormAction, isCreatePending] = useActionState(
     createClientAction,
@@ -152,7 +153,7 @@ export function WorkspaceContextBar() {
     <header className="bg-background/80 supports-[backdrop-filter]:bg-background/60 shrink-0 border-b backdrop-blur">
       <div className="space-y-3 px-4 py-3 md:px-6">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2">
             <div className="flex min-w-0 items-center gap-1">
               <Autocomplete
                 id="workspace-client"
@@ -207,31 +208,55 @@ export function WorkspaceContextBar() {
               disabled={!selectedClientId || isSelectorsLoading}
               aria-label="Sélectionner un projet"
             />
-
-            <Autocomplete
-              id="workspace-campaign"
-              options={campaignOptions}
-              value={selectedCampaignId}
-              onValueChange={setSelectedCampaignId}
-              clearable
-              clearLabel="Aucune campagne"
-              placeholder="Campagne"
-              searchPlaceholder="Rechercher une campagne…"
-              emptyMessage={
-                selectedProjectId
-                  ? "Aucune campagne"
-                  : "Sélectionnez un projet"
-              }
-              noResultsMessage="Aucune campagne trouvée"
-              disabled={!selectedProjectId || isSelectorsLoading}
-              aria-label="Sélectionner une campagne"
-            />
           </div>
-          {isContextFetching ? (
-            <span className="text-muted-foreground shrink-0 text-xs">
-              Actualisation…
-            </span>
-          ) : null}
+          <div className="flex shrink-0 flex-wrap items-end gap-2">
+            <div className="space-y-1">
+              <Label htmlFor="period-from" className="text-muted-foreground text-xs">
+                Du
+              </Label>
+              <Input
+                id="period-from"
+                type="date"
+                className="h-9 w-[9.5rem]"
+                value={periodFrom ?? ""}
+                onChange={(e) =>
+                  setPeriod(e.target.value || null, periodTo)
+                }
+                aria-label="Début de période"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="period-to" className="text-muted-foreground text-xs">
+                Au
+              </Label>
+              <Input
+                id="period-to"
+                type="date"
+                className="h-9 w-[9.5rem]"
+                value={periodTo ?? ""}
+                onChange={(e) =>
+                  setPeriod(periodFrom, e.target.value || null)
+                }
+                aria-label="Fin de période"
+              />
+            </div>
+            {periodFrom || periodTo ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9"
+                onClick={() => setPeriod(null, null)}
+              >
+                Réinitialiser
+              </Button>
+            ) : null}
+            {isContextFetching ? (
+              <span className="text-muted-foreground self-center text-xs">
+                Actualisation…
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
 

@@ -146,13 +146,6 @@ export function logUnilizeFetchSnapshot(params: {
     projectId: string;
     projectName: string;
     queryIndex: number;
-    campaigns: {
-      isFetched: boolean;
-      isFetching: boolean;
-      isError: boolean;
-      errorMessage: string | null;
-      data: ReturnType<typeof summarizeCampaigns>;
-    };
     keywords: {
       isFetched: boolean;
       isFetching: boolean;
@@ -179,10 +172,7 @@ export function logUnilizeFetchSnapshot(params: {
     params.perProject.map((row) => ({
       idx: row.queryIndex,
       project: row.projectName,
-      campagnes: row.campaigns.data.count,
       motsClés: row.keywords.data.count,
-      cFetch: row.campaigns.isFetched ? "ok" : "…",
-      cErr: row.campaigns.isError ? row.campaigns.errorMessage : "",
       kFetch: row.keywords.isFetched ? "ok" : "…",
       kErr: row.keywords.isError ? row.keywords.errorMessage : "",
     })),

@@ -133,14 +133,14 @@ export function computeHybridInsights(strategy: UnilizeStrategy | null): Insight
       id: "hybrid-sea-heavy",
       severity: "warning",
       title: "Portefeuille orienté SEA",
-      detail: `${summary.sea_keywords_count} recommandations SEA vs ${summary.seo_keywords_count} SEO.`,
+      detail: `${summary.sea_keywords_count} recommandations OPTIMIZE_ADS/MAINTAIN_ADS vs ${summary.seo_keywords_count} LAUNCH_SEO.`,
     });
   } else if (summary.seo_keywords_count > summary.sea_keywords_count) {
     insights.push({
       id: "hybrid-seo-heavy",
       severity: "success",
       title: "Portefeuille orienté SEO",
-      detail: `${summary.seo_keywords_count} recommandations SEO vs ${summary.sea_keywords_count} SEA.`,
+      detail: `${summary.seo_keywords_count} recommandations LAUNCH_SEO vs ${summary.sea_keywords_count} OPTIMIZE_ADS/MAINTAIN_ADS.`,
     });
   }
 

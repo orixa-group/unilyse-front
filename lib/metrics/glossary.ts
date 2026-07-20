@@ -23,6 +23,8 @@ export const METRIC_GLOSSARY: Record<string, string> = {
   seo_ctr: "Taux de clic organique.",
   seo_bas:
     "Score d'autorité de l'URL (BAS) : Optimisé ou Sous-optimisé vs concurrents.",
+  authority_status:
+    "Statut d'autorité de l'URL : Optimisé ou Sous-optimisé vs concurrents.",
   competitor_count: "Nombre d'annonceurs actifs sur ce mot-clé.",
   status:
     "Recommandation : Cibler (forte opportunité), À évaluer, ou Ignorer.",
@@ -31,8 +33,8 @@ export const METRIC_GLOSSARY: Record<string, string> = {
     "Écart de backlinks pour atteindre la position #1 (valeur négative).",
   semantic_gap:
     "Mot-clé dont la couverture sémantique n’est pas optimisée vs concurrents.",
-  semantic_score:
-    "Couverture sémantique du contenu : optimisé ou non optimisé (StrategySEO).",
+  semantic_status:
+    "Statut de couverture sémantique du contenu : Optimisé ou Sous-optimisé.",
   ad_relevance:
     "Évaluation Google Ads de la pertinence de l'annonce par rapport au mot-clé.",
   expected_ctr:

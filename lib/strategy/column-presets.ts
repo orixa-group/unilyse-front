@@ -22,8 +22,8 @@ export const STRATEGY_SEA_OPTIONAL_COLUMNS = [
 /** Colonnes SEO affichées par défaut (d’après StrategySEO). */
 export const STRATEGY_SEO_DEFAULT_COLUMNS = [
   ...STRATEGY_COMMON_COLUMNS,
-  "authority_score",
-  "semantic_score",
+  "authority_status",
+  "semantic_status",
   "position",
 ] as const;
 
@@ -42,8 +42,8 @@ export const STRATEGY_COLUMN_CHANNEL: Record<string, "common" | "sea" | "seo"> =
     impression_share: "sea",
     cpc: "sea",
     conversion_rate: "sea",
-    authority_score: "seo",
-    semantic_score: "seo",
+    authority_status: "seo",
+    semantic_status: "seo",
     position: "seo",
     page_intent_match: "seo",
   };

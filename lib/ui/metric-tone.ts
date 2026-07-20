@@ -71,17 +71,26 @@ export function optimizationTone(optimized: boolean): string {
 }
 
 export function recommendationTone(
-  recommendation: "seo" | "sea" | "hybrid" | string,
+  recommendation: string,
 ): string {
-  const key = recommendation.toLowerCase();
-  if (key === "seo") {
+  const key = recommendation.toUpperCase();
+  if (key === "LAUNCH_SEO") {
     return "bg-info/20 text-info dark:text-info";
   }
-  if (key === "sea") {
+  if (key === "OPTIMIZE_ADS" || key === "MAINTAIN_ADS") {
     return "bg-chart-1/20 text-chart-1 dark:text-chart-1";
   }
-  if (key === "hybrid") {
+  if (key === "DOUBLE_PRESENCE") {
     return "bg-primary/15 text-primary dark:text-primary";
+  }
+  if (key === "REVIEW_STRATEGY") {
+    return "bg-warning/20 text-warning dark:text-warning";
+  }
+  if (key === "HUMAN_ARBITRATION") {
+    return "bg-secondary/20 text-secondary-foreground dark:text-secondary-foreground";
+  }
+  if (key === "UNKNOWN") {
+    return "bg-muted/50 text-muted-foreground";
   }
   return "bg-muted/80 text-foreground dark:text-foreground";
 }

@@ -1,4 +1,4 @@
-import type { UnilizeCampaign, UnilizeProject } from "@/types/unilize";
+import type { UnilizeProject } from "@/types/unilize";
 
 /** État de préparation / collecte d'un projet (calculé côté front). */
 export type ProjectReadiness =
@@ -16,17 +16,12 @@ export const SYNC_PROBE_TIMEOUT_MS = 30 * 60 * 1000;
 /** Intervalle de polling des performances sur le dashboard (60 s). */
 export const SYNC_PROBE_INTERVAL_MS = 60_000;
 
-export type SetupMissingReason =
-  | "customer_id"
-  | "keywords"
-  | "campaign";
+export type SetupMissingReason = "customer_id" | "keywords";
 
 export interface ProjectReadinessInput {
   project: UnilizeProject;
   keywords: string[];
   keywordsFetched: boolean;
-  campaigns: UnilizeCampaign[];
-  campaignsFetched: boolean;
   hasPerformances: boolean;
   syncProbeTimedOut?: boolean;
   now?: Date;
@@ -39,7 +34,6 @@ export function hasCustomerId(project: UnilizeProject): boolean {
 export function getSetupMissingReasons(input: {
   project: UnilizeProject;
   keywords: string[];
-  campaigns: UnilizeCampaign[];
 }): SetupMissingReason[] {
   const missing: SetupMissingReason[] = [];
   if (!hasCustomerId(input.project)) {
@@ -48,20 +42,15 @@ export function getSetupMissingReasons(input: {
   if (input.keywords.length === 0) {
     missing.push("keywords");
   }
-  if (input.campaigns.length === 0) {
-    missing.push("campaign");
-  }
   return missing;
 }
 
 export function isProjectSetupComplete(input: {
   project: UnilizeProject;
   keywords: string[];
-  campaigns: UnilizeCampaign[];
   keywordsFetched: boolean;
-  campaignsFetched: boolean;
 }): boolean {
-  if (!input.keywordsFetched || !input.campaignsFetched) {
+  if (!input.keywordsFetched) {
     return false;
   }
   return getSetupMissingReasons(input).length === 0;
@@ -90,7 +79,7 @@ export function computeProjectReadiness(
 ): ProjectReadiness {
   const now = input.now ?? new Date();
 
-  if (!input.keywordsFetched || !input.campaignsFetched) {
+  if (!input.keywordsFetched) {
     return "setup_required";
   }
 
@@ -98,9 +87,7 @@ export function computeProjectReadiness(
     !isProjectSetupComplete({
       project: input.project,
       keywords: input.keywords,
-      campaigns: input.campaigns,
       keywordsFetched: input.keywordsFetched,
-      campaignsFetched: input.campaignsFetched,
     })
   ) {
     return "setup_required";
@@ -161,7 +148,5 @@ export function getSetupReasonLabel(reason: SetupMissingReason): string {
       return "Compte Google Ads renseigné";
     case "keywords":
       return "Mots-clés ajoutés";
-    case "campaign":
-      return "Campagne disponible";
   }
 }

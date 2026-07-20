@@ -15,16 +15,11 @@ import {
 } from "@hugeicons/core-free-icons";
 import {
   deleteProjectAction,
-  linkCampaignAction,
-  unlinkCampaignAction,
   updateProjectKeywordsAction,
 } from "@/app/(auth)/actions/unilize-actions";
 import {
   initialDeleteProjectState,
-  initialLinkCampaignState,
-  initialUnlinkCampaignState,
   initialUpdateProjectKeywordsState,
-  type ListCampaignsResult,
 } from "@/app/(auth)/actions/unilize-action-state";
 import { CreateProjectDialog } from "@/components/dashboard/create-project-dialog";
 import { DashboardHealthSummary } from "@/components/dashboard/dashboard-health-summary";
@@ -50,7 +45,7 @@ import {
   shouldBlockDashboardView,
   toUserFacingApiError,
 } from "@/lib/api/error-messages";
-import { useClient, useProjects, useProjectsCampaigns, useProjectsDetails } from "@/hooks/use-unilize-api";
+import { useClient, useProjects, useProjectsDetails } from "@/hooks/use-unilize-api";
 import { useProjectsSyncProbe } from "@/hooks/use-project-sync-probe";
 import { useSelectionHydrated } from "@/hooks/use-selection-hydrated";
 import { unilizeKeys } from "@/lib/api/unilize";
@@ -60,20 +55,17 @@ import {
 } from "@/lib/projects/project-readiness";
 import {
   logUnilizeFetchSnapshot,
-  summarizeCampaigns,
   summarizeKeywords,
 } from "@/lib/unilize/request-log";
 import { normalizeProjectsFromQuery } from "@/lib/unilize/normalize";
 import { useSelectionStore } from "@/stores/selection.store";
-import type { UnilizeCampaign, UnilizeProject } from "@/types/unilize";
+import type { UnilizeProject } from "@/types/unilize";
 
 export function DashboardView() {
   const queryClient = useQueryClient();
   const hasHydrated = useSelectionHydrated();
   const selectedClientId = useSelectionStore((s) => s.selectedClientId);
   const setSelectedProjectId = useSelectionStore((s) => s.setSelectedProjectId);
-  const setSelectedCampaignId = useSelectionStore((s) => s.setSelectedCampaignId);
-  const selectedCampaignId = useSelectionStore((s) => s.selectedCampaignId);
 
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [recentlyCreatedProjectId, setRecentlyCreatedProjectId] = useState<
@@ -84,27 +76,16 @@ export function DashboardView() {
   >(() => new Set());
   const [projectSearchQuery, setProjectSearchQuery] = useState("");
   const [deleteProjectOpen, setDeleteProjectOpen] = useState(false);
-  const [linkCampaignOpen, setLinkCampaignOpen] = useState(false);
-  const [unlinkCampaignOpen, setUnlinkCampaignOpen] = useState(false);
   const [keywordsOpen, setKeywordsOpen] = useState(false);
 
   const [projectToDelete, setProjectToDelete] = useState<UnilizeProject | null>(
     null,
   );
-  const [projectForLink, setProjectForLink] = useState<UnilizeProject | null>(
-    null,
-  );
   const [projectForKeywords, setProjectForKeywords] =
     useState<UnilizeProject | null>(null);
-  const [campaignToUnlink, setCampaignToUnlink] = useState<{
-    project: UnilizeProject;
-    campaign: UnilizeCampaign;
-  } | null>(null);
 
   const processedCreateIdRef = useRef<string | null>(null);
   const processedDeleteIdRef = useRef<string | null>(null);
-  const processedLinkIdRef = useRef<string | null>(null);
-  const processedUnlinkIdRef = useRef<string | null>(null);
   const processedKeywordsIdRef = useRef<string | null>(null);
 
   const {
@@ -122,17 +103,12 @@ export function DashboardView() {
   } = useProjects(hasHydrated ? selectedClientId : null);
 
   const projects = normalizeProjectsFromQuery(projectsResult);
-  // Ne pas couper les requêtes campagnes/détails pendant un refetch projets en arrière-plan :
-  // sinon useQueries reçoit projectIds=[] et l'UI affiche « Aucune campagne liée » à tort.
   const projectsListReady =
     Boolean(selectedClientId) && !isProjectsPending && !isProjectsError;
   const projectIds = useMemo(
     () => (projectsListReady ? projects.map((project) => project.id) : []),
     [projectsListReady, projects],
   );
-  const campaignQueries = useProjectsCampaigns(projectIds, {
-    enabled: projectsListReady,
-  });
   const projectDetailsQueries = useProjectsDetails(projectIds, {
     enabled: projectsListReady,
   });
@@ -177,23 +153,18 @@ export function DashboardView() {
         projectDetailsQueries[index]?.data?.project?.keywords ??
         project.keywords ??
         [];
-      const campaigns = campaignQueries[index]?.data?.campaigns ?? [];
       const keywordsFetched = projectDetailsQueries[index]?.isFetched ?? false;
-      const campaignsFetched = campaignQueries[index]?.isFetched ?? false;
 
       return {
         project,
-        campaignId: campaigns[0]?.id ?? null,
         setupComplete: isProjectSetupComplete({
           project,
           keywords,
-          campaigns,
           keywordsFetched,
-          campaignsFetched,
         }),
       };
     });
-  }, [projects, campaignQueries, projectDetailsQueries]);
+  }, [projects, projectDetailsQueries]);
 
   const syncProbeResults = useProjectsSyncProbe(syncProbeTargets);
 
@@ -205,7 +176,6 @@ export function DashboardView() {
         projectDetailsQueries[index]?.data?.project?.keywords ??
         project.keywords ??
         [];
-      const campaigns = campaignQueries[index]?.data?.campaigns ?? [];
       const probe = syncProbeResults.get(project.id);
 
       map.set(
@@ -214,8 +184,6 @@ export function DashboardView() {
           project,
           keywords,
           keywordsFetched: projectDetailsQueries[index]?.isFetched ?? false,
-          campaigns,
-          campaignsFetched: campaignQueries[index]?.isFetched ?? false,
           hasPerformances: probe?.hasPerformances ?? false,
           syncProbeTimedOut: probe?.timedOut ?? false,
         }),
@@ -223,7 +191,7 @@ export function DashboardView() {
     });
 
     return map;
-  }, [projects, campaignQueries, projectDetailsQueries, syncProbeResults]);
+  }, [projects, projectDetailsQueries, syncProbeResults]);
 
   const setupBannerProject = useMemo(() => {
     if (!recentlyCreatedProjectId) {
@@ -257,24 +225,12 @@ export function DashboardView() {
     deleteProjectAction,
     initialDeleteProjectState,
   );
-  const [linkState, linkFormAction, isLinkPending] = useActionState(
-    linkCampaignAction,
-    initialLinkCampaignState,
-  );
-  const [unlinkState, unlinkFormAction, isUnlinkPending] = useActionState(
-    unlinkCampaignAction,
-    initialUnlinkCampaignState,
-  );
   const [keywordsState, keywordsFormAction, isKeywordsPending] = useActionState(
     updateProjectKeywordsAction,
     initialUpdateProjectKeywordsState,
   );
 
-  const isBusy =
-    isDeletePending ||
-    isLinkPending ||
-    isUnlinkPending ||
-    isKeywordsPending;
+  const isBusy = isDeletePending || isKeywordsPending;
 
   const client = clientResult?.client ?? null;
   const projectCount = projects.length;
@@ -334,30 +290,21 @@ export function DashboardView() {
   }, [filteredProjects.length, normalizedProjectSearch, projectCount]);
 
   const healthStats = useMemo(() => {
-    let campaignCount = 0;
     let keywordCount = 0;
-    let projectsWithoutCampaign = 0;
 
     projects.forEach((project, index) => {
-      const campaigns = campaignQueries[index]?.data?.campaigns ?? [];
       const keywords =
         projectDetailsQueries[index]?.data?.project?.keywords ??
         project.keywords ??
         [];
-      campaignCount += campaigns.length;
       keywordCount += keywords.length;
-      if (campaigns.length === 0) {
-        projectsWithoutCampaign += 1;
-      }
     });
 
     return {
       projectCount,
-      campaignCount,
       keywordCount,
-      projectsWithoutCampaign,
     };
-  }, [projects, campaignQueries, projectDetailsQueries, projectCount]);
+  }, [projects, projectDetailsQueries, projectCount]);
 
   useEffect(() => {
     if (!hasHydrated || !selectedClientId) {
@@ -374,13 +321,6 @@ export function DashboardView() {
         projectId: project.id,
         projectName: project.name,
         queryIndex: index,
-        campaigns: {
-          isFetched: campaignQueries[index]?.isFetched ?? false,
-          isFetching: campaignQueries[index]?.isFetching ?? false,
-          isError: campaignQueries[index]?.isError ?? false,
-          errorMessage: campaignQueries[index]?.error?.message ?? null,
-          data: summarizeCampaigns(campaignQueries[index]?.data?.campaigns),
-        },
         keywords: {
           isFetched: projectDetailsQueries[index]?.isFetched ?? false,
           isFetching: projectDetailsQueries[index]?.isFetching ?? false,
@@ -399,7 +339,6 @@ export function DashboardView() {
     clientErrorRaw,
     projects,
     projectsErrorRaw,
-    campaignQueries,
     projectDetailsQueries,
   ]);
 
@@ -412,14 +351,6 @@ export function DashboardView() {
     });
   };
 
-  const invalidateCampaigns = (projectId: string) => {
-    void queryClient.invalidateQueries({
-      queryKey: unilizeKeys.campaigns(projectId),
-    });
-    void queryClient.refetchQueries({
-      queryKey: unilizeKeys.campaigns(projectId),
-    });
-  };
 
   const handleProjectCreated = useCallback(
     (result: { success: boolean; project?: UnilizeProject; clientId?: string }) => {
@@ -444,27 +375,6 @@ export function DashboardView() {
     [queryClient, setSelectedProjectId],
   );
 
-  useEffect(() => {
-    if (!recentlyCreatedProjectId || selectedCampaignId) {
-      return;
-    }
-
-    const queryIndex = projectQueryIndexById.get(recentlyCreatedProjectId);
-    if (queryIndex === undefined) {
-      return;
-    }
-
-    const campaigns = campaignQueries[queryIndex]?.data?.campaigns ?? [];
-    if (campaigns.length > 0) {
-      setSelectedCampaignId(campaigns[0].id);
-    }
-  }, [
-    recentlyCreatedProjectId,
-    selectedCampaignId,
-    projectQueryIndexById,
-    campaignQueries,
-    setSelectedCampaignId,
-  ]);
 
   useEffect(() => {
     if (
@@ -489,71 +399,6 @@ export function DashboardView() {
     setProjectToDelete(null);
   }, [deleteState, queryClient]);
 
-  useEffect(() => {
-    if (!linkState.success || !linkState.campaign || !linkState.projectId) {
-      return;
-    }
-    const key = `${linkState.projectId}:${linkState.campaign.id}`;
-    if (processedLinkIdRef.current === key) {
-      return;
-    }
-    processedLinkIdRef.current = key;
-
-    queryClient.setQueryData<ListCampaignsResult>(
-      unilizeKeys.campaigns(linkState.projectId),
-      (previous) => {
-        const projectId = linkState.projectId!;
-        const campaign = linkState.campaign!;
-        const campaigns = previous?.campaigns ?? [];
-        if (campaigns.some((c) => c.id === campaign.id)) {
-          return previous;
-        }
-        return {
-          requestUrl: previous?.requestUrl ?? "",
-          projectId,
-          campaigns: [...campaigns, campaign],
-          error: null,
-        };
-      },
-    );
-    invalidateCampaigns(linkState.projectId);
-    setLinkCampaignOpen(false);
-    setProjectForLink(null);
-  }, [linkState, queryClient]);
-
-  useEffect(() => {
-    if (
-      !unlinkState.success ||
-      !unlinkState.projectId ||
-      !unlinkState.campaignId
-    ) {
-      return;
-    }
-    const key = `${unlinkState.projectId}:${unlinkState.campaignId}`;
-    if (processedUnlinkIdRef.current === key) {
-      return;
-    }
-    processedUnlinkIdRef.current = key;
-
-    queryClient.setQueryData<ListCampaignsResult>(
-      unilizeKeys.campaigns(unlinkState.projectId),
-      (previous) => {
-        if (!previous) {
-          return previous;
-        }
-        return {
-          ...previous,
-          campaigns: previous.campaigns.filter(
-            (c) => c.id !== unlinkState.campaignId,
-          ),
-          error: null,
-        };
-      },
-    );
-    invalidateCampaigns(unlinkState.projectId);
-    setUnlinkCampaignOpen(false);
-    setCampaignToUnlink(null);
-  }, [unlinkState, queryClient]);
 
   useEffect(() => {
     if (!keywordsState.success || !keywordsState.projectId) {
@@ -621,16 +466,6 @@ export function DashboardView() {
           }
           keywordsFetched={
             projectDetailsQueries[
-              projectQueryIndexById.get(setupBannerProject.id) ?? 0
-            ]?.isFetched ?? false
-          }
-          campaigns={
-            campaignQueries[
-              projectQueryIndexById.get(setupBannerProject.id) ?? 0
-            ]?.data?.campaigns ?? []
-          }
-          campaignsFetched={
-            campaignQueries[
               projectQueryIndexById.get(setupBannerProject.id) ?? 0
             ]?.isFetched ?? false
           }
@@ -721,18 +556,9 @@ export function DashboardView() {
                   key={project.id}
                   project={project}
                   queryIndex={queryIndex}
-                  campaignQueries={campaignQueries}
                   projectDetailsQueries={projectDetailsQueries}
                   readiness={readiness}
                   isBusy={isBusy}
-                  onUnlink={(p, campaign) => {
-                    setCampaignToUnlink({ project: p, campaign });
-                    setUnlinkCampaignOpen(true);
-                  }}
-                  onAddCampaign={(p) => {
-                    setProjectForLink(p);
-                    setLinkCampaignOpen(true);
-                  }}
                   onEditKeywords={(p) => {
                     setProjectForKeywords(p);
                     setKeywordsOpen(true);
@@ -810,148 +636,6 @@ export function DashboardView() {
                   disabled={isDeletePending}
                 >
                   {isDeletePending ? "Suppression…" : "Supprimer"}
-                </Button>
-              </DialogFooter>
-            </form>
-          ) : null}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={linkCampaignOpen}
-        onOpenChange={(open) => {
-          setLinkCampaignOpen(open);
-          if (!open) {
-            setProjectForLink(null);
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Ajouter une campagne</DialogTitle>
-            <DialogDescription>
-              {projectForLink ? (
-                <>
-                  Lier une campagne Google Ads au projet{" "}
-                  <span className="text-foreground font-medium">
-                    {projectForLink.name}
-                  </span>
-                  .
-                </>
-              ) : (
-                "Aucun projet sélectionné."
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          {projectForLink ? (
-            <form action={linkFormAction} className="space-y-4">
-              <input type="hidden" name="projectId" value={projectForLink.id} />
-              <div className="space-y-2">
-                <Label htmlFor="campaign-name">Nom</Label>
-                <Input
-                  id="campaign-name"
-                  name="name"
-                  placeholder="Brand awareness - FR"
-                  required
-                  disabled={isLinkPending}
-                  autoFocus
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="campaign-customer-id">Customer ID</Label>
-                <Input
-                  id="campaign-customer-id"
-                  name="customer_id"
-                  placeholder="9876543210"
-                  required
-                  disabled={isLinkPending}
-                />
-              </div>
-              {linkState.error ? (
-                <p className="text-destructive text-sm" role="alert">
-                  {linkState.error}
-                </p>
-              ) : null}
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setLinkCampaignOpen(false)}
-                  disabled={isLinkPending}
-                >
-                  Annuler
-                </Button>
-                <Button type="submit" disabled={isLinkPending}>
-                  {isLinkPending ? "Liaison…" : "Lier"}
-                </Button>
-              </DialogFooter>
-            </form>
-          ) : null}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={unlinkCampaignOpen}
-        onOpenChange={(open) => {
-          setUnlinkCampaignOpen(open);
-          if (!open) {
-            setCampaignToUnlink(null);
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Délier la campagne</DialogTitle>
-            <DialogDescription>
-              {campaignToUnlink ? (
-                <>
-                  La campagne{" "}
-                  <span className="text-foreground font-medium">
-                    {campaignToUnlink.campaign.name}
-                  </span>{" "}
-                  sera détachée du projet{" "}
-                  <span className="text-foreground font-medium">
-                    {campaignToUnlink.project.name}
-                  </span>
-                  .
-                </>
-              ) : (
-                "Aucune campagne sélectionnée."
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          {campaignToUnlink ? (
-            <form action={unlinkFormAction} className="space-y-4">
-              <input
-                type="hidden"
-                name="projectId"
-                value={campaignToUnlink.project.id}
-              />
-              <input
-                type="hidden"
-                name="campaignId"
-                value={campaignToUnlink.campaign.id}
-              />
-              {unlinkState.error ? (
-                <p className="text-destructive text-sm" role="alert">
-                  {unlinkState.error}
-                </p>
-              ) : null}
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setUnlinkCampaignOpen(false)}
-                  disabled={isUnlinkPending}
-                >
-                  Annuler
-                </Button>
-                <Button
-                  type="submit"
-                  variant="destructiveOutline"
-                  disabled={isUnlinkPending}
-                >
-                  {isUnlinkPending ? "Déliaison…" : "Délier"}
                 </Button>
               </DialogFooter>
             </form>

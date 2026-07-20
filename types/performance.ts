@@ -1,14 +1,5 @@
-/** Période de reporting (OpenAPI Period). */
-export interface UnilizePerformancePeriod {
-  from: string;
-  to: string;
-}
-
-/** Métriques SEA par mot-clé (OpenAPI SEA). */
+/** Métriques SEA agrégées sur la période (OpenAPI PerformanceSEA). */
 export interface UnilizeSeaMetrics {
-  campaign: string;
-  keyword: string;
-  period: UnilizePerformancePeriod;
   impressions: number;
   clicks: number;
   spend: number;
@@ -18,6 +9,9 @@ export interface UnilizeSeaMetrics {
   match_type: "BROAD" | "PHRASE" | "EXACT";
   search_budget_lost_impression_share: number;
   search_rank_lost_impression_share: number;
+  ad_relevance: string;
+  expected_ctr: string;
+  landing_page_ux: string;
   ctr: number;
   cpc: number;
   conversion_rate: number;
@@ -27,45 +21,30 @@ export interface UnilizeSeaMetrics {
   potential_impressions_with_full_rank: number;
 }
 
-/** Volume de recherche mensuel (OpenAPI SearchVolume). */
+/** Volume de recherche estimé (OpenAPI PerformanceSearchVolume). */
 export interface UnilizeSearchVolume {
-  keyword: string;
-  period: UnilizePerformancePeriod;
   volume: number;
 }
 
-import type {
-  UnilizeBasStatusCode,
-  UnilizeOptimizationStatus,
-} from "@/types/strategy";
-
-/** Métriques SEO sur l’URL du projet (OpenAPI SEO). */
+/** Métriques SEO Search Console (OpenAPI PerformanceSEO). */
 export interface UnilizeSeoMetrics {
-  keyword: string;
-  url: string;
-  period: UnilizePerformancePeriod;
   impressions: number;
   clicks: number;
   /** Taux de clic en pourcentage (clics / impressions × 100). */
   ctr: number;
-  /** @deprecated Anciens champs BAS — rétrocompatibilité si encore renvoyés. */
-  authority_score?: UnilizeOptimizationStatus | null;
-  bas?: number | string | null;
-  bas_status?: UnilizeBasStatusCode | null;
 }
 
 /** Entrée performances par mot-clé (OpenAPI Performance). */
 export interface UnilizePerformance {
   keyword: string;
   sea: UnilizeSeaMetrics | null;
-  search_volume: UnilizeSearchVolume | null;
-  seo: UnilizeSeoMetrics | null;
+  search_volume: UnilizeSearchVolume;
+  seo: UnilizeSeoMetrics;
 }
 
 export type ListPerformancesResult = {
   requestUrl: string;
   projectId: string;
-  campaignId: string;
   performances: UnilizePerformance[];
   error: string | null;
 };

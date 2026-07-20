@@ -7,11 +7,11 @@ import { PerformanceSummary } from "@/components/performances/performance-summar
 import { toUserFacingApiError } from "@/lib/api/error-messages";
 import { usePerformances } from "@/hooks/use-performances-api";
 import { useMonitoring } from "@/hooks/use-monitoring-api";
-import { useProjectCampaignContext } from "@/hooks/use-project-campaign-context";
+import { useProjectContext } from "@/hooks/use-project-context";
 
 export function PerformancesView() {
-  const { canFetchMetrics, selectedProjectId, selectedCampaignId } =
-    useProjectCampaignContext();
+  const { canFetchMetrics, selectedProjectId, period } =
+    useProjectContext();
 
   const {
     data: performancesResult,
@@ -20,12 +20,12 @@ export function PerformancesView() {
     error: performancesError,
   } = usePerformances(
     canFetchMetrics ? selectedProjectId : null,
-    canFetchMetrics ? selectedCampaignId : null,
+    period,
   );
 
   const { data: monitoringResult } = useMonitoring(
     canFetchMetrics ? selectedProjectId : null,
-    canFetchMetrics ? selectedCampaignId : null,
+    period,
   );
 
   const performances = performancesResult?.performances ?? [];

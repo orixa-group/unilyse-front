@@ -3,10 +3,9 @@ import { apiClient } from "@/lib/api/client";
 import type {
   CreateClientPayload,
   CreateProjectPayload,
-  LinkCampaignPayload,
   UnilizeApiEnvelope,
-  UnilizeCampaign,
   UnilizeClient,
+  UnilizePeriodQuery,
   UnilizeProject,
   UnilizeProjectDetail,
 } from "@/types/unilize";
@@ -24,16 +23,30 @@ export const unilizeKeys = {
   project: (id: string) => [...unilizeKeys.all, "project", id] as const,
   projectDetails: (id: string) =>
     [...unilizeKeys.all, "project", "detail", id] as const,
-  campaigns: (projectId: string) =>
-    [...unilizeKeys.all, "campaigns", "list", projectId] as const,
-  campaign: (projectId: string, campaignId: string) =>
-    [...unilizeKeys.all, "campaign", projectId, campaignId] as const,
-  performances: (projectId: string, campaignId: string) =>
-    [...unilizeKeys.all, "performances", projectId, campaignId] as const,
-  strategy: (projectId: string, campaignId: string) =>
-    [...unilizeKeys.all, "strategy", projectId, campaignId] as const,
-  monitoring: (projectId: string, campaignId: string) =>
-    [...unilizeKeys.all, "monitoring", projectId, campaignId] as const,
+  performances: (projectId: string, period?: UnilizePeriodQuery) =>
+    [
+      ...unilizeKeys.all,
+      "performances",
+      projectId,
+      period?.from ?? "",
+      period?.to ?? "",
+    ] as const,
+  strategy: (projectId: string, period?: UnilizePeriodQuery) =>
+    [
+      ...unilizeKeys.all,
+      "strategy",
+      projectId,
+      period?.from ?? "",
+      period?.to ?? "",
+    ] as const,
+  monitoring: (projectId: string, period?: UnilizePeriodQuery) =>
+    [
+      ...unilizeKeys.all,
+      "monitoring",
+      projectId,
+      period?.from ?? "",
+      period?.to ?? "",
+    ] as const,
   sites: () => [...unilizeKeys.all, "sites"] as const,
 };
 
@@ -108,52 +121,13 @@ export async function updateProjectKeywords(
   return res.data;
 }
 
-export async function listCampaigns(
-  projectId: string,
-): Promise<UnilizeCampaign[]> {
-  const res = await apiClient.get<UnilizeApiEnvelope<UnilizeCampaign[]>>(
-    API.projectCampaigns(projectId),
-  );
-  if (!Array.isArray(res?.data)) {
-    throw new Error("Réponse API invalide pour la liste des campagnes.");
-  }
-  return res.data;
-}
-
-export async function getCampaign(
-  projectId: string,
-  campaignId: string,
-): Promise<UnilizeCampaign> {
-  const res = await apiClient.get<UnilizeApiEnvelope<UnilizeCampaign>>(
-    API.projectCampaign(projectId, campaignId),
-  );
-  return res.data;
-}
-
-export async function linkCampaign(
-  projectId: string,
-  payload: LinkCampaignPayload,
-): Promise<UnilizeCampaign> {
-  const res = await apiClient.post<UnilizeApiEnvelope<UnilizeCampaign>>(
-    API.projectCampaigns(projectId),
-    { body: payload },
-  );
-  return res.data;
-}
-
-export async function unlinkCampaign(
-  projectId: string,
-  campaignId: string,
-): Promise<void> {
-  await apiClient.delete(API.projectCampaign(projectId, campaignId));
-}
-
 export async function listPerformances(
   projectId: string,
-  campaignId: string,
+  period?: UnilizePeriodQuery,
 ): Promise<UnilizePerformance[]> {
   const res = await apiClient.get<UnilizeApiEnvelope<UnilizePerformance[]>>(
-    API.campaignPerformances(projectId, campaignId),
+    API.projectPerformances(projectId),
+    { query: period },
   );
   if (!Array.isArray(res?.data)) {
     throw new Error("Réponse API invalide pour les performances.");
@@ -163,10 +137,11 @@ export async function listPerformances(
 
 export async function getStrategy(
   projectId: string,
-  campaignId: string,
+  period?: UnilizePeriodQuery,
 ): Promise<UnilizeStrategy> {
   const res = await apiClient.get<UnilizeApiEnvelope<UnilizeStrategy>>(
-    API.campaignStrategy(projectId, campaignId),
+    API.projectStrategy(projectId),
+    { query: period },
   );
   if (!res?.data || typeof res.data !== "object") {
     throw new Error("Réponse API invalide pour la stratégie.");
@@ -176,11 +151,11 @@ export async function getStrategy(
 
 export async function listKeywordMonitoring(
   projectId: string,
-  campaignId: string,
+  period?: UnilizePeriodQuery,
 ): Promise<UnilizeKeywordMonitoring[]> {
   const res = await apiClient.get<
     UnilizeApiEnvelope<UnilizeKeywordMonitoring[]>
-  >(API.campaignMonitoring(projectId, campaignId));
+  >(API.projectMonitoring(projectId), { query: period });
   if (!Array.isArray(res?.data)) {
     throw new Error("Réponse API invalide pour le monitoring.");
   }

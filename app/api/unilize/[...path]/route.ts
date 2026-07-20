@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerAuthTokenFromRequest } from "@/lib/auth/server-token";
 import { UNILIZE_API_DEFAULT_URL } from "@/lib/constants/api-endpoints";
 import { logUnilizeEvent } from "@/lib/unilize/request-log";
 
@@ -28,7 +29,13 @@ async function proxy(
     upstream: url.toString(),
   });
 
+  const authToken = getServerAuthTokenFromRequest(request);
+  if (!authToken) {
+    return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
+  }
+
   const headers = new Headers();
+  headers.set("Authorization", `Bearer ${authToken}`);
   const contentType = request.headers.get("content-type");
   if (contentType) {
     headers.set("Content-Type", contentType);

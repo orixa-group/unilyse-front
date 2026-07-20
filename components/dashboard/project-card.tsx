@@ -2,8 +2,6 @@
 
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  Add01Icon,
-  Cancel01Icon,
   Delete02Icon,
   Edit02Icon,
   MoreHorizontalIcon,
@@ -24,14 +22,12 @@ import {
   isEmptyResourceApiError,
   toUserFacingApiError,
 } from "@/lib/api/error-messages";
-import type { useProjectsCampaigns, useProjectsDetails } from "@/hooks/use-unilize-api";
+import type { useProjectsDetails } from "@/hooks/use-unilize-api";
 import { isQueryInitialLoading } from "@/lib/unilize/query-display";
-import { hasCustomerId } from "@/lib/projects/project-readiness";
 import type { ProjectReadiness } from "@/lib/projects/project-readiness";
 import { cn } from "@/lib/utils/cn";
-import type { UnilizeCampaign, UnilizeProject } from "@/types/unilize";
+import type { UnilizeProject } from "@/types/unilize";
 
-const MAX_VISIBLE_CAMPAIGNS = 2;
 const MAX_VISIBLE_KEYWORDS = 4;
 
 function InlineIconAction({
@@ -41,7 +37,7 @@ function InlineIconAction({
   disabled,
 }: {
   label: string;
-  icon: typeof Add01Icon;
+  icon: typeof Edit02Icon;
   onClick: () => void;
   disabled?: boolean;
 }) {
@@ -69,13 +65,11 @@ function InlineIconAction({
 function ProjectActionsMenu({
   project,
   isBusy,
-  onAddCampaign,
   onEditKeywords,
   onDelete,
 }: {
   project: UnilizeProject;
   isBusy: boolean;
-  onAddCampaign: (project: UnilizeProject) => void;
   onEditKeywords: (project: UnilizeProject) => void;
   onDelete: (project: UnilizeProject) => void;
 }) {
@@ -100,18 +94,6 @@ function ProjectActionsMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
-        <DropdownMenuItem
-          disabled={isBusy}
-          onClick={() => onAddCampaign(project)}
-        >
-          <HugeiconsIcon
-            icon={Add01Icon}
-            size={16}
-            color="currentColor"
-            strokeWidth={1.5}
-          />
-          Ajouter une campagne
-        </DropdownMenuItem>
         <DropdownMenuItem
           disabled={isBusy}
           onClick={() => onEditKeywords(project)}
@@ -140,140 +122,6 @@ function ProjectActionsMenu({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  );
-}
-
-function CampaignsSection({
-  project,
-  campaigns,
-  isLoading,
-  errorMessage,
-  isBusy,
-  onUnlink,
-  onAddCampaign,
-}: {
-  project: UnilizeProject;
-  campaigns: UnilizeCampaign[];
-  isLoading: boolean;
-  errorMessage: string | null;
-  isBusy: boolean;
-  onUnlink: (project: UnilizeProject, campaign: UnilizeCampaign) => void;
-  onAddCampaign: (project: UnilizeProject) => void;
-}) {
-  if (isLoading) {
-    return (
-      <p className="text-muted-foreground text-xs">Campagnes — chargement…</p>
-    );
-  }
-
-  if (errorMessage) {
-    return (
-      <div className="flex flex-wrap items-center gap-1">
-        <p
-          className="text-muted-foreground text-xs"
-          title={toUserFacingApiError(errorMessage, {
-            fallback: "Campagnes indisponibles",
-          })}
-        >
-          Campagnes indisponibles
-        </p>
-        <InlineIconAction
-          label="Ajouter une campagne"
-          icon={Add01Icon}
-          disabled={isBusy}
-          onClick={() => onAddCampaign(project)}
-        />
-      </div>
-    );
-  }
-
-  if (campaigns.length === 0) {
-    const awaitingCampaign = hasCustomerId(project);
-    return (
-      <div className="flex flex-wrap items-center gap-1">
-        <p
-          className={cn(
-            "text-xs font-medium",
-            awaitingCampaign ? "text-muted-foreground" : "text-warning",
-          )}
-        >
-          {awaitingCampaign
-            ? "Campagne en cours d’activation…"
-            : "Aucune campagne disponible"}
-        </p>
-        {!awaitingCampaign ? (
-          <InlineIconAction
-            label="Ajouter une campagne"
-            icon={Add01Icon}
-            disabled={isBusy}
-            onClick={() => onAddCampaign(project)}
-          />
-        ) : null}
-      </div>
-    );
-  }
-
-  const { visible, overflowCount } = truncateList(
-    campaigns,
-    MAX_VISIBLE_CAMPAIGNS,
-  );
-  const hiddenNames = campaigns
-    .slice(MAX_VISIBLE_CAMPAIGNS)
-    .map((c) => c.name)
-    .join(", ");
-
-  return (
-    <div className="space-y-1">
-      <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
-        Campagnes
-      </p>
-      <ul className="flex flex-wrap items-center gap-1">
-        {visible.map((campaign) => (
-          <li key={campaign.id} className="max-w-full">
-            <Badge
-              variant="secondary"
-              className="max-w-[9rem] gap-1 py-0.5 pl-2 pr-1 text-xs font-normal"
-            >
-              <span className="truncate">{campaign.name}</span>
-              <button
-                type="button"
-                title={`Délier la campagne ${campaign.name}`}
-                aria-label={`Délier la campagne ${campaign.name}`}
-                disabled={isBusy}
-                onClick={() => onUnlink(project, campaign)}
-                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer focus-visible:ring-ring shrink-0 rounded-sm p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
-              >
-                <HugeiconsIcon
-                  icon={Cancel01Icon}
-                  size={12}
-                  color="currentColor"
-                  strokeWidth={1.5}
-                />
-              </button>
-            </Badge>
-          </li>
-        ))}
-        {overflowCount > 0 ? (
-          <li>
-            <Badge
-              variant="outline"
-              className="text-xs font-normal"
-              title={hiddenNames}
-            >
-              +{overflowCount}
-            </Badge>
-          </li>
-        ) : null}
-        <li>
-          <InlineIconAction
-            label="Ajouter une campagne"
-            icon={Add01Icon}
-            disabled={isBusy}
-            onClick={() => onAddCampaign(project)}
-          />
-        </li>
-      </ul>
-    </div>
   );
 }
 
@@ -376,37 +224,23 @@ function KeywordsSection({
 export function ProjectCard({
   project,
   queryIndex,
-  campaignQueries,
   projectDetailsQueries,
   readiness,
   isBusy,
-  onUnlink,
-  onAddCampaign,
   onEditKeywords,
   onDelete,
 }: {
   project: UnilizeProject;
   queryIndex: number;
-  campaignQueries: ReturnType<typeof useProjectsCampaigns>;
   projectDetailsQueries: ReturnType<typeof useProjectsDetails>;
   readiness: ProjectReadiness;
   isBusy: boolean;
-  onUnlink: (project: UnilizeProject, campaign: UnilizeCampaign) => void;
-  onAddCampaign: (project: UnilizeProject) => void;
   onEditKeywords: (project: UnilizeProject) => void;
   onDelete: (project: UnilizeProject) => void;
 }) {
-  const campaignQuery = campaignQueries[queryIndex];
   const detailsQuery = projectDetailsQueries[queryIndex];
 
-  const campaignsLoading = isQueryInitialLoading(campaignQuery);
   const keywordsLoading = isQueryInitialLoading(detailsQuery);
-
-  let campaignsError: string | null = null;
-  if (campaignQuery?.isError) {
-    const msg = campaignQuery.error?.message ?? "";
-    campaignsError = isEmptyResourceApiError(msg) ? null : msg;
-  }
 
   let keywordsError: string | null = null;
   if (detailsQuery?.isError) {
@@ -414,7 +248,6 @@ export function ProjectCard({
     keywordsError = isEmptyResourceApiError(msg) ? null : msg;
   }
 
-  const campaigns = campaignQuery?.data?.campaigns ?? [];
   const keywords =
     detailsQuery?.data?.project?.keywords ?? project.keywords ?? [];
   const showSetupBorder = readiness === "setup_required";
@@ -440,21 +273,10 @@ export function ProjectCard({
           <ProjectActionsMenu
             project={project}
             isBusy={isBusy}
-            onAddCampaign={onAddCampaign}
             onEditKeywords={onEditKeywords}
             onDelete={onDelete}
           />
         </div>
-
-        <CampaignsSection
-          project={project}
-          campaigns={campaigns}
-          isLoading={campaignsLoading}
-          errorMessage={campaignsError}
-          isBusy={isBusy}
-          onUnlink={onUnlink}
-          onAddCampaign={onAddCampaign}
-        />
 
         <KeywordsSection
           project={project}

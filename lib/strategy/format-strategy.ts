@@ -4,9 +4,13 @@ import type {
 } from "@/types/strategy";
 
 const RECOMMENDATION_LABELS: Record<UnilizeStrategyRecommendation, string> = {
-  seo: "SEO",
-  sea: "SEA",
-  hybrid: "SEO + SEA",
+  OPTIMIZE_ADS: "Optimiser Ads",
+  MAINTAIN_ADS: "Maintenir Ads",
+  LAUNCH_SEO: "Lancer SEO",
+  DOUBLE_PRESENCE: "Double présence",
+  REVIEW_STRATEGY: "Revoir la stratégie",
+  HUMAN_ARBITRATION: "Arbitrage humain",
+  UNKNOWN: "Indéterminé",
 };
 
 const TIER_LABELS: Record<string, string> = {
@@ -41,8 +45,8 @@ export const STRATEGY_COLUMN_LABELS = {
   impression_share: "Part d'impressions",
   cpc: "CPC",
   conversion_rate: "Taux de conversion",
-  authority_score: "BAS",
-  semantic_score: "Sémantique",
+  authority_status: "Statut autorité",
+  semantic_status: "Statut sémantique",
   position: "Position SEO",
   page_intent_match: "Correspondance d'intention",
 } as const;
@@ -70,7 +74,7 @@ export function formatStrategyRecommendation(
   if (!value) {
     return "—";
   }
-  const key = value.toLowerCase() as UnilizeStrategyRecommendation;
+  const key = value.toUpperCase() as UnilizeStrategyRecommendation;
   return RECOMMENDATION_LABELS[key] ?? String(value);
 }
 

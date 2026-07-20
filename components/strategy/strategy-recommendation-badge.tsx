@@ -8,7 +8,7 @@ export function StrategyRecommendationBadge({
 }: {
   recommendation: UnilizeStrategyRecommendation | string;
 }) {
-  const normalized = recommendation.toLowerCase() as UnilizeStrategyRecommendation;
+  const normalized = recommendation.toUpperCase() as UnilizeStrategyRecommendation;
   const label = formatStrategyRecommendation(normalized);
 
   return (

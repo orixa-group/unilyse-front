@@ -9,8 +9,10 @@ export interface UnilizeClient {
 export interface UnilizeProject {
   id: string;
   name: string;
+  /** URL du site associé au projet (Search Console). */
+  url: string;
   /** Google Ads customer ID lié au projet (sync SEA au niveau compte). */
-  customer_id?: string;
+  customer_id: string;
   created_at: string;
   updated_at: string;
   /** Présent après mise à jour des mots-clés ou selon réponse API. */
@@ -20,14 +22,6 @@ export interface UnilizeProject {
 /** Réponse détail projet (OpenAPI ProjectDetail — keywords requis). */
 export interface UnilizeProjectDetail extends UnilizeProject {
   keywords: string[];
-}
-
-export interface UnilizeCampaign {
-  id: string;
-  name: string;
-  customer_id: string;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface UnilizeApiEnvelope<T> {
@@ -48,11 +42,12 @@ export interface CreateProjectPayload {
   name: string;
   /** URL du site associé au projet (requis par l’API). */
   url: string;
-  /** Google Ads customer ID — déclenche la sync SEA à la création. */
+  /** Google Ads customer ID — sync SEA au niveau compte. */
   customer_id: string;
 }
 
-export interface LinkCampaignPayload {
-  name: string;
-  customer_id: string;
-}
+/** Query params optionnels pour les endpoints analytics (période). */
+export type UnilizePeriodQuery = {
+  from?: string;
+  to?: string;
+};

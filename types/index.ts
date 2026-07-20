@@ -2,7 +2,6 @@ export type { PaginatedResponse, ApiError } from "./api";
 export type { ListSitesResult, UnilizeSearchConsoleSite } from "./sites";
 export type {
   UnilizePerformance,
-  UnilizePerformancePeriod,
   UnilizeSeaMetrics,
   UnilizeSearchVolume,
   UnilizeSeoMetrics,
@@ -12,10 +11,9 @@ export type {
   UnilizeClient,
   UnilizeProject,
   UnilizeProjectDetail,
-  UnilizeCampaign,
   UnilizeApiEnvelope,
   UnilizeApiErrorBody,
   CreateClientPayload,
   CreateProjectPayload,
-  LinkCampaignPayload,
+  UnilizePeriodQuery,
 } from "./unilize";

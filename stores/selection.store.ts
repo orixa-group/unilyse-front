@@ -7,8 +7,6 @@ interface SelectionState {
   setSelectedClientId: (id: string | null) => void;
   selectedProjectId: string | null;
   setSelectedProjectId: (id: string | null) => void;
-  selectedCampaignId: string | null;
-  setSelectedCampaignId: (id: string | null) => void;
   analysisLens: AnalysisLens;
   setAnalysisLens: (lens: AnalysisLens) => void;
   strategyExtraColumns: Record<AnalysisLens, string[]>;
@@ -17,6 +15,10 @@ interface SelectionState {
     columnId: string,
     checked: boolean,
   ) => void;
+  /** Période analytics optionnelle (YYYY-MM-DD). */
+  periodFrom: string | null;
+  periodTo: string | null;
+  setPeriod: (from: string | null, to: string | null) => void;
   hasHydrated: boolean;
   setHasHydrated: (value: boolean) => void;
 }
@@ -29,16 +31,9 @@ export const useSelectionStore = create<SelectionState>()(
         set({
           selectedClientId: id,
           selectedProjectId: null,
-          selectedCampaignId: null,
         }),
       selectedProjectId: null,
-      setSelectedProjectId: (id) =>
-        set({
-          selectedProjectId: id,
-          selectedCampaignId: null,
-        }),
-      selectedCampaignId: null,
-      setSelectedCampaignId: (id) => set({ selectedCampaignId: id }),
+      setSelectedProjectId: (id) => set({ selectedProjectId: id }),
       analysisLens: "sea",
       setAnalysisLens: (lens) => set({ analysisLens: lens }),
       strategyExtraColumns: { sea: [], seo: [] },
@@ -57,6 +52,9 @@ export const useSelectionStore = create<SelectionState>()(
             },
           };
         }),
+      periodFrom: null,
+      periodTo: null,
+      setPeriod: (from, to) => set({ periodFrom: from, periodTo: to }),
       hasHydrated: false,
       setHasHydrated: (value) => set({ hasHydrated: value }),
     }),
@@ -65,9 +63,10 @@ export const useSelectionStore = create<SelectionState>()(
       partialize: (state) => ({
         selectedClientId: state.selectedClientId,
         selectedProjectId: state.selectedProjectId,
-        selectedCampaignId: state.selectedCampaignId,
         analysisLens: state.analysisLens,
         strategyExtraColumns: state.strategyExtraColumns,
+        periodFrom: state.periodFrom,
+        periodTo: state.periodTo,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {

@@ -18,7 +18,6 @@ export function ContextGuard({
   const hasHydrated = useSelectionHydrated();
   const selectedClientId = useSelectionStore((s) => s.selectedClientId);
   const selectedProjectId = useSelectionStore((s) => s.selectedProjectId);
-  const selectedCampaignId = useSelectionStore((s) => s.selectedCampaignId);
 
   if (!hasHydrated) {
     return (
@@ -39,13 +38,13 @@ export function ContextGuard({
   }
 
   if (
-    requiresContext === "project-campaign" &&
-    (!selectedProjectId || !selectedCampaignId)
+    (requiresContext === "project" || requiresContext === "project-campaign") &&
+    !selectedProjectId
   ) {
     return (
       <EmptyState
-        title="Projet et campagne requis"
-        description="Sélectionnez un projet et une campagne dans la barre de contexte pour afficher les données."
+        title="Projet requis"
+        description="Sélectionnez un projet dans la barre de contexte pour afficher les données."
         action={
           <Link
             href={ROUTES.DASHBOARD}

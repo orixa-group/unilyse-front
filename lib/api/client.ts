@@ -1,3 +1,4 @@
+import { getAuthTokenFromBridge } from "@/lib/auth/auth-token-bridge";
 import {
   UNILIZE_API_DEFAULT_URL,
   UNILIZE_API_PROXY_PREFIX,
@@ -26,6 +27,8 @@ function resolveApiBaseUrl(): string {
 export type ApiClientOptions = Omit<RequestInit, "body"> & {
   query?: Record<string, string | number | boolean | undefined>;
   body?: unknown;
+  /** Token Bearer explicite (serveur uniquement). */
+  authToken?: string;
 };
 
 export class ApiClientError extends Error {
@@ -79,7 +82,7 @@ export class ApiClient {
   }
 
   async request<T>(path: string, options: ApiClientOptions = {}): Promise<T> {
-    const { query, body, headers, ...rest } = options;
+    const { query, body, headers, authToken: explicitAuthToken, ...rest } = options;
     const url = this.buildUrl(path, query);
     const method = (rest.method ?? "GET").toUpperCase();
     const isServer = typeof window === "undefined";
@@ -92,6 +95,14 @@ export class ApiClient {
     const mergedHeaders = new Headers(headers);
     if (!mergedHeaders.has("Content-Type") && body !== undefined) {
       mergedHeaders.set("Content-Type", "application/json");
+    }
+
+    let authToken = explicitAuthToken ?? null;
+    if (!authToken && isServer) {
+      authToken = getAuthTokenFromBridge();
+    }
+    if (authToken && !mergedHeaders.has("Authorization")) {
+      mergedHeaders.set("Authorization", `Bearer ${authToken}`);
     }
 
     const response = await fetch(url, {

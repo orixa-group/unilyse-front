@@ -18,7 +18,7 @@ import {
 } from "@/lib/insights/compute-insights";
 import { formatNumber } from "@/lib/utils/formatting";
 import { useStrategy } from "@/hooks/use-strategy-api";
-import { useProjectCampaignContext } from "@/hooks/use-project-campaign-context";
+import { useProjectContext } from "@/hooks/use-project-context";
 import { useSelectionStore } from "@/stores/selection.store";
 import { useMemo } from "react";
 
@@ -28,8 +28,8 @@ export function StrategyView() {
   const setStrategyExtraColumn = useSelectionStore(
     (s) => s.setStrategyExtraColumn,
   );
-  const { canFetchMetrics, selectedProjectId, selectedCampaignId } =
-    useProjectCampaignContext();
+  const { canFetchMetrics, selectedProjectId, period } =
+    useProjectContext();
 
   const extraColumns = useMemo(
     () => new Set(strategyExtraColumns?.[analysisLens] ?? []),
@@ -48,7 +48,7 @@ export function StrategyView() {
     error: strategyError,
   } = useStrategy(
     canFetchMetrics ? selectedProjectId : null,
-    canFetchMetrics ? selectedCampaignId : null,
+    period,
   );
 
   const strategy = strategyResult?.strategy;
