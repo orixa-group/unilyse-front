@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import {
-  API,
-  UNILIZE_API_DEFAULT_URL,
-} from "@/lib/constants/api-endpoints";
+import { API } from "@/lib/constants/api-endpoints";
+import { buildUnilizeUpstreamUrl } from "@/lib/api/resolve-server-api-url";
 import { withBffAuth } from "@/lib/api/bff-auth";
 import { withRetry } from "@/lib/api/async-utils";
 import { bffRouteErrorResponse } from "@/lib/api/bff-route-utils";
@@ -10,10 +8,7 @@ import { logUnilizeEvent, summarizeUnilizePayload } from "@/lib/unilize/request-
 import { listProjects } from "@/lib/api/unilize";
 
 function getProjectsRequestUrl(clientId: string): string {
-  const base =
-    process.env.API_URL?.trim()?.replace(/\/$/, "") ??
-    UNILIZE_API_DEFAULT_URL.replace(/\/$/, "");
-  return `${base}${API.clientProjects(clientId)}`;
+  return buildUnilizeUpstreamUrl(API.clientProjects(clientId));
 }
 
 export async function GET(

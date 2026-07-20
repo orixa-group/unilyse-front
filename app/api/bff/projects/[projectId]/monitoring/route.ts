@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import {
-  API,
-  UNILIZE_API_DEFAULT_URL,
-} from "@/lib/constants/api-endpoints";
+import { API } from "@/lib/constants/api-endpoints";
+import { buildUnilizeUpstreamUrl } from "@/lib/api/resolve-server-api-url";
 import { withBffAuth } from "@/lib/api/bff-auth";
 import { withRetry } from "@/lib/api/async-utils";
 import { bffRouteErrorResponse } from "@/lib/api/bff-route-utils";
@@ -15,13 +13,10 @@ function getMonitoringRequestUrl(
   projectId: string,
   period?: UnilizePeriodQuery,
 ): string {
-  const base =
-    process.env.API_URL?.trim()?.replace(/\/$/, "") ??
-    UNILIZE_API_DEFAULT_URL.replace(/\/$/, "");
-  const url = new URL(`${base}${API.projectMonitoring(projectId)}`);
-  if (period?.from) url.searchParams.set("from", period.from);
-  if (period?.to) url.searchParams.set("to", period.to);
-  return url.toString();
+  return buildUnilizeUpstreamUrl(API.projectMonitoring(projectId), {
+    from: period?.from,
+    to: period?.to,
+  });
 }
 
 function parsePeriod(request: Request): UnilizePeriodQuery | undefined {

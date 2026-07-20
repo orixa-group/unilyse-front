@@ -5,10 +5,8 @@ import { z } from "zod";
 import { runAuthenticatedServerAction } from "@/lib/auth/server-action-auth";
 import { ApiClientError } from "@/lib/api/client";
 import { toUserFacingApiError } from "@/lib/api/error-messages";
-import {
-  API,
-  UNILIZE_API_DEFAULT_URL,
-} from "@/lib/constants/api-endpoints";
+import { API } from "@/lib/constants/api-endpoints";
+import { buildUnilizeUpstreamUrl } from "@/lib/api/resolve-server-api-url";
 import {
   createClient,
   createProject,
@@ -99,10 +97,7 @@ function revalidateAuthLayouts() {
 }
 
 function getUnilizeRequestUrl(path: string): string {
-  const base =
-    process.env.API_URL?.trim()?.replace(/\/$/, "") ??
-    UNILIZE_API_DEFAULT_URL.replace(/\/$/, "");
-  return `${base}${path}`;
+  return buildUnilizeUpstreamUrl(path);
 }
 
 function revalidateDashboard() {

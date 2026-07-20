@@ -37,7 +37,7 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-# API_URL peut aussi être surchargée au runtime (appels serveur Cloud Run).
-ENV API_URL=""
+# API_URL peut être surchargée au runtime (appels serveur Cloud Run).
+# Si absente ou vide, le fallback staging est utilisé (voir resolve-server-api-url.ts).
 
 CMD ["node", "server.js"]

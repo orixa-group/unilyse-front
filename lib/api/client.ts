@@ -1,8 +1,6 @@
 import { getAuthTokenFromBridge } from "@/lib/auth/auth-token-bridge";
-import {
-  UNILIZE_API_DEFAULT_URL,
-  UNILIZE_API_PROXY_PREFIX,
-} from "@/lib/constants/api-endpoints";
+import { UNILIZE_API_PROXY_PREFIX } from "@/lib/constants/api-endpoints";
+import { resolveUnilizeServerBaseUrl } from "@/lib/api/resolve-server-api-url";
 import { toUserFacingApiError } from "@/lib/api/error-messages";
 import {
   logUnilizeEvent,
@@ -16,12 +14,7 @@ function resolveApiBaseUrl(): string {
     return UNILIZE_API_PROXY_PREFIX;
   }
 
-  const serverUrl = process.env.API_URL?.trim();
-  if (serverUrl?.startsWith("http")) {
-    return serverUrl.replace(/\/$/, "");
-  }
-
-  return UNILIZE_API_DEFAULT_URL.replace(/\/$/, "");
+  return resolveUnilizeServerBaseUrl();
 }
 
 export type ApiClientOptions = Omit<RequestInit, "body"> & {

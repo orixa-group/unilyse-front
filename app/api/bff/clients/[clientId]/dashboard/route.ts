@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import {
-  API,
-  UNILIZE_API_DEFAULT_URL,
-} from "@/lib/constants/api-endpoints";
+import { API } from "@/lib/constants/api-endpoints";
+import { buildUnilizeUpstreamUrl } from "@/lib/api/resolve-server-api-url";
 import { withBffAuth } from "@/lib/api/bff-auth";
 import { mapWithConcurrency, withRetry } from "@/lib/api/async-utils";
 import { getApiErrorMessage, bffRouteErrorResponse } from "@/lib/api/bff-route-utils";
@@ -16,10 +14,7 @@ const PROJECT_ROW_CONCURRENCY = 3;
 const UPSTREAM_RETRY_ATTEMPTS = 3;
 
 function getDashboardRequestUrl(clientId: string): string {
-  const base =
-    process.env.API_URL?.trim()?.replace(/\/$/, "") ??
-    UNILIZE_API_DEFAULT_URL.replace(/\/$/, "");
-  return `${base}${API.client(clientId)}/dashboard`;
+  return buildUnilizeUpstreamUrl(`${API.client(clientId)}/dashboard`);
 }
 
 function jsonResponse(body: UnilizeDashboardPayload, status = 200): NextResponse {

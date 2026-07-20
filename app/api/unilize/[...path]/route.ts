@@ -1,17 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerAuthTokenFromRequest } from "@/lib/auth/server-token";
-import { UNILIZE_API_DEFAULT_URL } from "@/lib/constants/api-endpoints";
+import { resolveUnilizeServerBaseUrl } from "@/lib/api/resolve-server-api-url";
 import { logUnilizeEvent } from "@/lib/unilize/request-log";
 
 export const dynamic = "force-dynamic";
-
-function getUpstreamBase(): string {
-  const serverUrl = process.env.API_URL?.trim();
-  if (serverUrl?.startsWith("http")) {
-    return serverUrl.replace(/\/$/, "");
-  }
-  return UNILIZE_API_DEFAULT_URL.replace(/\/$/, "");
-}
 
 async function proxy(
   request: NextRequest,
@@ -19,7 +11,7 @@ async function proxy(
 ): Promise<NextResponse> {
   const { path } = await context.params;
   const upstreamPath = `/${path.join("/")}`;
-  const url = new URL(upstreamPath, getUpstreamBase());
+  const url = new URL(upstreamPath, `${resolveUnilizeServerBaseUrl()}/`);
   url.search = request.nextUrl.search;
 
   const method = request.method;

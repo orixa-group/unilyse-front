@@ -1,10 +1,7 @@
-import { UNILIZE_API_DEFAULT_URL } from "@/lib/constants/api-endpoints";
+import { buildUnilizeUpstreamUrl } from "@/lib/api/resolve-server-api-url";
 
 export async function fetchOpenApiSpec(): Promise<string> {
-  const base =
-    process.env.API_URL?.replace(/\/$/, "") ??
-    UNILIZE_API_DEFAULT_URL;
-  const response = await fetch(`${base}/openapi.yaml`, {
+  const response = await fetch(buildUnilizeUpstreamUrl("/openapi.yaml"), {
     next: { revalidate: 3600 },
   });
   if (!response.ok) {
