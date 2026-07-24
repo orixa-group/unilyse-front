@@ -28,7 +28,7 @@ export function DataTableShell({
           {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
         </div>
       ) : null}
-      <div className="w-full overflow-x-auto rounded-xl border">{children}</div>
+      <div className="bg-card w-full overflow-x-auto rounded-xl border border-border">{children}</div>
     </div>
   );
 }

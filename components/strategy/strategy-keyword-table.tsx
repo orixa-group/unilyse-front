@@ -10,7 +10,6 @@ import {
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { MetricHeader } from "@/components/performances/metric-header";
-import { OptimizationBadge } from "@/components/strategy/optimization-badge";
 import { SeaTierBadge } from "@/components/strategy/sea-tier-badge";
 import { StrategyRecommendationBadge } from "@/components/strategy/strategy-recommendation-badge";
 import { ShareBar } from "@/components/ui/share-bar";
@@ -22,23 +21,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  getVisibleStrategyColumns,
-  STRATEGY_COLUMN_CHANNEL,
-} from "@/lib/strategy/column-presets";
-import {
-  formatPageIntentMatch,
-  formatStrategyRecommendation,
-  STRATEGY_COLUMN_LABELS,
-} from "@/lib/strategy/format-strategy";
-import {
-  resolveStrategyAuthorityLabel,
-  resolveStrategySemanticLabel,
-} from "@/lib/strategy/resolve-bas-label";
-import {
-  pageIntentTone,
-  seoPositionTone,
-} from "@/lib/ui/metric-tone";
+import { STRATEGY_COLUMN_CHANNEL } from "@/lib/strategy/column-presets";
+import { STRATEGY_COLUMN_LABELS } from "@/lib/strategy/format-strategy";
 import {
   stickyBodyColumnClass,
   stickyFirstColumnClass,
@@ -46,7 +30,7 @@ import {
 } from "@/lib/ui/table-visual";
 import {
   formatCurrencyEur,
-  formatDecimal,
+  formatNumber,
   formatPercentValue,
 } from "@/lib/utils/formatting";
 import { cn } from "@/lib/utils/cn";
@@ -54,7 +38,6 @@ import type {
   UnilizeKeywordComparison,
   UnilizeStrategySeaTier,
 } from "@/types/strategy";
-import type { AnalysisLens } from "@/types/workspace";
 
 function formatNullablePercent(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) {
@@ -73,20 +56,6 @@ function formatNullableCurrency(value: number | null | undefined): string {
 function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
   return [
     {
-      id: "keyword",
-      accessorKey: "keyword",
-      header: () => (
-        <MetricHeader
-          label={STRATEGY_COLUMN_LABELS.keyword}
-          metricId="keyword"
-        />
-      ),
-      sortingFn: "alphanumeric",
-      cell: ({ getValue }) => (
-        <span className="font-medium">{String(getValue())}</span>
-      ),
-    },
-    {
       id: "recommendation",
       accessorKey: "recommendation",
       header: () => (
@@ -104,26 +73,37 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
       },
     },
     {
-      id: "budget_lost",
-      accessorFn: (row) => row.sea?.search_budget_lost_impression_share ?? null,
+      id: "keyword",
+      accessorKey: "keyword",
       header: () => (
         <MetricHeader
-          label={STRATEGY_COLUMN_LABELS.budget_lost}
-          metricId="budget_lost_impression_share"
+          label={STRATEGY_COLUMN_LABELS.keyword}
+          metricId="keyword"
         />
       ),
-      cell: ({ getValue }) => <ShareBar value={getValue() as number | null} />,
+      sortingFn: "alphanumeric",
+      cell: ({ getValue }) => (
+        <span className="font-medium">{String(getValue())}</span>
+      ),
     },
     {
-      id: "rank_lost",
-      accessorFn: (row) => row.sea?.search_rank_lost_impression_share ?? null,
+      id: "search_volume",
+      accessorKey: "search_volume",
       header: () => (
         <MetricHeader
-          label={STRATEGY_COLUMN_LABELS.rank_lost}
-          metricId="rank_lost_impression_share"
+          label={STRATEGY_COLUMN_LABELS.search_volume}
+          metricId="search_volume"
         />
       ),
-      cell: ({ getValue }) => <ShareBar value={getValue() as number | null} />,
+      cell: ({ getValue }) => {
+        const value = getValue() as number | null | undefined;
+        if (value === null || value === undefined || !Number.isFinite(value)) {
+          return "—";
+        }
+        return (
+          <span className="tabular-nums font-medium">{formatNumber(value)}</span>
+        );
+      },
     },
     {
       id: "ad_relevance",
@@ -198,132 +178,25 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
       cell: ({ getValue }) =>
         formatNullablePercent(getValue() as number | null),
     },
-    {
-      id: "authority_status",
-      accessorFn: (row) => resolveStrategyAuthorityLabel(row.seo),
-      header: () => (
-        <MetricHeader
-          label={STRATEGY_COLUMN_LABELS.authority_status}
-          metricId="seo_bas"
-        />
-      ),
-      cell: ({ getValue }) => {
-        const label = getValue() as string | null;
-        if (!label) {
-          return "—";
-        }
-        return <OptimizationBadge label={label} />;
-      },
-    },
-    {
-      id: "semantic_status",
-      accessorFn: (row) => resolveStrategySemanticLabel(row.seo),
-      header: () => (
-        <MetricHeader
-          label={STRATEGY_COLUMN_LABELS.semantic_status}
-          metricId="semantic_score"
-        />
-      ),
-      cell: ({ getValue }) => {
-        const label = getValue() as string | null;
-        if (!label) {
-          return "—";
-        }
-        return <OptimizationBadge label={label} />;
-      },
-    },
-    {
-      id: "position",
-      accessorFn: (row) => row.seo?.position ?? null,
-      header: () => (
-        <MetricHeader
-          label={STRATEGY_COLUMN_LABELS.position}
-          metricId="position"
-        />
-      ),
-      cell: ({ getValue }) => {
-        const value = getValue() as number | null;
-        if (value === null || !Number.isFinite(value)) {
-          return "—";
-        }
-        return (
-          <span
-            className={cn(
-              "tabular-nums rounded px-1.5 py-0.5",
-              seoPositionTone(value),
-            )}
-          >
-            {formatDecimal(value)}
-          </span>
-        );
-      },
-    },
-    {
-      id: "page_intent_match",
-      accessorFn: (row) => row.seo?.page_intent_match,
-      header: () => (
-        <MetricHeader
-          label={STRATEGY_COLUMN_LABELS.page_intent_match}
-          metricId="page_intent_match"
-        />
-      ),
-      cell: ({ getValue }) => {
-        const match = getValue() as boolean | undefined;
-        const label = formatPageIntentMatch(match);
-        if (label === "—") {
-          return label;
-        }
-        return (
-          <span
-            className={cn(
-              "rounded px-1.5 py-0.5 text-xs",
-              pageIntentTone(match === true),
-            )}
-          >
-            {label}
-          </span>
-        );
-      },
-    },
   ];
 }
 
 function isNumericColumn(columnId: string): boolean {
   return (
-    columnId !== "keyword" &&
-    columnId !== "recommendation" &&
-    columnId !== "authority_status" &&
-    columnId !== "semantic_status" &&
-    columnId !== "ad_relevance" &&
-    columnId !== "expected_ctr" &&
-    columnId !== "landing_page_ux" &&
-    columnId !== "page_intent_match" &&
-    columnId !== "budget_lost" &&
-    columnId !== "rank_lost" &&
-    columnId !== "impression_share"
+    columnId === "search_volume" ||
+    columnId === "cpc" ||
+    columnId === "conversion_rate"
   );
 }
 
 export function StrategyKeywordTable({
   rows,
-  lens,
-  extraColumns,
 }: {
   rows: UnilizeKeywordComparison[];
-  lens: AnalysisLens;
-  extraColumns: ReadonlySet<string>;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const data = useMemo(() => rows, [rows]);
-  const visibleIds = useMemo(
-    () => getVisibleStrategyColumns(lens, extraColumns),
-    [lens, extraColumns],
-  );
-  const allColumns = useMemo(() => buildColumns(), []);
-  const columns = useMemo(
-    () => allColumns.filter((col) => visibleIds.includes(col.id ?? "")),
-    [allColumns, visibleIds],
-  );
+  const columns = useMemo(() => buildColumns(), []);
 
   // eslint-disable-next-line react-hooks/incompatible-library -- useReactTable
   const table = useReactTable({
@@ -347,18 +220,22 @@ export function StrategyKeywordTable({
     <Table>
       <TableHeader>
         {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id} className="bg-muted/20 hover:bg-muted/20">
+          <TableRow key={headerGroup.id} className="bg-muted hover:bg-muted">
             {headerGroup.headers.map((header) => {
               const columnId = header.column.id;
               const numeric = isNumericColumn(columnId);
-              const channel = STRATEGY_COLUMN_CHANNEL[columnId] ?? "common";
+              const channel =
+                STRATEGY_COLUMN_CHANNEL[
+                  columnId as keyof typeof STRATEGY_COLUMN_CHANNEL
+                ] ?? "common";
               return (
                 <TableHead
                   key={header.id}
                   className={cn(
                     numeric && "text-right whitespace-nowrap",
                     channel !== "common" && STRATEGY_CHANNEL_HEAD_CLASS[channel],
-                    columnId === "keyword" && stickyFirstColumnClass("header"),
+                    columnId === "recommendation" &&
+                      stickyFirstColumnClass("header"),
                   )}
                 >
                   {header.isPlaceholder ? null : header.column.getCanSort() ? (
@@ -396,12 +273,15 @@ export function StrategyKeywordTable({
         {table.getRowModel().rows.map((row, rowIndex) => (
           <TableRow
             key={row.id}
-            className={cn(rowIndex % 2 === 1 && "bg-muted/15")}
+            className={cn(rowIndex % 2 === 1 && "bg-muted/40")}
           >
             {row.getVisibleCells().map((cell) => {
               const columnId = cell.column.id;
-              const channel = STRATEGY_COLUMN_CHANNEL[columnId] ?? "common";
-              const sticky = columnId === "keyword";
+              const channel =
+                STRATEGY_COLUMN_CHANNEL[
+                  columnId as keyof typeof STRATEGY_COLUMN_CHANNEL
+                ] ?? "common";
+              const sticky = columnId === "recommendation";
               return (
                 <TableCell
                   key={cell.id}

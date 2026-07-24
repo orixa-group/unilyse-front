@@ -4,9 +4,9 @@ import { cn } from "@/lib/utils/cn";
 const surfaceVariants = cva("rounded-xl", {
   variants: {
     variant: {
-      default: "border bg-card shadow-sm",
-      muted: "bg-muted/30 border",
-      dashed: "border border-dashed bg-muted/30",
+      default: "border border-border bg-card",
+      muted: "bg-muted/60 border border-border",
+      dashed: "border border-dashed border-border bg-muted/60",
     },
     padding: {
       none: "",

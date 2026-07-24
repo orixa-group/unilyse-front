@@ -37,18 +37,12 @@ export const STRATEGY_COLUMN_LABELS = {
   keyword: "Mot-clé",
   recommendation: "Recommandation",
   search_volume: "Volume rech.",
-  budget_lost: "Impr. perdues (budget)",
-  rank_lost: "Impr. perdues (rank)",
   ad_relevance: "Pertinence annonce",
   expected_ctr: "CTR attendu",
   landing_page_ux: "Expérience landing",
   impression_share: "Part d'impressions",
   cpc: "CPC",
   conversion_rate: "Taux de conversion",
-  authority_status: "Statut autorité",
-  semantic_status: "Statut sémantique",
-  position: "Position SEO",
-  page_intent_match: "Correspondance d'intention",
 } as const;
 
 export const OPPORTUNITY_QUADRANT_LABELS = {
@@ -88,11 +82,4 @@ export function formatStrategySeaTier(
     return "—";
   }
   return TIER_LABELS[key] ?? value ?? "—";
-}
-
-export function formatPageIntentMatch(value: boolean | null | undefined): string {
-  if (value === null || value === undefined) {
-    return "—";
-  }
-  return value ? "Oui" : "Non";
 }

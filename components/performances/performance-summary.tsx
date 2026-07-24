@@ -15,7 +15,7 @@ export function PerformanceSummary({
   const seaTargetCount = monitoring.filter((row) => row.status === "target").length;
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard label="Mots-clés" value={metrics.keywordCount} />
       <StatCard
         label="Impr. perdues (budget)"

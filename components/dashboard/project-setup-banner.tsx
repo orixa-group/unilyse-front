@@ -33,7 +33,7 @@ function ChecklistItem({
         <HugeiconsIcon
           icon={CheckmarkCircle02Icon}
           size={16}
-          className="text-emerald-600 dark:text-emerald-400 shrink-0"
+          className="text-success shrink-0"
           color="currentColor"
           strokeWidth={1.5}
         />

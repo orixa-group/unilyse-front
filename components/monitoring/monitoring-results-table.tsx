@@ -113,7 +113,7 @@ export function MonitoringResultsTable({
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="bg-muted/20 hover:bg-muted/20">
+            <TableRow key={headerGroup.id} className="bg-muted hover:bg-muted">
               {headerGroup.headers.map((header) => {
                 const numeric = isNumericColumn(header.column.id);
                 const sticky = header.column.id === "keyword";
@@ -163,7 +163,7 @@ export function MonitoringResultsTable({
               <TableRow
                 key={row.id}
                 className={cn(
-                  rowIndex % 2 === 1 && "bg-muted/15",
+                  rowIndex % 2 === 1 && "bg-muted/40",
                   isTarget && "border-l-2 border-l-success bg-success/5",
                 )}
               >

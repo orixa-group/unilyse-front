@@ -48,16 +48,15 @@ export type StickyColumnTone = "header" | "default" | "striped" | "highlight";
 
 /** Position et ombre pour la première colonne figée au scroll horizontal. */
 export const STICKY_COLUMN_POSITION =
-  "sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.4)]";
+  "sticky left-0 z-20 dark:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.4)]";
 
 const STICKY_COLUMN_BG: Record<StickyColumnTone, string> = {
-  header:
-    "bg-[color-mix(in_srgb,hsl(var(--muted))_20%,hsl(var(--background)))]",
-  default: "bg-background",
+  header: "bg-muted",
+  default: "bg-card",
   striped:
-    "bg-[color-mix(in_srgb,hsl(var(--muted))_15%,hsl(var(--background)))]",
+    "bg-[color-mix(in_srgb,hsl(var(--muted))_40%,hsl(var(--card)))]",
   highlight:
-    "bg-[color-mix(in_srgb,hsl(var(--success))_8%,hsl(var(--background)))]",
+    "bg-[color-mix(in_srgb,hsl(var(--success))_12%,hsl(var(--card)))]",
 };
 
 export function stickyFirstColumnClass(tone: StickyColumnTone): string {

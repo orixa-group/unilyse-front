@@ -427,8 +427,7 @@ export function DashboardView() {
   if (isLoading) {
     return (
       <div className="space-y-4" aria-busy="true" aria-label="Chargement">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <LoadingSkeleton className="h-20 w-full" />
+        <div className="grid gap-3 sm:grid-cols-2">
           <LoadingSkeleton className="h-20 w-full" />
           <LoadingSkeleton className="h-20 w-full" />
         </div>
@@ -548,8 +547,6 @@ export function DashboardView() {
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {filteredProjects.map((project) => {
               const queryIndex = projectQueryIndexById.get(project.id) ?? 0;
-              const readiness =
-                readinessByProjectId.get(project.id) ?? "setup_required";
 
               return (
                 <ProjectCard
@@ -557,7 +554,6 @@ export function DashboardView() {
                   project={project}
                   queryIndex={queryIndex}
                   projectDetailsQueries={projectDetailsQueries}
-                  readiness={readiness}
                   isBusy={isBusy}
                   onEditKeywords={(p) => {
                     setProjectForKeywords(p);

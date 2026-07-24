@@ -3,6 +3,7 @@
 import { BffErrorAlert } from "@/components/common/bff-error-alert";
 import { LoadingSkeleton } from "@/components/common/loading-skeleton";
 import { TableSkeleton } from "@/components/common/table-skeleton";
+import { PerformancePeriodPicker } from "@/components/performances/performance-period-picker";
 import { PerformanceResultsTable } from "@/components/performances/performance-results-table";
 import { PerformanceSummary } from "@/components/performances/performance-summary";
 import { usePerformances } from "@/hooks/use-performances-api";
@@ -34,7 +35,10 @@ export function PerformancesView() {
   if (isPerformancesLoading && !performancesResult) {
     return (
       <div className="space-y-3" aria-busy="true">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="flex justify-end">
+          <LoadingSkeleton className="h-8 w-48" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <LoadingSkeleton key={i} className="h-20 w-full" />
           ))}
@@ -56,6 +60,9 @@ export function PerformancesView() {
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <PerformancePeriodPicker />
+      </div>
       <PerformanceSummary rows={performances} monitoring={monitoring} />
       <PerformanceResultsTable rows={performances} />
     </div>

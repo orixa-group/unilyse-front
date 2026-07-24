@@ -2,12 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { PageShell } from "@/components/layout/page-shell";
-import {
-  getLensDescription,
-  getPageMetaForPath,
-} from "@/config/site.config";
-import { ROUTES } from "@/lib/constants/routes";
-import { useSelectionStore } from "@/stores/selection.store";
+import { getPageMetaForPath } from "@/config/site.config";
 
 export function AppPage({
   children,
@@ -19,17 +14,12 @@ export function AppPage({
   actions?: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const analysisLens = useSelectionStore((s) => s.analysisLens);
   const meta = getPageMetaForPath(pathname);
-  const description =
-    pathname === ROUTES.STRATEGY || pathname.startsWith(`${ROUTES.STRATEGY}/`)
-      ? getLensDescription(pathname, analysisLens)
-      : meta.description;
 
   return (
     <PageShell
       title={meta.title}
-      description={description}
+      description={meta.description}
       requiresContext={meta.requiresContext}
       insights={insights}
       actions={actions}

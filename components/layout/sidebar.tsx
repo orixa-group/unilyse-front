@@ -39,7 +39,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "border-border bg-muted/20 flex h-full shrink-0 flex-col border-r transition-[width] duration-200 ease-out",
+        "border-border bg-background flex h-full shrink-0 flex-col border-r dark:shadow-[4px_0_20px_-6px_rgba(40,20,80,0.45)] transition-[width] duration-200 ease-out",
         collapsed ? "w-16" : "w-64",
       )}
     >
@@ -52,7 +52,7 @@ export function Sidebar() {
         <Link
           href={ROUTES.DASHBOARD}
           className={cn(
-            "text-foreground hover:bg-background/80 flex min-w-0 items-center gap-2 rounded-md p-1.5 transition-colors",
+            "text-foreground hover:bg-accent flex min-w-0 items-center gap-2 rounded-md p-1.5 transition-colors",
             collapsed ? "justify-center" : "justify-start",
           )}
           title={siteConfig.name}
@@ -104,10 +104,10 @@ export function Sidebar() {
                   href={item.href}
                   title={collapsed ? item.label : undefined}
                   className={cn(
-                    "flex items-center gap-3 rounded-md px-2 py-2 text-sm transition-colors",
+                    "flex items-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors",
                     active
-                      ? "bg-background text-foreground border shadow-sm"
-                      : "text-muted-foreground hover:bg-background/80 hover:text-foreground",
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
                     collapsed && "justify-center px-0",
                   )}
                 >
@@ -137,14 +137,20 @@ export function Sidebar() {
         {user ? (
           <div className={cn("space-y-2", collapsed && "flex flex-col items-center")}>
             {!collapsed ? (
-              <p className="text-muted-foreground truncate px-1 text-xs">
+              <p className="text-muted-foreground truncate px-1 text-xs text-center">
                 {user.email ?? user.displayName ?? "Compte connecté"}
               </p>
             ) : null}
             <Button
               type="button"
-              variant="outline"
-              className={cn("w-full", collapsed && "px-0")}
+              variant="destructiveOutline"
+              size={collapsed ? "icon" : "sm"}
+              className={cn(
+                "bg-destructive/20 hover:bg-destructive/30 rounded-lg text-destructive",
+                collapsed
+                  ? "size-10 shrink-0"
+                  : "w-full justify-center",
+              )}
               aria-label="Déconnexion"
               title="Déconnexion"
               disabled={authLoading}
@@ -158,14 +164,26 @@ export function Sidebar() {
                   strokeWidth={1.5}
                 />
               ) : (
-                "Déconnexion"
+                <>
+                  <HugeiconsIcon
+                    icon={Logout02Icon}
+                    size={16}
+                    color="currentColor"
+                    strokeWidth={1.5}
+                  />
+                  Déconnexion
+                </>
               )}
             </Button>
           </div>
         ) : configured ? (
           <Button
             variant="outline"
-            className={cn("w-full", collapsed && "px-0")}
+            size={collapsed ? "icon" : "default"}
+            className={cn(
+              "rounded-lg",
+              collapsed ? "size-10 shrink-0" : "w-full",
+            )}
             asChild
             title="Connexion"
           >

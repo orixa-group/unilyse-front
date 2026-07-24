@@ -3,6 +3,8 @@ export const ROUTES = {
   DASHBOARD: "/dashboard",
   PERFORMANCES: "/performances",
   STRATEGY: "/strategie",
+  STRATEGY_NETLINKING: "/strategie/netlinking",
+  STRATEGY_CONTENT: "/strategie/contenu",
   MONITORING: "/monitoring",
   SIGN_IN: "/sign-in",
   SIGN_UP: "/sign-up",

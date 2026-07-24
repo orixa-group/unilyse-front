@@ -42,7 +42,7 @@ export interface AutocompleteProps {
 }
 
 const selectTriggerClassName =
-  "flex h-9 w-full items-center justify-between gap-2 whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+  "flex h-9 w-full items-center justify-between gap-2 whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 export function Autocomplete({
   options,
@@ -297,7 +297,7 @@ export function Autocomplete({
         <button
           type="button"
           aria-label={`${clearLabel} — effacer la sélection`}
-          className="text-muted-foreground hover:text-foreground border-input flex h-9 shrink-0 items-center justify-center rounded-md border bg-transparent px-2 shadow-sm transition-colors hover:bg-accent/50 disabled:pointer-events-none disabled:opacity-50"
+          className="text-muted-foreground hover:text-foreground border-input flex h-9 shrink-0 items-center justify-center rounded-md border bg-transparent px-2 transition-colors hover:bg-accent/50 disabled:pointer-events-none disabled:opacity-50"
           onClick={handleClear}
         >
           <HugeiconsIcon

@@ -7,7 +7,6 @@ import {
   MoreHorizontalIcon,
 } from "@hugeicons/core-free-icons";
 import { ProjectCoverArt } from "@/components/dashboard/project-cover-art";
-import { ProjectReadinessBadge } from "@/components/dashboard/project-readiness-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,8 +23,6 @@ import {
 } from "@/lib/api/error-messages";
 import type { useProjectsDetails } from "@/hooks/use-unilize-api";
 import { isQueryInitialLoading } from "@/lib/unilize/query-display";
-import type { ProjectReadiness } from "@/lib/projects/project-readiness";
-import { cn } from "@/lib/utils/cn";
 import type { UnilizeProject } from "@/types/unilize";
 
 const MAX_VISIBLE_KEYWORDS = 4;
@@ -78,9 +75,9 @@ function ProjectActionsMenu({
       <DropdownMenuTrigger asChild>
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="icon"
-          className="h-8 w-8 shrink-0"
+          className="shrink-0 rounded-lg"
           disabled={isBusy}
           title="Actions du projet"
           aria-label={`Actions pour ${project.name}`}
@@ -225,7 +222,6 @@ export function ProjectCard({
   project,
   queryIndex,
   projectDetailsQueries,
-  readiness,
   isBusy,
   onEditKeywords,
   onDelete,
@@ -233,7 +229,6 @@ export function ProjectCard({
   project: UnilizeProject;
   queryIndex: number;
   projectDetailsQueries: ReturnType<typeof useProjectsDetails>;
-  readiness: ProjectReadiness;
   isBusy: boolean;
   onEditKeywords: (project: UnilizeProject) => void;
   onDelete: (project: UnilizeProject) => void;
@@ -250,19 +245,9 @@ export function ProjectCard({
 
   const keywords =
     detailsQuery?.data?.project?.keywords ?? project.keywords ?? [];
-  const showSetupBorder = readiness === "setup_required";
 
   return (
-    <article
-      className={cn(
-        "bg-card relative flex h-full flex-col overflow-hidden rounded-xl border shadow-sm hover:translate-y-[-1px] hover:translate-x-[-1px] transition-transform duration-100",
-        showSetupBorder && "border-warning/40",
-      )}
-    >
-      <div className="absolute top-2 right-2 z-10">
-        <ProjectReadinessBadge readiness={readiness} />
-      </div>
-
+    <article className="bg-card relative flex h-full flex-col overflow-hidden rounded-xl border border-border transition-transform duration-100 hover:translate-x-[-1px] hover:translate-y-[-1px]">
       <ProjectCoverArt projectId={project.id} />
 
       <div className="flex min-h-[9rem] flex-1 flex-col gap-3 p-4">

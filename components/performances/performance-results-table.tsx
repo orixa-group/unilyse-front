@@ -10,9 +10,9 @@ import {
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { MetricHeader } from "@/components/performances/metric-header";
+import { PerformanceColumnMenu } from "@/components/performances/performance-column-menu";
 import { ShareBar } from "@/components/ui/share-bar";
 import { DataTableShell } from "@/components/ui/data-table-shell";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import {
   isPerformanceColumnVisible,
+  resolvePerformanceVisibleColumns,
 } from "@/lib/performances/column-presets";
 import {
   stickyBodyColumnClass,
@@ -34,6 +35,7 @@ import {
   formatNumber,
 } from "@/lib/utils/formatting";
 import { cn } from "@/lib/utils/cn";
+import { useSelectionStore } from "@/stores/selection.store";
 import type { UnilizePerformance } from "@/types/performance";
 
 function formatApiPercent(value: number): string {
@@ -239,16 +241,28 @@ export function PerformanceResultsTable({
   rows: UnilizePerformance[];
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [showAllColumns, setShowAllColumns] = useState(false);
+  const performanceVisibleColumns = useSelectionStore(
+    (s) => s.performanceVisibleColumns,
+  );
+  const setPerformanceVisibleColumn = useSelectionStore(
+    (s) => s.setPerformanceVisibleColumn,
+  );
+  const resetPerformanceVisibleColumns = useSelectionStore(
+    (s) => s.resetPerformanceVisibleColumns,
+  );
+  const visibleColumnSet = useMemo(
+    () => resolvePerformanceVisibleColumns(performanceVisibleColumns),
+    [performanceVisibleColumns],
+  );
   const data = useMemo(() => rows, [rows]);
   const allColumns = useMemo(() => buildColumns(), []);
 
   const columns = useMemo(
     () =>
       allColumns.filter((col) =>
-        isPerformanceColumnVisible(col.id ?? "", showAllColumns),
+        isPerformanceColumnVisible(col.id ?? "", visibleColumnSet),
       ),
-    [allColumns, showAllColumns],
+    [allColumns, visibleColumnSet],
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library -- useReactTable
@@ -264,7 +278,7 @@ export function PerformanceResultsTable({
   if (rows.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
-        Aucune performance enregistrée pour cette combinaison projet / campagne.
+        Aucune performance enregistrée pour ce projet.
       </p>
     );
   }
@@ -272,20 +286,17 @@ export function PerformanceResultsTable({
   return (
     <DataTableShell
       actions={
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setShowAllColumns((v) => !v)}
-        >
-          {showAllColumns ? "Colonnes essentielles" : "Toutes les colonnes"}
-        </Button>
+        <PerformanceColumnMenu
+          visibleColumns={visibleColumnSet}
+          onToggleColumn={setPerformanceVisibleColumn}
+          onReset={resetPerformanceVisibleColumns}
+        />
       }
     >
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="bg-muted/20 hover:bg-muted/20">
+            <TableRow key={headerGroup.id} className="bg-muted hover:bg-muted">
               {headerGroup.headers.map((header) => {
                 const columnId = header.column.id;
                 const numeric = isNumericColumn(columnId);
@@ -333,7 +344,7 @@ export function PerformanceResultsTable({
           {table.getRowModel().rows.map((row, rowIndex) => (
             <TableRow
               key={row.id}
-              className={cn(rowIndex % 2 === 1 && "bg-muted/15")}
+              className={cn(rowIndex % 2 === 1 && "bg-muted/40")}
             >
               {row.getVisibleCells().map((cell) => {
                 const columnId = cell.column.id;

@@ -26,8 +26,8 @@ export function StatCard({
           ? "border-warning/50 bg-warning/10"
           : tone === "success"
             ? "border-success/50 bg-success/10"
-            : "bg-muted/30",
-        href && "transition-colors hover:bg-muted/40",
+            : "bg-card border-border",
+        href && "transition-colors hover:bg-accent/50",
         className,
       )}
     >

@@ -3,7 +3,13 @@
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Add01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
+import {
+  Add01Icon,
+  Building02Icon,
+  Delete02Icon,
+  Folder02Icon,
+  Loading03Icon,
+} from "@hugeicons/core-free-icons";
 import {
   createClientAction,
   deleteClientAction,
@@ -68,10 +74,6 @@ export function WorkspaceContextBar() {
     isSelectorsLoading,
     isContextFetching,
   } = useProjectContext();
-
-  const periodFrom = useSelectionStore((s) => s.periodFrom);
-  const periodTo = useSelectionStore((s) => s.periodTo);
-  const setPeriod = useSelectionStore((s) => s.setPeriod);
 
   const [createState, createFormAction, isCreatePending] = useActionState(
     createClientAction,
@@ -141,7 +143,7 @@ export function WorkspaceContextBar() {
 
   if (!hasHydrated || (isClientsPending && clients.length === 0)) {
     return (
-      <header className="bg-background/80 shrink-0 border-b backdrop-blur">
+      <header className="bg-secondary shrink-0 border-b">
         <div className="px-4 py-3 md:px-6">
           <LoadingSkeleton className="h-9 w-full max-w-4xl" />
         </div>
@@ -150,113 +152,115 @@ export function WorkspaceContextBar() {
   }
 
   return (
-    <header className="bg-background/80 supports-[backdrop-filter]:bg-background/60 shrink-0 border-b backdrop-blur">
+    <header className="bg-secondary shrink-0 border-b">
       <div className="space-y-3 px-4 py-3 md:px-6">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2">
-            <div className="flex min-w-0 items-center gap-1">
-              <Autocomplete
-                id="workspace-client"
-                className="min-w-0 flex-1"
-                options={clientOptions}
-                value={selectedClientId}
-                onValueChange={setSelectedClientId}
-                clearable
-                clearLabel="Aucun client"
-                placeholder="Client"
-                searchPlaceholder="Rechercher un client…"
-                emptyMessage="Aucun client"
-                noResultsMessage="Aucun client trouvé"
-                disabled={clients.length === 0 || isBusy}
-                aria-label="Sélectionner un client"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => setCreateDialogOpen(true)}
-                disabled={isBusy}
-                aria-label="Créer un client"
+          <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="workspace-client"
+                className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium"
               >
-                <HugeiconsIcon icon={Add01Icon} size={16} color="currentColor" strokeWidth={1.5} />
-              </Button>
-              <Button
-                type="button"
-                variant="destructiveOutline"
-                size="icon"
-                onClick={() => setDeleteDialogOpen(true)}
-                disabled={!selectedClientId || isBusy}
-                aria-label="Supprimer le client"
-              >
-                <HugeiconsIcon icon={Delete02Icon} size={16} color="currentColor" strokeWidth={1.5} />
-              </Button>
+                <HugeiconsIcon
+                  icon={Building02Icon}
+                  size={14}
+                  color="currentColor"
+                  strokeWidth={1.5}
+                />
+                Client
+              </Label>
+              <div className="flex min-w-0 items-center gap-1">
+                <Autocomplete
+                  id="workspace-client"
+                  className="min-w-0 flex-1"
+                  options={clientOptions}
+                  value={selectedClientId}
+                  onValueChange={setSelectedClientId}
+                  clearable
+                  clearLabel="Aucun client"
+                  placeholder="Sélectionner un client"
+                  searchPlaceholder="Rechercher un client…"
+                  emptyMessage="Aucun client"
+                  noResultsMessage="Aucun client trouvé"
+                  disabled={clients.length === 0 || isBusy}
+                  aria-label="Sélectionner un client"
+                />
+                <Button
+                  type="button"
+                  variant="default"
+                  size="icon"
+                  className="rounded-lg"
+                  onClick={() => setCreateDialogOpen(true)}
+                  disabled={isBusy}
+                  aria-label="Créer un client"
+                >
+                  <HugeiconsIcon icon={Add01Icon} size={16} color="currentColor" strokeWidth={1.5} />
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  className="text-muted-foreground hover:text-destructive hover:border-destructive/40 rounded-lg"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  disabled={!selectedClientId || isBusy}
+                  aria-label="Supprimer le client"
+                >
+                  <HugeiconsIcon icon={Delete02Icon} size={16} color="currentColor" strokeWidth={1.5} />
+                </Button>
+              </div>
             </div>
 
-            <Autocomplete
-              id="workspace-project"
-              options={projectOptions}
-              value={selectedProjectId}
-              onValueChange={setSelectedProjectId}
-              clearable
-              clearLabel="Aucun projet"
-              placeholder="Projet"
-              searchPlaceholder="Rechercher un projet…"
-              emptyMessage={
-                selectedClientId ? "Aucun projet" : "Sélectionnez un client"
-              }
-              noResultsMessage="Aucun projet trouvé"
-              disabled={!selectedClientId || isSelectorsLoading}
-              aria-label="Sélectionner un projet"
-            />
-          </div>
-          <div className="flex shrink-0 flex-wrap items-end gap-2">
-            <div className="space-y-1">
-              <Label htmlFor="period-from" className="text-muted-foreground text-xs">
-                Du
-              </Label>
-              <Input
-                id="period-from"
-                type="date"
-                className="h-9 w-[9.5rem]"
-                value={periodFrom ?? ""}
-                onChange={(e) =>
-                  setPeriod(e.target.value || null, periodTo)
-                }
-                aria-label="Début de période"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="period-to" className="text-muted-foreground text-xs">
-                Au
-              </Label>
-              <Input
-                id="period-to"
-                type="date"
-                className="h-9 w-[9.5rem]"
-                value={periodTo ?? ""}
-                onChange={(e) =>
-                  setPeriod(periodFrom, e.target.value || null)
-                }
-                aria-label="Fin de période"
-              />
-            </div>
-            {periodFrom || periodTo ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-9"
-                onClick={() => setPeriod(null, null)}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="workspace-project"
+                className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium"
               >
-                Réinitialiser
-              </Button>
-            ) : null}
-            {isContextFetching ? (
-              <span className="text-muted-foreground self-center text-xs">
-                Actualisation…
-              </span>
-            ) : null}
+                <HugeiconsIcon
+                  icon={Folder02Icon}
+                  size={14}
+                  color="currentColor"
+                  strokeWidth={1.5}
+                />
+                Projet
+              </Label>
+              {isSelectorsLoading && selectedClientId ? (
+                <LoadingSkeleton className="h-9 w-full" />
+              ) : (
+                <Autocomplete
+                  id="workspace-project"
+                  options={projectOptions}
+                  value={selectedProjectId}
+                  onValueChange={setSelectedProjectId}
+                  clearable
+                  clearLabel="Aucun projet"
+                  placeholder="Sélectionner un projet"
+                  searchPlaceholder="Rechercher un projet…"
+                  emptyMessage={
+                    selectedClientId ? "Aucun projet" : "Sélectionnez un client"
+                  }
+                  noResultsMessage="Aucun projet trouvé"
+                  disabled={!selectedClientId}
+                  aria-label="Sélectionner un projet"
+                />
+              )}
+            </div>
           </div>
+          {isContextFetching && !isSelectorsLoading ? (
+            <span
+              role="status"
+              aria-label="Actualisation en cours"
+              className="text-muted-foreground shrink-0 self-center"
+            >
+              <HugeiconsIcon
+                icon={Loading03Icon}
+                size={16}
+                color="currentColor"
+                strokeWidth={1.5}
+                className="animate-spin"
+                aria-hidden
+              />
+            </span>
+          ) : null}
         </div>
       </div>
 

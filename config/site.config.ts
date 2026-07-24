@@ -1,14 +1,12 @@
 import { ROUTES } from "@/lib/constants/routes";
-import type { AnalysisLens, ContextRequirement } from "@/types/workspace";
+import type { ContextRequirement } from "@/types/workspace";
 
 export type NavItem = {
   label: string;
   href: string;
   title: string;
   description: string;
-  lensHints?: Record<AnalysisLens, string>;
   requiresContext: ContextRequirement;
-  lensAffinity?: AnalysisLens[];
 };
 
 export type NavSection = {
@@ -45,13 +43,8 @@ export const siteConfig = {
           href: ROUTES.STRATEGY,
           title: "Stratégie",
           description:
-            "Recommandations SEO / SEA, écarts et opportunités par mot-clé.",
-          lensHints: {
-            sea: "Parts d'impressions perdues et indicateurs qualité annonce.",
-            seo: "Gaps sémantiques, netlinking, matrice d'opportunités et BAS.",
-          },
+            "Recommandations par mot-clé, leviers netlinking / contenu et opportunités.",
           requiresContext: "project",
-          lensAffinity: ["sea", "seo"],
         },
         {
           label: "Monitoring",
@@ -66,18 +59,41 @@ export const siteConfig = {
   ] as const satisfies NavSection[],
 } as const;
 
+/** Meta pages hors nav principale (sous-routes Stratégie, etc.). */
+const pageMetaExtras: NavItem[] = [
+  {
+    label: "Netlinking",
+    href: ROUTES.STRATEGY_NETLINKING,
+    title: "Netlinking",
+    description: "Mots-clés à travailler via le netlinking — tableau complet.",
+    requiresContext: "project",
+  },
+  {
+    label: "Contenu",
+    href: ROUTES.STRATEGY_CONTENT,
+    title: "Contenu",
+    description: "Mots-clés à travailler via le contenu — tableau complet.",
+    requiresContext: "project",
+  },
+];
+
 export const primaryNavItems = siteConfig.navSections[0]!.items;
 
 export function findNavItemByHref(href: string): NavItem | undefined {
-  for (const section of siteConfig.navSections) {
-    const item = section.items.find(
-      (entry) => href === entry.href || href.startsWith(`${entry.href}/`),
-    );
-    if (item) {
-      return item;
-    }
+  const candidates: NavItem[] = [
+    ...pageMetaExtras,
+    ...siteConfig.navSections.flatMap((section) => [...section.items]),
+  ];
+
+  const matches = candidates.filter(
+    (entry) => href === entry.href || href.startsWith(`${entry.href}/`),
+  );
+  if (matches.length === 0) {
+    return undefined;
   }
-  return undefined;
+  return matches.reduce((best, entry) =>
+    entry.href.length > best.href.length ? entry : best,
+  );
 }
 
 export function getPageMetaForPath(pathname: string): {
@@ -98,12 +114,4 @@ export function getPageMetaForPath(pathname: string): {
     description: item.description,
     requiresContext: item.requiresContext,
   };
-}
-
-export function getLensDescription(
-  pathname: string,
-  lens: AnalysisLens,
-): string {
-  const item = findNavItemByHref(pathname);
-  return item?.lensHints?.[lens] ?? item?.description ?? siteConfig.description;
 }

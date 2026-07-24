@@ -108,7 +108,7 @@ function OpportunityQuadrantTable({
   });
 
   return (
-    <div className="bg-muted/20 space-y-2 rounded-xl border p-4">
+    <div className="bg-card space-y-2 rounded-xl border border-border p-4">
       <div>
         <h3 className="text-sm font-semibold">
           {OPPORTUNITY_QUADRANT_LABELS[quadrant]}
@@ -120,7 +120,7 @@ function OpportunityQuadrantTable({
       {rows.length === 0 ? (
         <p className="text-muted-foreground text-sm">Aucun mot-clé.</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border bg-background">
+        <div className="overflow-x-auto rounded-lg border bg-secondary">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (

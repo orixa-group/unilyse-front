@@ -1,20 +1,16 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { AnalysisLens } from "@/types/workspace";
+import { DEFAULT_PERFORMANCE_VISIBLE_COLUMNS } from "@/lib/performances/column-presets";
 
 interface SelectionState {
   selectedClientId: string | null;
   setSelectedClientId: (id: string | null) => void;
   selectedProjectId: string | null;
   setSelectedProjectId: (id: string | null) => void;
-  analysisLens: AnalysisLens;
-  setAnalysisLens: (lens: AnalysisLens) => void;
-  strategyExtraColumns: Record<AnalysisLens, string[]>;
-  setStrategyExtraColumn: (
-    lens: AnalysisLens,
-    columnId: string,
-    checked: boolean,
-  ) => void;
+  /** Colonnes Performances visibles (`null` = défaut essentielles). */
+  performanceVisibleColumns: string[] | null;
+  setPerformanceVisibleColumn: (columnId: string, checked: boolean) => void;
+  resetPerformanceVisibleColumns: () => void;
   /** Période analytics optionnelle (YYYY-MM-DD). */
   periodFrom: string | null;
   periodTo: string | null;
@@ -34,24 +30,21 @@ export const useSelectionStore = create<SelectionState>()(
         }),
       selectedProjectId: null,
       setSelectedProjectId: (id) => set({ selectedProjectId: id }),
-      analysisLens: "sea",
-      setAnalysisLens: (lens) => set({ analysisLens: lens }),
-      strategyExtraColumns: { sea: [], seo: [] },
-      setStrategyExtraColumn: (lens, columnId, checked) =>
+      performanceVisibleColumns: null,
+      setPerformanceVisibleColumn: (columnId, checked) =>
         set((state) => {
-          const current = state.strategyExtraColumns[lens];
+          const current =
+            state.performanceVisibleColumns ??
+            [...DEFAULT_PERFORMANCE_VISIBLE_COLUMNS];
           const next = checked
             ? current.includes(columnId)
               ? current
               : [...current, columnId]
             : current.filter((id) => id !== columnId);
-          return {
-            strategyExtraColumns: {
-              ...state.strategyExtraColumns,
-              [lens]: next,
-            },
-          };
+          return { performanceVisibleColumns: next };
         }),
+      resetPerformanceVisibleColumns: () =>
+        set({ performanceVisibleColumns: null }),
       periodFrom: null,
       periodTo: null,
       setPeriod: (from, to) => set({ periodFrom: from, periodTo: to }),
@@ -63,19 +56,14 @@ export const useSelectionStore = create<SelectionState>()(
       partialize: (state) => ({
         selectedClientId: state.selectedClientId,
         selectedProjectId: state.selectedProjectId,
-        analysisLens: state.analysisLens,
-        strategyExtraColumns: state.strategyExtraColumns,
+        performanceVisibleColumns: state.performanceVisibleColumns,
         periodFrom: state.periodFrom,
         periodTo: state.periodTo,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          const stored = state.analysisLens as string;
-          if (stored === "hybrid" || (stored !== "sea" && stored !== "seo")) {
-            state.setAnalysisLens("sea");
-          }
-          if (!state.strategyExtraColumns) {
-            state.strategyExtraColumns = { sea: [], seo: [] };
+          if (state.performanceVisibleColumns === undefined) {
+            state.performanceVisibleColumns = null;
           }
           state.setHasHydrated(true);
         }
