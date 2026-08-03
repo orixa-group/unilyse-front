@@ -31,6 +31,8 @@
   --input: 0 0% 89.8%;
   --ring: 254 91% 63%;
   --radius: 0.75rem;
+  /* Hauteur commune logo sidebar ↔ barre contexte (traits alignés). */
+  --app-header-height: 5.5rem;
 }
 
 /*

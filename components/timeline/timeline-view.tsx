@@ -21,6 +21,8 @@ import { LoadingSkeleton } from "@/components/common/loading-skeleton";
 import { PerformancePeriodPicker } from "@/components/performances/performance-period-picker";
 import { Autocomplete } from "@/components/ui/autocomplete";
 import { Button } from "@/components/ui/button";
+import { ChartLegend } from "@/components/ui/chart-legend";
+import { ChartTooltip } from "@/components/ui/chart-tooltip";
 import { StatCard } from "@/components/ui/stat-card";
 import {
   useTimeline,
@@ -35,6 +37,16 @@ import {
   formatNumber,
   formatPercentValue,
 } from "@/lib/utils/formatting";
+import {
+  CHART_CONV,
+  CHART_COST,
+  CHART_CTR,
+  CHART_SEA,
+  CHART_SEA_SESSIONS,
+  CHART_SEO,
+  CHART_SEO_SESSIONS,
+  CHART_TICK,
+} from "@/lib/ui/chart-theme";
 import { cn } from "@/lib/utils/cn";
 import type {
   UnilizeTimelineCtrBudgetPoint,
@@ -42,13 +54,6 @@ import type {
 } from "@/types/timeline";
 
 type CanalFilter = "all" | "seo" | "sea";
-
-const CHART_SEA = "hsl(var(--chart-1))";
-const CHART_SEO = "hsl(var(--chart-2))";
-const CHART_CONV = "hsl(var(--chart-3))";
-const CHART_SESSIONS = "hsl(var(--muted-foreground) / 0.45)";
-const CHART_CTR = "hsl(var(--chart-4))";
-const CHART_COST = "hsl(var(--chart-5))";
 
 function formatAxisDate(value: string): string {
   try {
@@ -306,13 +311,20 @@ export function TimelineView() {
               <XAxis
                 dataKey="date"
                 tickFormatter={formatAxisDate}
-                tick={{ fontSize: 11 }}
+                tick={CHART_TICK}
               />
-              <YAxis tick={{ fontSize: 11 }} />
+              <YAxis tick={CHART_TICK} />
               <Tooltip
-                labelFormatter={(label) => formatTooltipDate(String(label))}
+                content={(props) => (
+                  <ChartTooltip
+                    {...props}
+                    labelFormatter={(label) =>
+                      formatTooltipDate(String(label))
+                    }
+                  />
+                )}
               />
-              <Legend />
+              <Legend content={<ChartLegend />} />
               <Bar
                 dataKey="seaClicks"
                 name="Clics SEA"
@@ -329,7 +341,8 @@ export function TimelineView() {
                 type="monotone"
                 dataKey="seaSessions"
                 name="Sessions SEA"
-                stroke={CHART_SESSIONS}
+                stroke={CHART_SEA_SESSIONS}
+                strokeWidth={2}
                 strokeDasharray="4 4"
                 dot={false}
               />
@@ -337,7 +350,8 @@ export function TimelineView() {
                 type="monotone"
                 dataKey="seoSessions"
                 name="Sessions SEO"
-                stroke={CHART_SESSIONS}
+                stroke={CHART_SEO_SESSIONS}
+                strokeWidth={2}
                 dot={false}
               />
             </ComposedChart>
@@ -351,13 +365,20 @@ export function TimelineView() {
               <XAxis
                 dataKey="date"
                 tickFormatter={formatAxisDate}
-                tick={{ fontSize: 11 }}
+                tick={CHART_TICK}
               />
-              <YAxis tick={{ fontSize: 11 }} />
+              <YAxis tick={CHART_TICK} />
               <Tooltip
-                labelFormatter={(label) => formatTooltipDate(String(label))}
+                content={(props) => (
+                  <ChartTooltip
+                    {...props}
+                    labelFormatter={(label) =>
+                      formatTooltipDate(String(label))
+                    }
+                  />
+                )}
               />
-              <Legend />
+              <Legend content={<ChartLegend />} />
               <Line
                 type="monotone"
                 dataKey="seaConversions"
@@ -449,13 +470,20 @@ export function TimelineView() {
               <XAxis
                 dataKey="date"
                 tickFormatter={formatAxisDate}
-                tick={{ fontSize: 11 }}
+                tick={CHART_TICK}
               />
-              <YAxis tick={{ fontSize: 11 }} />
+              <YAxis tick={CHART_TICK} />
               <Tooltip
-                labelFormatter={(label) => formatTooltipDate(String(label))}
+                content={(props) => (
+                  <ChartTooltip
+                    {...props}
+                    labelFormatter={(label) =>
+                      formatTooltipDate(String(label))
+                    }
+                  />
+                )}
               />
-              <Legend />
+              <Legend content={<ChartLegend />} />
               <Bar
                 dataKey="clicks"
                 name={
@@ -482,30 +510,37 @@ export function TimelineView() {
               <XAxis
                 dataKey="date"
                 tickFormatter={formatAxisDate}
-                tick={{ fontSize: 11 }}
+                tick={CHART_TICK}
               />
               <YAxis
                 yAxisId="left"
-                tick={{ fontSize: 11 }}
+                tick={CHART_TICK}
                 tickFormatter={(v) => `${v}%`}
               />
               <YAxis
                 yAxisId="right"
                 orientation="right"
-                tick={{ fontSize: 11 }}
+                tick={CHART_TICK}
                 tickFormatter={(v) => formatCurrencyEur(Number(v))}
               />
               <Tooltip
-                labelFormatter={(label) => formatTooltipDate(String(label))}
-                formatter={(value, name) => {
-                  const n = Number(value);
-                  if (name === "Coût ads") {
-                    return [formatCurrencyEur(n), name];
-                  }
-                  return [`${formatNumber(n)} %`, name];
-                }}
+                content={(props) => (
+                  <ChartTooltip
+                    {...props}
+                    labelFormatter={(label) =>
+                      formatTooltipDate(String(label))
+                    }
+                    valueFormatter={(value, name) => {
+                      const n = Number(value);
+                      if (name === "Coût ads") {
+                        return formatCurrencyEur(n);
+                      }
+                      return `${formatNumber(n)} %`;
+                    }}
+                  />
+                )}
               />
-              <Legend />
+              <Legend content={<ChartLegend />} />
               <Area
                 yAxisId="left"
                 type="monotone"

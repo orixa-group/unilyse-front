@@ -47,14 +47,16 @@ export function Sidebar() {
     >
       <div
         className={cn(
-          "border-border flex shrink-0 items-center gap-2 border-b p-2",
-          collapsed ? "flex-col" : "justify-between",
+          "border-border flex shrink-0 items-center gap-2 border-b px-2",
+          collapsed
+            ? "h-auto min-h-[var(--app-header-height)] flex-col justify-center py-2"
+            : "h-[var(--app-header-height)] justify-between",
         )}
       >
         <Link
           href={ROUTES.DASHBOARD}
           className={cn(
-            "text-foreground hover:bg-accent flex min-w-0 items-center gap-2 rounded-md p-1.5 transition-colors",
+            "text-foreground hover:bg-accent flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1 transition-colors",
             collapsed ? "justify-center" : "justify-start",
           )}
           title={siteConfig.name}

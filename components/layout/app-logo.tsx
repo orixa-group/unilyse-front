@@ -31,7 +31,7 @@ export function AppLogo({ className, compact }: AppLogoProps) {
         unoptimized
         className={cn(
           compact ? "hidden" : "dark:hidden",
-          "h-auto w-auto max-w-full object-contain object-left h-10",          
+          "h-9 w-auto max-w-full object-contain object-left",
         )}
         priority
       />
@@ -43,7 +43,7 @@ export function AppLogo({ className, compact }: AppLogoProps) {
         unoptimized
         className={cn(
           compact ? "hidden" : "dark:block",
-          "hidden h-auto w-auto max-w-full object-contain object-left h-10",          
+          "hidden h-9 w-auto max-w-full object-contain object-left",
         )}
         priority
       />

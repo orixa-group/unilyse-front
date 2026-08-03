@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar03Icon } from "@hugeicons/core-free-icons";
+import { isBefore, isSameDay } from "date-fns";
+import { fr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -22,7 +24,14 @@ import {
 } from "@/lib/performances/period-presets";
 import { useSelectionStore } from "@/stores/selection.store";
 import { cn } from "@/lib/utils/cn";
-import { fr } from "date-fns/locale";
+
+/** Ordonne deux dates en borne from/to (indépendamment de l’ordre des clics). */
+function orderedPeriod(a: Date, b: Date): { from: string; to: string } {
+  if (isBefore(b, a)) {
+    return { from: formatDateIso(b), to: formatDateIso(a) };
+  }
+  return { from: formatDateIso(a), to: formatDateIso(b) };
+}
 
 export function PerformancePeriodPicker({
   className,
@@ -49,15 +58,42 @@ export function PerformancePeriodPicker({
     setPeriod(formatDateIso(from), formatDateIso(to));
   };
 
-  const handleSelect = (range: DateRange | undefined) => {
-    if (!range?.from) {
-      setPeriod(null, null);
+  const handleSelect = (
+    _range: DateRange | undefined,
+    selectedDay: Date,
+  ) => {
+    const prevFrom = parseDateIso(periodFrom);
+    const prevTo = parseDateIso(periodTo);
+
+    // Plage déjà complète → le clic repart sur une nouvelle ancre.
+    if (prevFrom && prevTo) {
+      setPeriod(formatDateIso(selectedDay), null);
       return;
     }
-    setPeriod(
-      formatDateIso(range.from),
-      range.to ? formatDateIso(range.to) : formatDateIso(range.from),
-    );
+
+    // Une ancre déjà posée → 2e clic : from/to selon l’ordre chronologique.
+    if (prevFrom && !prevTo) {
+      if (isSameDay(selectedDay, prevFrom)) {
+        setPeriod(formatDateIso(selectedDay), formatDateIso(selectedDay));
+        return;
+      }
+      const { from, to } = orderedPeriod(prevFrom, selectedDay);
+      setPeriod(from, to);
+      return;
+    }
+
+    if (!prevFrom && prevTo) {
+      if (isSameDay(selectedDay, prevTo)) {
+        setPeriod(formatDateIso(selectedDay), formatDateIso(selectedDay));
+        return;
+      }
+      const { from, to } = orderedPeriod(selectedDay, prevTo);
+      setPeriod(from, to);
+      return;
+    }
+
+    // Aucune borne → 1er clic = ancre (from ou to selon le prochain clic).
+    setPeriod(formatDateIso(selectedDay), null);
   };
 
   return (
@@ -115,6 +151,7 @@ export function PerformancePeriodPicker({
             numberOfMonths={2}
             selected={selectedRange}
             onSelect={handleSelect}
+            resetOnSelect
             defaultMonth={selectedRange?.from ?? selectedRange?.to}
             locale={fr}
             disabled={{ after: new Date() }}

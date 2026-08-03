@@ -42,7 +42,7 @@ export interface AutocompleteProps {
 }
 
 const selectTriggerClassName =
-  "flex h-9 w-full items-center justify-between gap-2 whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+  "flex h-9 w-full min-w-0 items-center justify-between gap-2 overflow-hidden rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 export function Autocomplete({
   options,
@@ -187,10 +187,11 @@ export function Autocomplete({
           >
             <span
               className={cn(
-                "line-clamp-1 min-w-0 flex-1 text-left",
+                "min-w-0 flex-1 truncate text-left",
                 !selectedOption && !listEmpty && "text-muted-foreground",
                 listEmpty && "text-muted-foreground",
               )}
+              title={selectedOption?.label}
             >
               {triggerLabel}
             </span>
@@ -273,8 +274,9 @@ export function Autocomplete({
                   onMouseDown={(event) => event.preventDefault()}
                   onMouseEnter={() => setHighlightedIndex(index)}
                   onClick={() => handleSelect(option)}
+                  title={option.label}
                 >
-                  {option.label}
+                  <span className="min-w-0 flex-1 break-words">{option.label}</span>
                   {isSelected ? (
                     <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
                       <HugeiconsIcon

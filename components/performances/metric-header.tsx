@@ -14,7 +14,10 @@ export function MetricHeader({
     return <>{label}</>;
   }
   return (
-    <span title={tip} className="cursor-help border-b border-dotted border-muted-foreground/50">
+    <span
+      title={tip}
+      className="cursor-help border-muted-foreground/50 border-b border-dotted"
+    >
       {label}
     </span>
   );

@@ -24,6 +24,7 @@ import {
 import {
   computeGlobalCtr,
   isPerformanceColumnVisible,
+  orderPerformanceVisibleColumns,
   PERFORMANCE_COLUMN_LABELS,
   PERFORMANCE_COLUMN_PRESETS,
   resolvePerformanceVisibleColumns,
@@ -46,6 +47,24 @@ import type {
   UnilizePerformance,
 } from "@/types/performance";
 import { Badge } from "@/components/ui/badge";
+
+/** Intitulés longs : wrap autorisé pour ne pas étirer la colonne. */
+const PERFORMANCE_WRAP_HEADER_COLUMNS = new Set([
+  "budget_lost_impression_share",
+  "rank_lost_impression_share",
+  "potential_impressions_budget",
+  "potential_impressions_rank",
+  "average_position",
+  "real_time_position",
+  "netlinking_score",
+  "semantic_score",
+  "netlinking_avg",
+  "semantic_avg",
+  "semantic_max",
+  "semantic_min",
+  "collection_status",
+  "match_type",
+]);
 
 function formatApiPercent(value: number): string {
   return `${formatNumber(value, "fr-FR")} %`;
@@ -375,6 +394,30 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
       cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
     },
     {
+      id: "netlinking_score",
+      accessorFn: () => null,
+      header: () => (
+        <MetricHeader
+          label={PERFORMANCE_COLUMN_LABELS.netlinking_score}
+          metricId="netlinking_score"
+        />
+      ),
+      cell: () => "—",
+      enableSorting: false,
+    },
+    {
+      id: "semantic_score",
+      accessorFn: () => null,
+      header: () => (
+        <MetricHeader
+          label={PERFORMANCE_COLUMN_LABELS.semantic_score}
+          metricId="semantic_score"
+        />
+      ),
+      cell: () => "—",
+      enableSorting: false,
+    },
+    {
       id: "netlinking_avg",
       accessorFn: (row) => row.seo?.netlinking_competitors?.average_score ?? null,
       header: () => (
@@ -396,15 +439,29 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
       ),
       cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
     },
+    {
+      id: "semantic_max",
+      accessorFn: (row) => row.seo?.semantic_competitors?.max_score ?? null,
+      header: () => (
+        <MetricHeader
+          label={PERFORMANCE_COLUMN_LABELS.semantic_max}
+          metricId="semantic_max"
+        />
+      ),
+      cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
+    },
+    {
+      id: "semantic_min",
+      accessorFn: (row) => row.seo?.semantic_competitors?.min_score ?? null,
+      header: () => (
+        <MetricHeader
+          label={PERFORMANCE_COLUMN_LABELS.semantic_min}
+          metricId="semantic_min"
+        />
+      ),
+      cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
+    },
   ];
-}
-
-function isNumericColumn(columnId: string): boolean {
-  return (
-    columnId !== "keyword" &&
-    columnId !== "match_type" &&
-    columnId !== "collection_status"
-  );
 }
 
 export function PerformanceResultsTable({
@@ -435,14 +492,26 @@ export function PerformanceResultsTable({
   };
   const data = useMemo(() => rows, [rows]);
   const allColumns = useMemo(() => buildColumns(), []);
+  const columnsById = useMemo(() => {
+    const map = new Map<string, (typeof allColumns)[number]>();
+    for (const column of allColumns) {
+      if (column.id) map.set(column.id, column);
+    }
+    return map;
+  }, [allColumns]);
 
-  const columns = useMemo(
-    () =>
-      allColumns.filter((col) =>
+  const columns = useMemo(() => {
+    const orderedIds = [
+      "keyword",
+      ...orderPerformanceVisibleColumns(visibleColumnSet),
+    ];
+    return orderedIds
+      .map((id) => columnsById.get(id))
+      .filter((col): col is (typeof allColumns)[number] => Boolean(col))
+      .filter((col) =>
         isPerformanceColumnVisible(col.id ?? "", visibleColumnSet),
-      ),
-    [allColumns, visibleColumnSet],
-  );
+      );
+  }, [allColumns, columnsById, visibleColumnSet]);
 
   // eslint-disable-next-line react-hooks/incompatible-library -- useReactTable
   const table = useReactTable({
@@ -479,24 +548,28 @@ export function PerformanceResultsTable({
             <TableRow key={headerGroup.id} className="bg-muted hover:bg-muted">
               {headerGroup.headers.map((header) => {
                 const columnId = header.column.id;
-                const numeric = isNumericColumn(columnId);
                 const sticky = columnId === "keyword";
+                const wrapHeader = PERFORMANCE_WRAP_HEADER_COLUMNS.has(columnId);
                 return (
                   <TableHead
                     key={header.id}
                     className={cn(
-                      numeric && "text-right whitespace-nowrap",
+                      "text-foreground h-auto px-4 py-3.5 font-semibold",
+                      wrapHeader
+                        ? "max-w-[9.5rem] whitespace-normal"
+                        : "whitespace-nowrap",
+                      sticky ? "text-left" : "text-center",
                       sticky && stickyFirstColumnClass("header"),
                     )}
                   >
                     {header.isPlaceholder ? null : header.column.getCanSort() ? (
                       <button
                         type="button"
-                        className={
-                          numeric
-                            ? "inline-flex w-full cursor-pointer select-none items-center justify-end gap-1"
-                            : "cursor-pointer select-none"
-                        }
+                        className={cn(
+                          "w-full cursor-pointer select-none font-semibold",
+                          wrapHeader ? "whitespace-normal" : "whitespace-nowrap",
+                          sticky ? "text-left" : "text-center",
+                        )}
                         onClick={header.column.getToggleSortingHandler()}
                       >
                         {flexRender(
@@ -533,7 +606,8 @@ export function PerformanceResultsTable({
                   <TableCell
                     key={cell.id}
                     className={cn(
-                      isNumericColumn(columnId) && "text-right whitespace-nowrap",
+                      "px-4 py-3.5 whitespace-nowrap",
+                      sticky ? "text-left" : "text-center",
                       sticky && stickyBodyColumnClass(rowIndex),
                     )}
                   >

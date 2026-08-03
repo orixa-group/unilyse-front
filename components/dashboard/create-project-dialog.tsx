@@ -90,7 +90,7 @@ export function CreateProjectDialog({
             ID Google Ads ainsi que la propriété GA4 pour lancer la collecte.
           </DialogDescription>
         </DialogHeader>
-        <form action={createFormAction} className="space-y-4">
+        <form action={createFormAction} className="min-w-0 space-y-4">
           <input type="hidden" name="clientId" value={clientId} />
           <input type="hidden" name="url" value={selectedSiteUrl ?? ""} />
           <div className="space-y-2">
@@ -136,13 +136,14 @@ export function CreateProjectDialog({
               conversions seront synchronisées depuis cette propriété.
             </p>
           </div>
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <Label htmlFor="project-site-url">Site Search Console</Label>
             {isSitesLoading ? (
               <LoadingSkeleton className="h-9 w-full" />
             ) : (
               <Autocomplete
                 id="project-site-url"
+                className="w-full min-w-0"
                 options={siteOptions}
                 value={selectedSiteUrl}
                 onValueChange={setSelectedSiteUrl}

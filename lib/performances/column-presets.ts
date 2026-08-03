@@ -16,8 +16,10 @@ export function computeGlobalCtr(row: UnilizePerformance): number | null {
 }
 
 /**
- * Défaut PDF : vol., dépense SEA, clics SEA/SEO, CTR global/SEA/SEO,
- * conv. SEA, impr. SEA/SEO, % no clic, position moy. SEO.
+ * Essentielles (ordre PDF) :
+ * Vol. recherche, Dépense SEA, Clics SEA, Clics SEO, CTR global, CTR SEA,
+ * CTR SEO, Conversion SEA, Impression SEA, Impression SEO, % No clics,
+ * Position moyenne SEO.
  */
 export const PERFORMANCE_ESSENTIEL_COLUMNS = [
   "search_volume",
@@ -34,14 +36,8 @@ export const PERFORMANCE_ESSENTIEL_COLUMNS = [
   "average_position",
 ] as const;
 
-/** Preset SEA (optionnels PDF inclus). */
-export const PERFORMANCE_SEA_PRESET_COLUMNS = [
-  "search_volume",
-  "spend",
-  "clicks",
-  "ctr",
-  "conversions",
-  "impressions",
+/** Extras preset SEA (après les essentielles). */
+export const PERFORMANCE_SEA_EXTRA_COLUMNS = [
   "cpc",
   "roas",
   "quality_score",
@@ -49,53 +45,52 @@ export const PERFORMANCE_SEA_PRESET_COLUMNS = [
   "rank_lost_impression_share",
   "potential_impressions_budget",
   "potential_impressions_rank",
-  "no_click_rate",
 ] as const;
 
-/** Preset SEO. */
-export const PERFORMANCE_SEO_PRESET_COLUMNS = [
-  "search_volume",
-  "seo_clicks",
-  "seo_ctr",
-  "seo_impressions",
-  "ctr_global",
-  "no_click_rate",
-  "average_position",
+/**
+ * Extras preset SEO (après les essentielles).
+ * `netlinking_score` / `semantic_score` = scores projet (placeholders API).
+ */
+export const PERFORMANCE_SEO_EXTRA_COLUMNS = [
   "real_time_position",
+  "netlinking_score",
+  "semantic_score",
   "netlinking_avg",
   "semantic_avg",
+  "semantic_max",
+  "semantic_min",
+] as const;
+
+/** Preset SEA = essentielles + extras SEA. */
+export const PERFORMANCE_SEA_PRESET_COLUMNS = [
+  ...PERFORMANCE_ESSENTIEL_COLUMNS,
+  ...PERFORMANCE_SEA_EXTRA_COLUMNS,
+] as const;
+
+/** Preset SEO = essentielles + extras SEO. */
+export const PERFORMANCE_SEO_PRESET_COLUMNS = [
+  ...PERFORMANCE_ESSENTIEL_COLUMNS,
+  ...PERFORMANCE_SEO_EXTRA_COLUMNS,
 ] as const;
 
 /** @deprecated Utiliser PERFORMANCE_ESSENTIEL_COLUMNS. */
 export const PERFORMANCE_SEA_COLUMNS = PERFORMANCE_ESSENTIEL_COLUMNS;
 
-/** Colonnes basculables (hors mot-clé, toujours visible). */
-export const PERFORMANCE_TOGGLEABLE_COLUMNS = [
-  "search_volume",
-  "no_click_rate",
-  "ctr_global",
+/**
+ * Ordre d’affichage canonique (mot-clé hors toggle).
+ * Essentielles → SEA extras → SEO extras → utilitaires.
+ */
+export const PERFORMANCE_COLUMN_DISPLAY_ORDER = [
+  ...PERFORMANCE_ESSENTIEL_COLUMNS,
+  ...PERFORMANCE_SEA_EXTRA_COLUMNS,
+  ...PERFORMANCE_SEO_EXTRA_COLUMNS,
   "collection_status",
-  "impressions",
-  "clicks",
-  "spend",
-  "ctr",
-  "cpc",
-  "conversions",
-  "roas",
-  "quality_score",
   "match_type",
-  "budget_lost_impression_share",
-  "rank_lost_impression_share",
-  "potential_impressions_budget",
-  "potential_impressions_rank",
-  "seo_impressions",
-  "seo_clicks",
-  "seo_ctr",
-  "average_position",
-  "real_time_position",
-  "netlinking_avg",
-  "semantic_avg",
 ] as const;
+
+/** Colonnes basculables (hors mot-clé, toujours visible). */
+export const PERFORMANCE_TOGGLEABLE_COLUMNS =
+  PERFORMANCE_COLUMN_DISPLAY_ORDER;
 
 export type PerformanceToggleableColumnId =
   (typeof PERFORMANCE_TOGGLEABLE_COLUMNS)[number];
@@ -121,6 +116,12 @@ export const PERFORMANCE_COLUMN_PRESET_LABELS: Record<
   seo: "SEO",
 };
 
+export const PERFORMANCE_COLUMN_PRESET_ORDER: PerformanceColumnPresetId[] = [
+  "essentiel",
+  "sea",
+  "seo",
+];
+
 export const PERFORMANCE_COLUMN_LABELS: Record<string, string> = {
   keyword: "Mot-clé",
   search_volume: "Volume rech.",
@@ -138,24 +139,35 @@ export const PERFORMANCE_COLUMN_LABELS: Record<string, string> = {
   match_type: "Type de correspondance",
   budget_lost_impression_share: "Impr. perdues (budget)",
   rank_lost_impression_share: "Impr. perdues (rang)",
-  potential_impressions_budget: "Potentiel impr. (budget)",
-  potential_impressions_rank: "Potentiel impr. (rang)",
+  potential_impressions_budget: "Impr. potentielles (budget)",
+  potential_impressions_rank: "Impr. potentielles (rang)",
   seo_impressions: "Impr. SEO",
   seo_clicks: "Clics SEO",
   seo_ctr: "CTR SEO",
   average_position: "Position moy. SEO",
   real_time_position: "Position temps réel",
-  netlinking_avg: "BAS concurrents (moy.)",
-  semantic_avg: "Sémantique concurrents (moy.)",
+  netlinking_score: "Score netlinking (Babbar)",
+  semantic_score: "Score sémantique (SERPmantics)",
+  netlinking_avg: "Netlinking concurrents (moy. top 5)",
+  semantic_avg: "Sémantique concurrents (moy. top 5)",
+  semantic_max: "Sémantique max (top 5)",
+  semantic_min: "Sémantique mini (top 5)",
 };
 
 export function resolvePerformanceVisibleColumns(
   stored: string[] | null | undefined,
 ): Set<string> {
+  return new Set(resolvePerformanceVisibleColumnIds(stored));
+}
+
+/** Liste ordonnée des colonnes visibles (hors mot-clé). */
+export function resolvePerformanceVisibleColumnIds(
+  stored: string[] | null | undefined,
+): string[] {
   if (stored === null || stored === undefined) {
-    return new Set(DEFAULT_PERFORMANCE_VISIBLE_COLUMNS);
+    return [...DEFAULT_PERFORMANCE_VISIBLE_COLUMNS];
   }
-  return new Set(stored);
+  return stored.filter((id) => id !== "keyword");
 }
 
 export function isPerformanceColumnVisible(
@@ -166,6 +178,30 @@ export function isPerformanceColumnVisible(
     return true;
   }
   return visibleColumns.has(columnId);
+}
+
+/** Preset actif si l’ensemble visible correspond exactement. */
+export function matchPerformanceColumnPreset(
+  visibleColumns: ReadonlySet<string>,
+): PerformanceColumnPresetId | null {
+  for (const presetId of PERFORMANCE_COLUMN_PRESET_ORDER) {
+    const preset = PERFORMANCE_COLUMN_PRESETS[presetId];
+    if (
+      preset.length === visibleColumns.size &&
+      preset.every((id) => visibleColumns.has(id))
+    ) {
+      return presetId;
+    }
+  }
+  return null;
+}
+
+export function orderPerformanceVisibleColumns(
+  visibleColumns: ReadonlySet<string>,
+): string[] {
+  return PERFORMANCE_COLUMN_DISPLAY_ORDER.filter((id) =>
+    visibleColumns.has(id),
+  );
 }
 
 export const PERFORMANCE_COLUMN_CHANNEL: Record<string, TableChannel> = {
@@ -192,6 +228,10 @@ export const PERFORMANCE_COLUMN_CHANNEL: Record<string, TableChannel> = {
   seo_ctr: "seo",
   average_position: "seo",
   real_time_position: "seo",
+  netlinking_score: "seo",
+  semantic_score: "seo",
   netlinking_avg: "seo",
   semantic_avg: "seo",
+  semantic_max: "seo",
+  semantic_min: "seo",
 };

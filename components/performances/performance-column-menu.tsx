@@ -10,19 +10,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  DEFAULT_PERFORMANCE_VISIBLE_COLUMNS,
   PERFORMANCE_COLUMN_LABELS,
   PERFORMANCE_COLUMN_PRESET_LABELS,
-  PERFORMANCE_COLUMN_PRESETS,
+  PERFORMANCE_COLUMN_PRESET_ORDER,
   PERFORMANCE_TOGGLEABLE_COLUMNS,
+  matchPerformanceColumnPreset,
   type PerformanceColumnPresetId,
 } from "@/lib/performances/column-presets";
-
-const PRESET_ORDER: PerformanceColumnPresetId[] = [
-  "essentiel",
-  "sea",
-  "seo",
-];
+import { cn } from "@/lib/utils/cn";
 
 export function PerformanceColumnMenu({
   visibleColumns,
@@ -35,38 +30,47 @@ export function PerformanceColumnMenu({
   onApplyPreset?: (presetId: PerformanceColumnPresetId) => void;
   onReset?: () => void;
 }) {
-  const activeCount = PERFORMANCE_TOGGLEABLE_COLUMNS.filter((id) =>
-    visibleColumns.has(id),
-  ).length;
-  const isDefault =
-    activeCount === DEFAULT_PERFORMANCE_VISIBLE_COLUMNS.length &&
-    DEFAULT_PERFORMANCE_VISIBLE_COLUMNS.every((id) => visibleColumns.has(id));
+  const activePreset = matchPerformanceColumnPreset(visibleColumns);
+  const triggerLabel = activePreset
+    ? `Colonnes · ${PERFORMANCE_COLUMN_PRESET_LABELS[activePreset]}`
+    : `Colonnes (${visibleColumns.size})`;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button type="button" variant="outline" size="sm">
-          Colonnes
-          {!isDefault ? ` (${activeCount})` : ""}
+          {triggerLabel}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align="end" className="w-72">
         {onApplyPreset ? (
           <>
             <DropdownMenuLabel>Presets</DropdownMenuLabel>
-            <div className="flex flex-wrap gap-1 px-2 pb-1">
-              {PRESET_ORDER.map((presetId) => (
-                <Button
-                  key={presetId}
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="h-7 px-2 text-xs"
-                  onClick={() => onApplyPreset(presetId)}
-                >
-                  {PERFORMANCE_COLUMN_PRESET_LABELS[presetId]}
-                </Button>
-              ))}
+            <div className="flex flex-col gap-1 px-2 pb-2">
+              {PERFORMANCE_COLUMN_PRESET_ORDER.map((presetId) => {
+                const isActive = activePreset === presetId;
+                return (
+                  <Button
+                    key={presetId}
+                    type="button"
+                    size="sm"
+                    variant={isActive ? "default" : "outline"}
+                    className={cn(
+                      "h-8 w-full justify-between px-3 text-xs font-medium",
+                      isActive && "pointer-events-none",
+                    )}
+                    aria-pressed={isActive}
+                    onClick={() => onApplyPreset(presetId)}
+                  >
+                    <span>{PERFORMANCE_COLUMN_PRESET_LABELS[presetId]}</span>
+                    {isActive ? (
+                      <span className="text-[10px] font-normal opacity-90">
+                        Actif
+                      </span>
+                    ) : null}
+                  </Button>
+                );
+              })}
             </div>
             <DropdownMenuSeparator />
           </>

@@ -33,6 +33,16 @@ export const METRIC_GLOSSARY: Record<string, string> = {
     "Score d'autorité (BAS) moyen des 5 premiers concurrents classés sur ce mot-clé.",
   semantic_avg:
     "Score de contenu (sémantique) moyen des 5 premiers concurrents classés sur ce mot-clé.",
+  semantic_max:
+    "Score sémantique maximal parmi les 5 premiers concurrents classés sur ce mot-clé.",
+  semantic_min:
+    "Score sémantique minimal parmi les 5 premiers concurrents classés sur ce mot-clé.",
+  netlinking_score:
+    "Score netlinking (Babbar) du projet sur ce mot-clé — non encore exposé par l'API.",
+  semantic_score:
+    "Score sémantique (SERPmantics) du projet sur ce mot-clé — non encore exposé par l'API.",
+  ctr_global:
+    "CTR global dérivé : (clics SEA + clics SEO) / volume de recherche × 100.",
   authority_status:
     "Statut d'autorité de l'URL : Optimisé ou Sous-optimisé vs concurrents.",
   competitor_count: "Nombre d'annonceurs actifs sur ce mot-clé.",

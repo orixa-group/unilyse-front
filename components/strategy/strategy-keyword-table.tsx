@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { STRATEGY_COLUMN_CHANNEL } from "@/lib/strategy/column-presets";
 import { STRATEGY_COLUMN_LABELS } from "@/lib/strategy/format-strategy";
+import { volumeTone } from "@/lib/ui/metric-tone";
 import {
   stickyBodyColumnClass,
   stickyFirstColumnClass,
@@ -39,6 +40,32 @@ import type {
   UnilizeKeywordComparison,
   UnilizeStrategySeaTier,
 } from "@/types/strategy";
+
+/** Intitulés longs : wrap autorisé pour ne pas étirer la colonne. */
+const STRATEGY_WRAP_HEADER_COLUMNS = new Set([
+  "recommendation",
+  "sea_score",
+  "d1_volume",
+  "d2_budget",
+  "d3_conversion",
+  "d4_ad",
+  "d5_ctr",
+  "seo_position",
+  "content_label",
+  "popularity_label",
+  "e4_delay",
+  "e5_gain",
+  "s_seo_invest",
+  "ad_relevance",
+  "expected_ctr",
+  "landing_page_ux",
+  "impression_share",
+  "conversion_rate",
+  "sea_status",
+  "effort_status",
+]);
+
+const STRATEGY_LEFT_ALIGN_COLUMNS = new Set(["recommendation", "keyword"]);
 
 function formatNullablePercent(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) {
@@ -113,7 +140,9 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
           return "—";
         }
         return (
-          <span className="tabular-nums font-medium">{formatNumber(value)}</span>
+          <span className={cn("rounded px-1.5 py-0.5", volumeTone(value))}>
+            {formatNumber(value)}
+          </span>
         );
       },
     },
@@ -397,21 +426,6 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
   ];
 }
 
-function isNumericColumn(columnId: string): boolean {
-  return (
-    columnId === "search_volume" ||
-    columnId === "cpc" ||
-    columnId === "conversion_rate" ||
-    columnId === "sea_score" ||
-    columnId === "d1_volume" ||
-    columnId === "d2_budget" ||
-    columnId === "d3_conversion" ||
-    columnId === "d4_ad" ||
-    columnId === "d5_ctr" ||
-    columnId === "seo_position"
-  );
-}
-
 export function StrategyKeywordTable({
   rows,
 }: {
@@ -446,7 +460,9 @@ export function StrategyKeywordTable({
           <TableRow key={headerGroup.id} className="bg-muted hover:bg-muted">
             {headerGroup.headers.map((header) => {
               const columnId = header.column.id;
-              const numeric = isNumericColumn(columnId);
+              const sticky = columnId === "recommendation";
+              const leftAlign = STRATEGY_LEFT_ALIGN_COLUMNS.has(columnId);
+              const wrapHeader = STRATEGY_WRAP_HEADER_COLUMNS.has(columnId);
               const channel =
                 STRATEGY_COLUMN_CHANNEL[
                   columnId as keyof typeof STRATEGY_COLUMN_CHANNEL
@@ -455,20 +471,23 @@ export function StrategyKeywordTable({
                 <TableHead
                   key={header.id}
                   className={cn(
-                    numeric && "text-right whitespace-nowrap",
+                    "text-foreground h-auto px-4 py-3.5 font-semibold",
+                    wrapHeader
+                      ? "max-w-[9.5rem] whitespace-normal"
+                      : "whitespace-nowrap",
+                    leftAlign ? "text-left" : "text-center",
                     channel !== "common" && STRATEGY_CHANNEL_HEAD_CLASS[channel],
-                    columnId === "recommendation" &&
-                      stickyFirstColumnClass("header"),
+                    sticky && stickyFirstColumnClass("header"),
                   )}
                 >
                   {header.isPlaceholder ? null : header.column.getCanSort() ? (
                     <button
                       type="button"
-                      className={
-                        numeric
-                          ? "inline-flex w-full cursor-pointer select-none items-center justify-end gap-1"
-                          : "cursor-pointer select-none"
-                      }
+                      className={cn(
+                        "w-full cursor-pointer select-none font-semibold",
+                        wrapHeader ? "whitespace-normal" : "whitespace-nowrap",
+                        leftAlign ? "text-left" : "text-center",
+                      )}
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       {flexRender(
@@ -500,16 +519,18 @@ export function StrategyKeywordTable({
           >
             {row.getVisibleCells().map((cell) => {
               const columnId = cell.column.id;
+              const sticky = columnId === "recommendation";
+              const leftAlign = STRATEGY_LEFT_ALIGN_COLUMNS.has(columnId);
               const channel =
                 STRATEGY_COLUMN_CHANNEL[
                   columnId as keyof typeof STRATEGY_COLUMN_CHANNEL
                 ] ?? "common";
-              const sticky = columnId === "recommendation";
               return (
                 <TableCell
                   key={cell.id}
                   className={cn(
-                    isNumericColumn(columnId) && "text-right whitespace-nowrap",
+                    "px-4 py-3.5 whitespace-nowrap",
+                    leftAlign ? "text-left" : "text-center",
                     channel !== "common" && STRATEGY_CHANNEL_HEAD_CLASS[channel],
                     sticky && stickyBodyColumnClass(rowIndex),
                   )}
