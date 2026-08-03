@@ -10,6 +10,7 @@ interface SelectionState {
   /** Colonnes Performances visibles (`null` = défaut essentielles). */
   performanceVisibleColumns: string[] | null;
   setPerformanceVisibleColumn: (columnId: string, checked: boolean) => void;
+  setPerformanceVisibleColumns: (columnIds: readonly string[]) => void;
   resetPerformanceVisibleColumns: () => void;
   /** Période analytics optionnelle (YYYY-MM-DD). */
   periodFrom: string | null;
@@ -43,6 +44,8 @@ export const useSelectionStore = create<SelectionState>()(
             : current.filter((id) => id !== columnId);
           return { performanceVisibleColumns: next };
         }),
+      setPerformanceVisibleColumns: (columnIds) =>
+        set({ performanceVisibleColumns: [...columnIds] }),
       resetPerformanceVisibleColumns: () =>
         set({ performanceVisibleColumns: null }),
       periodFrom: null,

@@ -12,13 +12,20 @@ export function resolveUnilizeServerBaseUrl(): string {
 /** Construit une URL absolue vers l'API Unilize (query params optionnels). */
 export function buildUnilizeUpstreamUrl(
   path: string,
-  query?: Record<string, string | undefined>,
+  query?: Record<string, string | string[] | undefined>,
 ): string {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const url = new URL(normalizedPath, `${resolveUnilizeServerBaseUrl()}/`);
   if (query) {
     for (const [key, value] of Object.entries(query)) {
-      if (value) url.searchParams.set(key, value);
+      if (value === undefined) continue;
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          if (item) url.searchParams.append(key, item);
+        }
+      } else if (value) {
+        url.searchParams.set(key, value);
+      }
     }
   }
   return url.toString();

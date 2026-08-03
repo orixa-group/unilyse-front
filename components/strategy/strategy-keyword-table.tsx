@@ -34,6 +34,7 @@ import {
   formatPercentValue,
 } from "@/lib/utils/formatting";
 import { cn } from "@/lib/utils/cn";
+import { formatKeywordLabel } from "@/lib/projects/keywords";
 import type {
   UnilizeKeywordComparison,
   UnilizeStrategySeaTier,
@@ -51,6 +52,17 @@ function formatNullableCurrency(value: number | null | undefined): string {
     return "—";
   }
   return formatCurrencyEur(value);
+}
+
+function formatNullableScore(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return "—";
+  }
+  return formatNumber(value);
+}
+
+function PlaceholderCell() {
+  return <span className="text-muted-foreground">—</span>;
 }
 
 function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
@@ -83,7 +95,7 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
       ),
       sortingFn: "alphanumeric",
       cell: ({ getValue }) => (
-        <span className="font-medium">{String(getValue())}</span>
+        <span className="font-medium">{formatKeywordLabel(getValue())}</span>
       ),
     },
     {
@@ -104,6 +116,165 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
           <span className="tabular-nums font-medium">{formatNumber(value)}</span>
         );
       },
+    },
+    {
+      id: "sea_score",
+      accessorFn: (row) => row.scoring?.sea?.score ?? null,
+      header: () => (
+        <MetricHeader
+          label={STRATEGY_COLUMN_LABELS.sea_score}
+          metricId="sea_score"
+        />
+      ),
+      cell: ({ getValue }) => formatNullableScore(getValue() as number | null),
+    },
+    {
+      id: "d1_volume",
+      accessorFn: (row) =>
+        row.scoring?.sea?.potential_search_volume_score ?? null,
+      header: () => (
+        <MetricHeader
+          label={STRATEGY_COLUMN_LABELS.d1_volume}
+          metricId="d1_volume"
+        />
+      ),
+      cell: ({ getValue }) => formatNullableScore(getValue() as number | null),
+    },
+    {
+      id: "d2_budget",
+      accessorFn: (row) => row.scoring?.sea?.budget_score ?? null,
+      header: () => (
+        <MetricHeader
+          label={STRATEGY_COLUMN_LABELS.d2_budget}
+          metricId="d2_budget"
+        />
+      ),
+      cell: ({ getValue }) => formatNullableScore(getValue() as number | null),
+    },
+    {
+      id: "d3_conversion",
+      accessorFn: (row) => row.scoring?.sea?.conversion_score ?? null,
+      header: () => (
+        <MetricHeader
+          label={STRATEGY_COLUMN_LABELS.d3_conversion}
+          metricId="d3_conversion"
+        />
+      ),
+      cell: ({ getValue }) => formatNullableScore(getValue() as number | null),
+    },
+    {
+      id: "d4_ad",
+      accessorFn: (row) => row.scoring?.sea?.ad_score ?? null,
+      header: () => (
+        <MetricHeader
+          label={STRATEGY_COLUMN_LABELS.d4_ad}
+          metricId="d4_ad"
+        />
+      ),
+      cell: ({ getValue }) => formatNullableScore(getValue() as number | null),
+    },
+    {
+      id: "d5_ctr",
+      accessorFn: (row) => row.scoring?.sea?.ctr_incremental_score ?? null,
+      header: () => (
+        <MetricHeader
+          label={STRATEGY_COLUMN_LABELS.d5_ctr}
+          metricId="d5_ctr"
+        />
+      ),
+      cell: ({ getValue }) => formatNullableScore(getValue() as number | null),
+    },
+    {
+      id: "seo_position",
+      accessorFn: (row) => row.seo?.position ?? null,
+      header: () => (
+        <MetricHeader
+          label={STRATEGY_COLUMN_LABELS.seo_position}
+          metricId="seo_position"
+        />
+      ),
+      cell: ({ getValue }) => formatNullableScore(getValue() as number | null),
+    },
+    {
+      id: "content_label",
+      accessorFn: () => null,
+      header: () => (
+        <MetricHeader
+          label={STRATEGY_COLUMN_LABELS.content_label}
+          metricId="content_label"
+        />
+      ),
+      cell: () => <PlaceholderCell />,
+      enableSorting: false,
+    },
+    {
+      id: "popularity_label",
+      accessorFn: () => null,
+      header: () => (
+        <MetricHeader
+          label={STRATEGY_COLUMN_LABELS.popularity_label}
+          metricId="popularity_label"
+        />
+      ),
+      cell: () => <PlaceholderCell />,
+      enableSorting: false,
+    },
+    {
+      id: "e4_delay",
+      accessorFn: (row) => row.scoring?.seo?.time_to_value_status ?? null,
+      header: () => (
+        <MetricHeader
+          label={STRATEGY_COLUMN_LABELS.e4_delay}
+          metricId="e4_delay"
+        />
+      ),
+      cell: ({ getValue }) => {
+        const value = getValue() as string | null;
+        return value ? (
+          <span className="capitalize">{value}</span>
+        ) : (
+          "—"
+        );
+      },
+    },
+    {
+      id: "e5_gain",
+      accessorFn: (row) => row.scoring?.seo?.potential_gain_status ?? null,
+      header: () => (
+        <MetricHeader
+          label={STRATEGY_COLUMN_LABELS.e5_gain}
+          metricId="e5_gain"
+        />
+      ),
+      cell: ({ getValue }) => {
+        const value = getValue() as string | null;
+        return value ? (
+          <span className="capitalize">{value}</span>
+        ) : (
+          "—"
+        );
+      },
+    },
+    {
+      id: "s_seo_invest",
+      accessorFn: () => null,
+      header: () => (
+        <MetricHeader
+          label={STRATEGY_COLUMN_LABELS.s_seo_invest}
+          metricId="s_seo_invest"
+        />
+      ),
+      cell: () => <PlaceholderCell />,
+      enableSorting: false,
+    },
+    {
+      id: "note",
+      accessorFn: () => null,
+      header: () => (
+        <MetricHeader label={STRATEGY_COLUMN_LABELS.note} metricId="note" />
+      ),
+      cell: () => <PlaceholderCell />,
+      enableSorting: false,
     },
     {
       id: "ad_relevance",
@@ -178,6 +349,51 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
       cell: ({ getValue }) =>
         formatNullablePercent(getValue() as number | null),
     },
+    {
+      id: "sea_status",
+      accessorFn: (row) => row.scoring?.sea?.status ?? null,
+      header: () => (
+        <MetricHeader
+          label={STRATEGY_COLUMN_LABELS.sea_status}
+          metricId="sea_status"
+        />
+      ),
+      cell: ({ getValue }) => {
+        const value = getValue() as string | null;
+        if (!value) {
+          return "—";
+        }
+        return (
+          <span
+            className={cn(
+              "rounded px-1.5 py-0.5 text-xs font-medium capitalize",
+              value === "high" && "bg-success/30 text-success",
+              value === "low" && "bg-warning/30 text-warning",
+            )}
+          >
+            {value}
+          </span>
+        );
+      },
+    },
+    {
+      id: "effort_status",
+      accessorFn: (row) => row.scoring?.seo?.effort_status ?? null,
+      header: () => (
+        <MetricHeader
+          label={STRATEGY_COLUMN_LABELS.effort_status}
+          metricId="effort_status"
+        />
+      ),
+      cell: ({ getValue }) => {
+        const value = getValue() as string | null;
+        return value ? (
+          <span className="capitalize">{value}</span>
+        ) : (
+          "—"
+        );
+      },
+    },
   ];
 }
 
@@ -185,7 +401,14 @@ function isNumericColumn(columnId: string): boolean {
   return (
     columnId === "search_volume" ||
     columnId === "cpc" ||
-    columnId === "conversion_rate"
+    columnId === "conversion_rate" ||
+    columnId === "sea_score" ||
+    columnId === "d1_volume" ||
+    columnId === "d2_budget" ||
+    columnId === "d3_conversion" ||
+    columnId === "d4_ad" ||
+    columnId === "d5_ctr" ||
+    columnId === "seo_position"
   );
 }
 
@@ -211,7 +434,7 @@ export function StrategyKeywordTable({
   if (rows.length === 0) {
     return (
       <p className="text-muted-foreground px-4 py-6 text-sm">
-        Aucune analyse stratégique pour cette combinaison projet / campagne.
+        Aucune analyse stratégique pour ce projet.
       </p>
     );
   }

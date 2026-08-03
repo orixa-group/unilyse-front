@@ -1,4 +1,8 @@
-import type { UnilizeClient, UnilizeProject } from "@/types/unilize";
+import type {
+  UnilizeClient,
+  UnilizeKeyword,
+  UnilizeProject,
+} from "@/types/unilize";
 
 export type CreateClientActionState = {
   success: boolean;
@@ -66,7 +70,7 @@ export type UpdateProjectKeywordsActionState = {
   error?: string;
   project?: UnilizeProject;
   projectId?: string;
-  keywords?: string[];
+  keywords?: UnilizeKeyword[];
 };
 
 export const initialUpdateProjectKeywordsState: UpdateProjectKeywordsActionState =

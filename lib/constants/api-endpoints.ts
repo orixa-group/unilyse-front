@@ -26,6 +26,19 @@ export const API = {
   /** GET — Monitoring (niveau projet) */
   projectMonitoring: (projectId: string) =>
     `/projects/${projectId}/monitoring` as const,
+  /** GET — Timeline summary */
+  projectTimeline: (projectId: string) =>
+    `/projects/${projectId}/timeline` as const,
+  projectTimelineTraffic: (projectId: string) =>
+    `/projects/${projectId}/timeline/traffic` as const,
+  projectTimelineCtrBudget: (projectId: string) =>
+    `/projects/${projectId}/timeline/ctr-budget` as const,
+  /** GET — Thématiques projet */
+  projectThemes: (projectId: string) =>
+    `/projects/${projectId}/themes` as const,
+  /** POST — Refresh SEO metrics */
+  projectRefresh: (projectId: string) =>
+    `/projects/${projectId}/refresh` as const,
   /** GET — Sites Google Search Console */
   SITES: "/sites",
 } as const;

@@ -6,9 +6,11 @@ import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PerformancePeriodPicker } from "@/components/performances/performance-period-picker";
 import { PerformanceResultsTable } from "@/components/performances/performance-results-table";
 import { PerformanceSummary } from "@/components/performances/performance-summary";
+import { Button } from "@/components/ui/button";
 import { usePerformances } from "@/hooks/use-performances-api";
 import { useMonitoring } from "@/hooks/use-monitoring-api";
 import { useProjectContext } from "@/hooks/use-project-context";
+import { useRefreshProject } from "@/hooks/use-refresh-project";
 
 export function PerformancesView() {
   const { canFetchMetrics, selectedProjectId, period } =
@@ -28,6 +30,8 @@ export function PerformancesView() {
     canFetchMetrics ? selectedProjectId : null,
     period,
   );
+
+  const refreshMutation = useRefreshProject();
 
   const performances = performancesResult?.performances ?? [];
   const monitoring = monitoringResult?.monitoring ?? [];
@@ -61,8 +65,27 @@ export function PerformancesView() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-end gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={!selectedProjectId || refreshMutation.isPending}
+          onClick={() => {
+            if (!selectedProjectId) return;
+            refreshMutation.mutate({ projectId: selectedProjectId });
+          }}
+        >
+          {refreshMutation.isPending ? "Rafraîchissement…" : "Rafraîchir"}
+        </Button>
         <PerformancePeriodPicker />
       </div>
+      {refreshMutation.isError ? (
+        <BffErrorAlert
+          error={refreshMutation.error}
+          fallback="Impossible de lancer le rafraîchissement SEO."
+          title="Rafraîchissement échoué"
+        />
+      ) : null}
       <PerformanceSummary rows={performances} monitoring={monitoring} />
       <PerformanceResultsTable rows={performances} />
     </div>

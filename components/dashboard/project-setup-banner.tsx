@@ -16,7 +16,7 @@ import {
   type ProjectReadiness,
 } from "@/lib/projects/project-readiness";
 import { cn } from "@/lib/utils/cn";
-import type { UnilizeProject } from "@/types/unilize";
+import type { UnilizeKeyword, UnilizeProject } from "@/types/unilize";
 
 function ChecklistItem({
   done,
@@ -67,7 +67,7 @@ export function ProjectSetupBanner({
   onEditKeywords,
 }: {
   project: UnilizeProject;
-  keywords: string[];
+  keywords: UnilizeKeyword[];
   keywordsFetched: boolean;
   readiness: ProjectReadiness;
   onDismiss: () => void;
@@ -77,6 +77,7 @@ export function ProjectSetupBanner({
   const missing = getSetupMissingReasons({ project, keywords });
   const gscDone = true;
   const customerDone = !missing.includes("customer_id");
+  const ga4Done = !missing.includes("ga4_property_id");
   const keywordsDone = !missing.includes("keywords");
   const syncInProgress = readiness === "awaiting_first_sync";
   const syncDone = readiness === "ready";
@@ -114,6 +115,10 @@ export function ProjectSetupBanner({
           label={getSetupReasonLabel("customer_id")}
         />
         <ChecklistItem
+          done={ga4Done}
+          label={getSetupReasonLabel("ga4_property_id")}
+        />
+        <ChecklistItem
           done={keywordsDone}
           label={getSetupReasonLabel("keywords")}
         />
@@ -142,7 +147,7 @@ export function ProjectSetupBanner({
 
 export function buildProjectReadinessForBanner(input: {
   project: UnilizeProject;
-  keywords: string[];
+  keywords: UnilizeKeyword[];
   keywordsFetched: boolean;
   hasPerformances: boolean;
   syncProbeTimedOut: boolean;

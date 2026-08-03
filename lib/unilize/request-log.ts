@@ -38,11 +38,17 @@ export function summarizeCampaigns(
   };
 }
 
-export function summarizeKeywords(keywords: string[] | undefined): {
+export function summarizeKeywords(
+  keywords:
+    | Array<string | { value: string; theme?: string }>
+    | undefined,
+): {
   count: number;
   preview: string[];
 } {
-  const list = keywords ?? [];
+  const list = (keywords ?? []).map((keyword) =>
+    typeof keyword === "string" ? keyword : keyword.value,
+  );
   return {
     count: list.length,
     preview: list.slice(0, 5),
@@ -78,7 +84,9 @@ export function summarizeUnilizePayload(
         envelope: "projectDetail",
         id: d.id,
         name: d.name,
-        keywords: summarizeKeywords(d.keywords as string[]),
+        keywords: summarizeKeywords(
+          d.keywords as Array<string | { value: string }>,
+        ),
       };
     }
     return { envelope: "data", keys: Object.keys(d), sample: d };

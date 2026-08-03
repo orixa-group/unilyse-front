@@ -25,6 +25,7 @@ import {
   stickyBodyColumnClass,
   stickyFirstColumnClass,
 } from "@/lib/ui/table-visual";
+import { formatKeywordLabel } from "@/lib/projects/keywords";
 import { formatNumber } from "@/lib/utils/formatting";
 import { cn } from "@/lib/utils/cn";
 import type {
@@ -47,7 +48,7 @@ const columns: ColumnDef<UnilizeKeywordMonitoring>[] = [
     header: "Mot-clé",
     sortingFn: "alphanumeric",
     cell: ({ getValue }) => (
-      <span className="font-medium">{String(getValue())}</span>
+      <span className="font-medium">{formatKeywordLabel(getValue())}</span>
     ),
   },
   {

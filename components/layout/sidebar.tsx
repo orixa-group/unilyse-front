@@ -9,6 +9,7 @@ import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
   ChartBarLineIcon,
+  ChartLineData01Icon,
   DashboardCircleIcon,
   GridViewIcon,
   Logout02Icon,
@@ -27,6 +28,7 @@ function navIcon(href: string) {
   if (href === ROUTES.DASHBOARD) return GridViewIcon;
   if (href === ROUTES.PERFORMANCES) return ChartBarLineIcon;
   if (href === ROUTES.STRATEGY) return Target01Icon;
+  if (href === ROUTES.TIMELINE) return ChartLineData01Icon;
   if (href === ROUTES.MONITORING) return Radar01Icon;
   return DashboardCircleIcon;
 }

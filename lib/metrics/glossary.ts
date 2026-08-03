@@ -18,19 +18,28 @@ export const METRIC_GLOSSARY: Record<string, string> = {
     "Volume d'impressions supplémentaires estimé par Google Ads si la contrainte budget était levée, le rang actuel étant conservé. Scénario « et si » distinct du potentiel rang — estimation indicative sur la période, pas un objectif garanti.",
   potential_impressions_rank:
     "Volume d'impressions supplémentaires estimé par Google Ads si la contrainte de rang (enchère × qualité) était levée, le budget actuel étant conservé. Scénario « et si » distinct du potentiel budget — estimation indicative sur la période, pas un objectif garanti.",
+  no_click_rate:
+    "Part des recherches sans clic SEA ni SEO, en % — (1 − (clics SEA + clics SEO) / volume) × 100.",
+  collection_status:
+    "État de collecte des métriques (en cours / terminé) par source : SEA, SEO, volume, ranking, autorité, sémantique.",
   seo_impressions: "Affichages dans les résultats organiques.",
   seo_clicks: "Clics depuis la recherche organique.",
   seo_ctr: "Taux de clic organique.",
-  seo_bas:
-    "Score d'autorité de l'URL (BAS) : Optimisé ou Sous-optimisé vs concurrents.",
+  average_position:
+    "Position organique moyenne sur la période, pondérée par les impressions (Search Console).",
+  real_time_position:
+    "Dernière position organique connue (snapshot ValueSERP), distincte de la moyenne Search Console.",
+  netlinking_avg:
+    "Score d'autorité (BAS) moyen des 5 premiers concurrents classés sur ce mot-clé.",
+  semantic_avg:
+    "Score de contenu (sémantique) moyen des 5 premiers concurrents classés sur ce mot-clé.",
   authority_status:
     "Statut d'autorité de l'URL : Optimisé ou Sous-optimisé vs concurrents.",
   competitor_count: "Nombre d'annonceurs actifs sur ce mot-clé.",
   status:
-    "Recommandation : Cibler (forte opportunité), À évaluer, ou Ignorer.",
+    "Recommandation monitoring : Cibler (forte opportunité), À évaluer, ou Ignorer.",
   recommendation: "Canal recommandé : SEO, SEA ou SEO + SEA.",
-  backlink_gap:
-    "Écart de backlinks pour atteindre la position #1 (valeur négative).",
+  gap: "Écart de score (autorité ou sémantique) par rapport à la moyenne des top-3 concurrents.",
   semantic_gap:
     "Mot-clé dont la couverture sémantique n’est pas optimisée vs concurrents.",
   semantic_status:
@@ -46,6 +55,11 @@ export const METRIC_GLOSSARY: Record<string, string> = {
   position: "Position moyenne dans les résultats organiques.",
   page_intent_match:
     "La page cible correspond-elle à l'intention de recherche du mot-clé ?",
+  sea_score: "Score composite SEA (S_SEA) dérivé des dimensions D1–D5.",
+  sea_status: "Statut SEA high/low selon le seuil de performance.",
+  effort_status: "Niveau d'effort SEO (low / medium / high).",
+  time_to_value_status: "Délai estimé avant valeur SEO (low / medium / high).",
+  potential_gain_status: "Gain potentiel SEO (low / medium / high).",
 };
 
 export function getMetricGlossary(id: string): string | undefined {

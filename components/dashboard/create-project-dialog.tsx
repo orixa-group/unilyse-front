@@ -87,7 +87,7 @@ export function CreateProjectDialog({
             Le projet sera rattaché au client{" "}
             <span className="text-foreground font-medium">{clientName}</span>.
             Choisissez un site Google Search Console et renseignez le Customer
-            ID Google Ads pour lancer la collecte SEO et SEA.
+            ID Google Ads ainsi que la propriété GA4 pour lancer la collecte.
           </DialogDescription>
         </DialogHeader>
         <form action={createFormAction} className="space-y-4">
@@ -118,6 +118,22 @@ export function CreateProjectDialog({
             <p className="text-muted-foreground text-xs">
               Identifiant du compte Google Ads — les métriques SEA seront
               synchronisées pour l’ensemble du compte.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="project-ga4-property-id">ID propriété GA4</Label>
+            <Input
+              id="project-ga4-property-id"
+              name="ga4_property_id"
+              placeholder="312345678"
+              required
+              disabled={isCreatePending}
+              inputMode="numeric"
+              autoComplete="off"
+            />
+            <p className="text-muted-foreground text-xs">
+              Identifiant de la propriété Google Analytics 4 — sessions et
+              conversions seront synchronisées depuis cette propriété.
             </p>
           </div>
           <div className="space-y-2">

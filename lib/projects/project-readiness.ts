@@ -1,4 +1,4 @@
-import type { UnilizeProject } from "@/types/unilize";
+import type { UnilizeKeyword, UnilizeProject } from "@/types/unilize";
 
 /** État de préparation / collecte d'un projet (calculé côté front). */
 export type ProjectReadiness =
@@ -16,11 +16,11 @@ export const SYNC_PROBE_TIMEOUT_MS = 30 * 60 * 1000;
 /** Intervalle de polling des performances sur le dashboard (60 s). */
 export const SYNC_PROBE_INTERVAL_MS = 60_000;
 
-export type SetupMissingReason = "customer_id" | "keywords";
+export type SetupMissingReason = "customer_id" | "ga4_property_id" | "keywords";
 
 export interface ProjectReadinessInput {
   project: UnilizeProject;
-  keywords: string[];
+  keywords: UnilizeKeyword[];
   keywordsFetched: boolean;
   hasPerformances: boolean;
   syncProbeTimedOut?: boolean;
@@ -31,13 +31,20 @@ export function hasCustomerId(project: UnilizeProject): boolean {
   return Boolean(project.customer_id?.trim());
 }
 
+export function hasGa4PropertyId(project: UnilizeProject): boolean {
+  return Boolean(project.ga4_property_id?.trim());
+}
+
 export function getSetupMissingReasons(input: {
   project: UnilizeProject;
-  keywords: string[];
+  keywords: UnilizeKeyword[];
 }): SetupMissingReason[] {
   const missing: SetupMissingReason[] = [];
   if (!hasCustomerId(input.project)) {
     missing.push("customer_id");
+  }
+  if (!hasGa4PropertyId(input.project)) {
+    missing.push("ga4_property_id");
   }
   if (input.keywords.length === 0) {
     missing.push("keywords");
@@ -47,7 +54,7 @@ export function getSetupMissingReasons(input: {
 
 export function isProjectSetupComplete(input: {
   project: UnilizeProject;
-  keywords: string[];
+  keywords: UnilizeKeyword[];
   keywordsFetched: boolean;
 }): boolean {
   if (!input.keywordsFetched) {
@@ -114,7 +121,7 @@ const READINESS_META: Record<ProjectReadiness, ProjectReadinessMeta> = {
   setup_required: {
     label: "Configuration requise",
     description:
-      "Complétez le compte Google Ads et les mots-clés pour lancer la collecte.",
+      "Complétez Google Ads, GA4 et les mots-clés pour lancer la collecte.",
     tone: "warning",
   },
   awaiting_first_sync: {
@@ -146,6 +153,8 @@ export function getSetupReasonLabel(reason: SetupMissingReason): string {
   switch (reason) {
     case "customer_id":
       return "Compte Google Ads renseigné";
+    case "ga4_property_id":
+      return "Propriété GA4 renseignée";
     case "keywords":
       return "Mots-clés ajoutés";
   }

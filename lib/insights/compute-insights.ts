@@ -24,7 +24,17 @@ export function computeHybridInsights(strategy: UnilizeStrategy | null): Insight
       id: "hybrid-netlinking",
       severity: "info",
       title: `${netlinking} mot${netlinking > 1 ? "s" : ""}-clé avec écart de netlinking`,
-      href: ROUTES.STRATEGY,
+      href: ROUTES.STRATEGY_NETLINKING,
+    });
+  }
+
+  const semantic = strategy.semantic_gaps.length;
+  if (semantic > 0) {
+    insights.push({
+      id: "hybrid-semantic",
+      severity: "info",
+      title: `${semantic} mot${semantic > 1 ? "s" : ""}-clé avec écart de contenu`,
+      href: ROUTES.STRATEGY_CONTENT,
     });
   }
 

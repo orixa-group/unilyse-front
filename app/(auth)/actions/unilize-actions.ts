@@ -13,10 +13,15 @@ import {
   deleteClient,
   deleteProject,
   getClient,
+  getProject,
   listProjects,
   listSearchConsoleSites,
   updateProjectKeywords,
 } from "@/lib/api/unilize";
+import {
+  mergeKeywordThemes,
+  parseKeywordsRaw,
+} from "@/lib/projects/keywords";
 import {
   logUnilizeEvent,
   summarizeUnilizePayload,
@@ -53,6 +58,7 @@ const createProjectSchema = z.object({
   name: nonEmptyString,
   url: z.string().trim().min(1, "Sélectionnez un site Search Console."),
   customer_id: nonEmptyString,
+  ga4_property_id: nonEmptyString,
 });
 
 const deleteProjectSchema = z.object({
@@ -64,24 +70,6 @@ const updateProjectKeywordsSchema = z.object({
   projectId: nonEmptyString,
   keywordsRaw: z.string(),
 });
-
-function parseKeywordsRaw(raw: string): string[] | { error: string } {
-  const keywords = raw
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  if (keywords.length === 0) {
-    return { error: "Au moins un mot-clé est requis." };
-  }
-
-  const unique = new Set(keywords);
-  if (unique.size !== keywords.length) {
-    return { error: "Les mots-clés doivent être uniques." };
-  }
-
-  return keywords;
-}
 
 const AUTH_LAYOUT_PATHS = [
   "/dashboard",
@@ -224,6 +212,7 @@ export async function createProjectAction(
     name: formData.get("name"),
     url: formData.get("url"),
     customer_id: formData.get("customer_id"),
+    ga4_property_id: formData.get("ga4_property_id"),
   });
 
   if (!parsed.success) {
@@ -231,13 +220,18 @@ export async function createProjectAction(
     const customerIssue = parsed.error.issues.find(
       (i) => i.path[0] === "customer_id",
     );
+    const ga4Issue = parsed.error.issues.find(
+      (i) => i.path[0] === "ga4_property_id",
+    );
     return {
       success: false,
       error: urlIssue
         ? "Sélectionnez un site Search Console valide."
         : customerIssue
           ? "Le Customer ID Google Ads est requis."
-          : "Le client, le nom, l’URL et le Customer ID sont requis.",
+          : ga4Issue
+            ? "L’ID de propriété GA4 est requis."
+            : "Le client, le nom, l’URL, le Customer ID et la propriété GA4 sont requis.",
     };
   }
 
@@ -256,6 +250,7 @@ export async function createProjectAction(
       name: parsed.data.name,
       url: parsed.data.url,
       customer_id: parsed.data.customer_id,
+      ga4_property_id: parsed.data.ga4_property_id,
     });
     revalidateDashboard();
     return {
@@ -356,16 +351,25 @@ export async function updateProjectKeywordsAction(
   }
 
   try {
+    let existingKeywords;
+    try {
+      const detail = await getProject(parsed.data.projectId);
+      existingKeywords = detail.keywords;
+    } catch {
+      existingKeywords = undefined;
+    }
+
+    const keywords = mergeKeywordThemes(keywordsResult, existingKeywords);
     const project = await updateProjectKeywords(
       parsed.data.projectId,
-      keywordsResult,
+      keywords,
     );
     revalidateDashboard();
     return {
       success: true,
       project,
       projectId: parsed.data.projectId,
-      keywords: keywordsResult,
+      keywords,
     };
   } catch (error) {
     if (error instanceof ApiClientError) {

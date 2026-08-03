@@ -1,3 +1,16 @@
+/** État de collecte d'une métrique (OpenAPI CollectionState). */
+export type UnilizeCollectionState = "in_progress" | "completed";
+
+/** Statut de collecte par source (OpenAPI CollectionStatus). */
+export interface UnilizeCollectionStatus {
+  sea: UnilizeCollectionState;
+  seo: UnilizeCollectionState;
+  search_volume: UnilizeCollectionState;
+  organic_ranking: UnilizeCollectionState;
+  url_authority: UnilizeCollectionState;
+  semantic: UnilizeCollectionState;
+}
+
 /** Métriques SEA agrégées sur la période (OpenAPI PerformanceSEA). */
 export interface UnilizeSeaMetrics {
   impressions: number;
@@ -26,12 +39,23 @@ export interface UnilizeSearchVolume {
   volume: number;
 }
 
+/** Scores concurrents top-5 (OpenAPI PerformanceCompetitorScores / NetlinkingCompetitors). */
+export interface UnilizeCompetitorScores {
+  average_score: number;
+  max_score: number;
+  min_score: number;
+}
+
 /** Métriques SEO Search Console (OpenAPI PerformanceSEO). */
 export interface UnilizeSeoMetrics {
   impressions: number;
   clicks: number;
   /** Taux de clic en pourcentage (clics / impressions × 100). */
   ctr: number;
+  average_position: number;
+  real_time_position: number | null;
+  netlinking_competitors: UnilizeCompetitorScores;
+  semantic_competitors: UnilizeCompetitorScores;
 }
 
 /** Entrée performances par mot-clé (OpenAPI Performance). */
@@ -40,6 +64,9 @@ export interface UnilizePerformance {
   sea: UnilizeSeaMetrics | null;
   search_volume: UnilizeSearchVolume;
   seo: UnilizeSeoMetrics;
+  status: UnilizeCollectionStatus;
+  /** Part des recherches sans clic SEA ni SEO, en %. */
+  no_click_rate: number;
 }
 
 export type ListPerformancesResult = {

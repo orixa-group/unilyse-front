@@ -11,6 +11,9 @@ export type UnilizeStrategyRecommendation =
   | "HUMAN_ARBITRATION"
   | "UNKNOWN";
 
+/** Objectif d’un gap netlinking / contenu. */
+export type UnilizeGapObjective = "LAUNCH_SEO" | "DOUBLE_PRESENCE";
+
 /** Niveau qualité Google Ads (OpenAPI StrategySEA). */
 export type UnilizeStrategySeaTier =
   | "UNSPECIFIED"
@@ -18,6 +21,9 @@ export type UnilizeStrategySeaTier =
   | "BELOW_AVERAGE"
   | "AVERAGE"
   | "ABOVE_AVERAGE";
+
+export type UnilizeScoringLevel = "low" | "medium" | "high";
+export type UnilizeSeaScoringStatus = "high" | "low";
 
 /** Indicateurs SEA stratégie (OpenAPI StrategySEA). */
 export interface UnilizeStrategySea {
@@ -39,6 +45,34 @@ export interface UnilizeStrategySeo {
   authority_status?: UnilizeOptimizationStatus;
 }
 
+/** Scores intermédiaires SEA (OpenAPI KeywordComparisonScoringSEA). */
+export interface UnilizeKeywordComparisonScoringSea {
+  potential_search_volume_score: number;
+  budget_score: number;
+  conversion_score: number;
+  ad_score: number;
+  ctr_incremental_score: number;
+  score: number;
+  status: UnilizeSeaScoringStatus;
+}
+
+/** Scores intermédiaires SEO (OpenAPI KeywordComparisonScoringSEO). */
+export interface UnilizeKeywordComparisonScoringSeo {
+  effort_score?: number;
+  effort_status?: UnilizeScoringLevel;
+  time_to_value_score?: number;
+  time_to_value_status?: UnilizeScoringLevel;
+  potential_gain_score?: number;
+  potential_gain_status?: UnilizeScoringLevel;
+  semantic_score?: number;
+  authority_score?: number;
+}
+
+export interface UnilizeKeywordComparisonScoring {
+  sea?: UnilizeKeywordComparisonScoringSea;
+  seo?: UnilizeKeywordComparisonScoringSeo;
+}
+
 export interface UnilizeKeywordComparison {
   keyword: string;
   recommendation: UnilizeStrategyRecommendation;
@@ -46,6 +80,7 @@ export interface UnilizeKeywordComparison {
   search_volume: number;
   sea?: UnilizeStrategySea | null;
   seo: UnilizeStrategySeo;
+  scoring: UnilizeKeywordComparisonScoring;
 }
 
 export interface UnilizeStrategySummary {
@@ -57,29 +92,31 @@ export interface UnilizeStrategySummary {
   hybrid_keywords_count: number;
 }
 
-export interface UnilizeNetlinkingGap {
+/** Gap netlinking ou contenu (OpenAPI NetlinkingGap / SemanticGap). */
+export interface UnilizeWorkGap {
   keyword: string;
   volume: number;
-  backlink_gap: number;
+  priority: number;
+  current_score: number;
+  target_score: number;
+  gap: number;
+  objective: UnilizeGapObjective;
 }
 
-/** Mot-clé dont la couverture sémantique n’est pas optimisée (OpenAPI SemanticGap). */
-export interface UnilizeSemanticGap {
-  keyword: string;
-}
+export type UnilizeNetlinkingGap = UnilizeWorkGap;
+export type UnilizeSemanticGap = UnilizeWorkGap;
 
-export interface UnilizeOpportunityMatrixEntry {
-  keyword: string;
+/** Bucket matrice d’opportunités (OpenAPI OpportunityMatrixBucket). */
+export interface UnilizeOpportunityMatrixBucket {
+  keyword_count: number;
   volume: number;
-  semantic_score?: number;
-  position?: number;
 }
 
 export interface UnilizeOpportunityMatrix {
-  high_impact: UnilizeOpportunityMatrixEntry[];
-  low_priority: UnilizeOpportunityMatrixEntry[];
-  balanced: UnilizeOpportunityMatrixEntry[];
-  quick_wins: UnilizeOpportunityMatrixEntry[];
+  launch_seo: UnilizeOpportunityMatrixBucket;
+  double_presence: UnilizeOpportunityMatrixBucket;
+  maintain_ads: UnilizeOpportunityMatrixBucket;
+  review_strategy: UnilizeOpportunityMatrixBucket;
 }
 
 export interface UnilizeStrategy {

@@ -22,8 +22,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  computeGlobalCtr,
   isPerformanceColumnVisible,
+  PERFORMANCE_COLUMN_LABELS,
+  PERFORMANCE_COLUMN_PRESETS,
   resolvePerformanceVisibleColumns,
+  type PerformanceColumnPresetId,
 } from "@/lib/performances/column-presets";
 import {
   stickyBodyColumnClass,
@@ -34,9 +38,14 @@ import {
   formatCurrencyEur,
   formatNumber,
 } from "@/lib/utils/formatting";
+import { formatKeywordLabel } from "@/lib/projects/keywords";
 import { cn } from "@/lib/utils/cn";
 import { useSelectionStore } from "@/stores/selection.store";
-import type { UnilizePerformance } from "@/types/performance";
+import type {
+  UnilizeCollectionStatus,
+  UnilizePerformance,
+} from "@/types/performance";
+import { Badge } from "@/components/ui/badge";
 
 function formatApiPercent(value: number): string {
   return `${formatNumber(value, "fr-FR")} %`;
@@ -56,6 +65,37 @@ function formatNullableCurrency(value: number | null | undefined): string {
   return formatCurrencyEur(value);
 }
 
+function countInProgress(status: UnilizeCollectionStatus | undefined): number {
+  if (!status) {
+    return 0;
+  }
+  return Object.values(status).filter((state) => state === "in_progress")
+    .length;
+}
+
+function CollectionStatusCell({
+  status,
+}: {
+  status: UnilizeCollectionStatus | undefined;
+}) {
+  const pending = countInProgress(status);
+  if (!status) {
+    return "—";
+  }
+  if (pending === 0) {
+    return (
+      <Badge variant="outline" className="text-xs font-normal">
+        À jour
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="secondary" className="text-xs font-normal">
+      {pending} en cours
+    </Badge>
+  );
+}
+
 function buildColumns(): ColumnDef<UnilizePerformance>[] {
   return [
     {
@@ -63,8 +103,15 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
       accessorKey: "keyword",
       header: () => <MetricHeader label="Mot-clé" metricId="keyword" />,
       sortingFn: "alphanumeric",
-      cell: ({ getValue }) => (
-        <span className="font-medium">{String(getValue())}</span>
+      cell: ({ row, getValue }) => (
+        <span className="inline-flex items-center gap-2 font-medium">
+          {formatKeywordLabel(getValue())}
+          {countInProgress(row.original.status) > 0 ? (
+            <Badge variant="secondary" className="text-[10px] font-normal">
+              Collecte…
+            </Badge>
+          ) : null}
+        </span>
       ),
     },
     {
@@ -81,6 +128,47 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
           </span>
         );
       },
+    },
+    {
+      id: "no_click_rate",
+      accessorKey: "no_click_rate",
+      header: () => (
+        <MetricHeader
+          label={PERFORMANCE_COLUMN_LABELS.no_click_rate}
+          metricId="no_click_rate"
+        />
+      ),
+      cell: ({ getValue }) => {
+        const value = getValue() as number | null | undefined;
+        return value === null || value === undefined
+          ? "—"
+          : formatApiPercent(value);
+      },
+    },
+    {
+      id: "ctr_global",
+      accessorFn: (row) => computeGlobalCtr(row),
+      header: () => (
+        <MetricHeader
+          label={PERFORMANCE_COLUMN_LABELS.ctr_global}
+          metricId="ctr_global"
+        />
+      ),
+      cell: ({ getValue }) => {
+        const value = getValue() as number | null;
+        return value === null ? "—" : formatApiPercent(value);
+      },
+    },
+    {
+      id: "collection_status",
+      accessorFn: (row) => countInProgress(row.status),
+      header: () => (
+        <MetricHeader
+          label={PERFORMANCE_COLUMN_LABELS.collection_status}
+          metricId="collection_status"
+        />
+      ),
+      cell: ({ row }) => <CollectionStatusCell status={row.original.status} />,
     },
     {
       id: "impressions",
@@ -228,11 +316,95 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
       ),
       cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
     },
+    {
+      id: "seo_impressions",
+      accessorFn: (row) => row.seo?.impressions ?? null,
+      header: () => (
+        <MetricHeader
+          label={PERFORMANCE_COLUMN_LABELS.seo_impressions}
+          metricId="seo_impressions"
+        />
+      ),
+      cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
+    },
+    {
+      id: "seo_clicks",
+      accessorFn: (row) => row.seo?.clicks ?? null,
+      header: () => (
+        <MetricHeader
+          label={PERFORMANCE_COLUMN_LABELS.seo_clicks}
+          metricId="seo_clicks"
+        />
+      ),
+      cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
+    },
+    {
+      id: "seo_ctr",
+      accessorFn: (row) => row.seo?.ctr ?? null,
+      header: () => (
+        <MetricHeader
+          label={PERFORMANCE_COLUMN_LABELS.seo_ctr}
+          metricId="seo_ctr"
+        />
+      ),
+      cell: ({ getValue }) => {
+        const value = getValue() as number | null;
+        return value === null ? "—" : formatApiPercent(value);
+      },
+    },
+    {
+      id: "average_position",
+      accessorFn: (row) => row.seo?.average_position ?? null,
+      header: () => (
+        <MetricHeader
+          label={PERFORMANCE_COLUMN_LABELS.average_position}
+          metricId="average_position"
+        />
+      ),
+      cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
+    },
+    {
+      id: "real_time_position",
+      accessorFn: (row) => row.seo?.real_time_position ?? null,
+      header: () => (
+        <MetricHeader
+          label={PERFORMANCE_COLUMN_LABELS.real_time_position}
+          metricId="real_time_position"
+        />
+      ),
+      cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
+    },
+    {
+      id: "netlinking_avg",
+      accessorFn: (row) => row.seo?.netlinking_competitors?.average_score ?? null,
+      header: () => (
+        <MetricHeader
+          label={PERFORMANCE_COLUMN_LABELS.netlinking_avg}
+          metricId="netlinking_avg"
+        />
+      ),
+      cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
+    },
+    {
+      id: "semantic_avg",
+      accessorFn: (row) => row.seo?.semantic_competitors?.average_score ?? null,
+      header: () => (
+        <MetricHeader
+          label={PERFORMANCE_COLUMN_LABELS.semantic_avg}
+          metricId="semantic_avg"
+        />
+      ),
+      cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
+    },
   ];
 }
 
 function isNumericColumn(columnId: string): boolean {
-  return columnId !== "keyword" && columnId !== "match_type";
+  return (
+    columnId !== "keyword" &&
+    columnId !== "match_type" &&
+    columnId !== "collection_status"
+  );
 }
 
 export function PerformanceResultsTable({
@@ -247,6 +419,9 @@ export function PerformanceResultsTable({
   const setPerformanceVisibleColumn = useSelectionStore(
     (s) => s.setPerformanceVisibleColumn,
   );
+  const setPerformanceVisibleColumns = useSelectionStore(
+    (s) => s.setPerformanceVisibleColumns,
+  );
   const resetPerformanceVisibleColumns = useSelectionStore(
     (s) => s.resetPerformanceVisibleColumns,
   );
@@ -254,6 +429,10 @@ export function PerformanceResultsTable({
     () => resolvePerformanceVisibleColumns(performanceVisibleColumns),
     [performanceVisibleColumns],
   );
+
+  const applyPreset = (presetId: PerformanceColumnPresetId) => {
+    setPerformanceVisibleColumns(PERFORMANCE_COLUMN_PRESETS[presetId]);
+  };
   const data = useMemo(() => rows, [rows]);
   const allColumns = useMemo(() => buildColumns(), []);
 
@@ -289,6 +468,7 @@ export function PerformanceResultsTable({
         <PerformanceColumnMenu
           visibleColumns={visibleColumnSet}
           onToggleColumn={setPerformanceVisibleColumn}
+          onApplyPreset={applyPreset}
           onReset={resetPerformanceVisibleColumns}
         />
       }

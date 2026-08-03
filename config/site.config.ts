@@ -47,6 +47,14 @@ export const siteConfig = {
           requiresContext: "project",
         },
         {
+          label: "Timeline",
+          href: ROUTES.TIMELINE,
+          title: "Timeline",
+          description:
+            "Évolution du trafic, des conversions, du CTR et des budgets sur la période.",
+          requiresContext: "project",
+        },
+        {
           label: "Monitoring",
           href: ROUTES.MONITORING,
           title: "Monitoring",

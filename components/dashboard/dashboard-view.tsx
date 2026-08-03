@@ -53,6 +53,7 @@ import {
   computeProjectReadiness,
   isProjectSetupComplete,
 } from "@/lib/projects/project-readiness";
+import { toKeywordValues } from "@/lib/projects/keywords";
 import {
   logUnilizeFetchSnapshot,
   summarizeKeywords,
@@ -137,7 +138,7 @@ export function DashboardView() {
 
       return (
         project.keywords?.some((keyword) =>
-          keyword.toLowerCase().includes(normalizedProjectSearch),
+          keyword.value.toLowerCase().includes(normalizedProjectSearch),
         ) ?? false
       );
     });
@@ -404,7 +405,7 @@ export function DashboardView() {
     if (!keywordsState.success || !keywordsState.projectId) {
       return;
     }
-    const key = `${keywordsState.projectId}:${keywordsState.keywords?.join(",") ?? ""}`;
+    const key = `${keywordsState.projectId}:${toKeywordValues(keywordsState.keywords).join(",")}`;
     if (processedKeywordsIdRef.current === key) {
       return;
     }
@@ -678,13 +679,15 @@ export function DashboardView() {
                   id="project-keywords"
                   name="keywordsRaw"
                   key={projectForKeywords.id}
-                  defaultValue={
-                    projectDetailsQueries[
-                      projectQueryIndexById.get(projectForKeywords.id) ?? 0
-                    ]?.data?.project?.keywords?.join("\n") ??
-                    projectForKeywords.keywords?.join("\n") ??
-                    ""
-                  }
+                  defaultValue={(() => {
+                    const fromDetails =
+                      projectDetailsQueries[
+                        projectQueryIndexById.get(projectForKeywords.id) ?? 0
+                      ]?.data?.project?.keywords;
+                    const source =
+                      fromDetails ?? projectForKeywords.keywords ?? [];
+                    return toKeywordValues(source).join("\n");
+                  })()}
                   placeholder={"seo\nsea\nppc"}
                   required
                   disabled={isKeywordsPending}

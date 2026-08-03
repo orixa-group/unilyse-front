@@ -18,7 +18,10 @@ function resolveApiBaseUrl(): string {
 }
 
 export type ApiClientOptions = Omit<RequestInit, "body"> & {
-  query?: Record<string, string | number | boolean | undefined>;
+  query?: Record<
+    string,
+    string | number | boolean | string[] | undefined
+  >;
   body?: unknown;
   /** Token Bearer explicite (serveur uniquement). */
   authToken?: string;
@@ -69,7 +72,13 @@ export class ApiClient {
 
     for (const [key, value] of Object.entries(query)) {
       if (value === undefined) continue;
-      url.searchParams.set(key, String(value));
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          url.searchParams.append(key, String(item));
+        }
+      } else {
+        url.searchParams.set(key, String(value));
+      }
     }
     return url.toString();
   }

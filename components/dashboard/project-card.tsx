@@ -23,7 +23,8 @@ import {
 } from "@/lib/api/error-messages";
 import type { useProjectsDetails } from "@/hooks/use-unilize-api";
 import { isQueryInitialLoading } from "@/lib/unilize/query-display";
-import type { UnilizeProject } from "@/types/unilize";
+import type { UnilizeKeyword, UnilizeProject } from "@/types/unilize";
+import { toKeywordValues } from "@/lib/projects/keywords";
 
 const MAX_VISIBLE_KEYWORDS = 4;
 
@@ -130,7 +131,7 @@ function KeywordsSection({
   onEditKeywords,
   project,
 }: {
-  keywords: string[];
+  keywords: UnilizeKeyword[];
   isLoading: boolean;
   errorMessage: string | null;
   isBusy: boolean;
@@ -178,8 +179,9 @@ function KeywordsSection({
     );
   }
 
-  const { visible, overflowCount } = truncateList(keywords, MAX_VISIBLE_KEYWORDS);
-  const hiddenKeywords = keywords.slice(MAX_VISIBLE_KEYWORDS).join(", ");
+  const values = toKeywordValues(keywords);
+  const { visible, overflowCount } = truncateList(values, MAX_VISIBLE_KEYWORDS);
+  const hiddenKeywords = values.slice(MAX_VISIBLE_KEYWORDS).join(", ");
 
   return (
     <div className="space-y-1">

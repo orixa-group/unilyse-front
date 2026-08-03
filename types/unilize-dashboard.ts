@@ -1,4 +1,8 @@
-import type { UnilizeClient, UnilizeProject } from "@/types/unilize";
+import type {
+  UnilizeClient,
+  UnilizeKeyword,
+  UnilizeProject,
+} from "@/types/unilize";
 
 export interface UnilizeDashboardPayload {
   requestUrl: string;
@@ -7,7 +11,7 @@ export interface UnilizeDashboardPayload {
   clientError: string | null;
   rows: Array<{
     project: UnilizeProject;
-    keywords: string[];
+    keywords: UnilizeKeyword[];
     keywordsError: string | null;
   }>;
   error: string | null;

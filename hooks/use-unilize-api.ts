@@ -34,6 +34,7 @@ import type {
   CreateClientPayload,
   CreateProjectPayload,
   UnilizeClient,
+  UnilizeKeyword,
   UnilizeProject,
 } from "@/types/unilize";
 
@@ -170,6 +171,7 @@ async function fetchProjectDetails(
         name: "",
         url: "",
         customer_id: "",
+        ga4_property_id: "",
         created_at: "",
         updated_at: "",
         keywords: [],
@@ -296,7 +298,7 @@ export function useDeleteProjectMutation(clientId: string | null) {
 export function useUpdateProjectKeywordsMutation(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (keywords: string[]) =>
+    mutationFn: (keywords: UnilizeKeyword[]) =>
       updateProjectKeywords(projectId, keywords),
     onSuccess: () => {
       void qc.invalidateQueries({

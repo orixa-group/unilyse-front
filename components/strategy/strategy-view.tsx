@@ -147,11 +147,14 @@ export function StrategyView() {
         <StrategyKeywordTable rows={filteredComparisons} />
       </DataTableShell>
 
-      <StrategyWorkPanels />
+      <StrategyWorkPanels
+        netlinkingGaps={strategy.netlinking_gaps}
+        semanticGaps={strategy.semantic_gaps}
+      />
 
       <DataTableShell
         title="Matrice d'opportunités"
-        description="Répartition des mots-clés selon volume, score sémantique et position organique."
+        description="Répartition des mots-clés par recommandation actionnable (volume agrégé)."
       >
         <StrategyOpportunityMatrix matrix={strategy.opportunity_matrix} />
       </DataTableShell>

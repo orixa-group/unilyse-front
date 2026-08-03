@@ -5,6 +5,7 @@ import { withBffAuth } from "@/lib/api/bff-auth";
 import { mapWithConcurrency, withRetry } from "@/lib/api/async-utils";
 import { getApiErrorMessage, bffRouteErrorResponse } from "@/lib/api/bff-route-utils";
 import { getClient, getProject, listProjects } from "@/lib/api/unilize";
+import type { UnilizeKeyword } from "@/types/unilize";
 import type { UnilizeDashboardPayload } from "@/types/unilize-dashboard";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +31,7 @@ function jsonResponse(body: UnilizeDashboardPayload, status = 200): NextResponse
 async function loadProjectRow(
   project: Awaited<ReturnType<typeof listProjects>>[number],
 ): Promise<UnilizeDashboardPayload["rows"][number]> {
-  let keywords: string[] = [];
+  let keywords: UnilizeKeyword[] = [];
   let keywordsError: string | null = null;
   try {
     const detail = await withRetry(() => getProject(project.id), {

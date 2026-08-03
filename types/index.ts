@@ -5,10 +5,14 @@ export type {
   UnilizeSeaMetrics,
   UnilizeSearchVolume,
   UnilizeSeoMetrics,
+  UnilizeCollectionStatus,
+  UnilizeCollectionState,
+  UnilizeCompetitorScores,
   ListPerformancesResult,
 } from "./performance";
 export type {
   UnilizeClient,
+  UnilizeKeyword,
   UnilizeProject,
   UnilizeProjectDetail,
   UnilizeApiEnvelope,
