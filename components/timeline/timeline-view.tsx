@@ -23,6 +23,7 @@ import { Autocomplete } from "@/components/ui/autocomplete";
 import { Button } from "@/components/ui/button";
 import { ChartLegend } from "@/components/ui/chart-legend";
 import { ChartTooltip } from "@/components/ui/chart-tooltip";
+import { DataRefreshingOverlay } from "@/components/ui/data-refreshing-overlay";
 import { StatCard } from "@/components/ui/stat-card";
 import {
   useTimeline,
@@ -152,6 +153,7 @@ export function TimelineView() {
   const {
     data: timelineResult,
     isLoading: isTimelineLoading,
+    isFetching: isTimelineFetching,
     isError: isTimelineError,
     error: timelineError,
   } = useTimeline(canFetchMetrics ? selectedProjectId : null, period);
@@ -159,6 +161,7 @@ export function TimelineView() {
   const {
     data: trafficResult,
     isLoading: isTrafficLoading,
+    isFetching: isTrafficFetching,
     isError: isTrafficError,
     error: trafficError,
   } = useTimelineTraffic(canFetchMetrics ? selectedProjectId : null, period);
@@ -166,6 +169,7 @@ export function TimelineView() {
   const {
     data: ctrResult,
     isLoading: isCtrLoading,
+    isFetching: isCtrFetching,
     isError: isCtrError,
     error: ctrError,
   } = useTimelineCtrBudget(
@@ -209,6 +213,10 @@ export function TimelineView() {
     (isTrafficLoading && !trafficResult) ||
     (isCtrLoading && !ctrResult);
 
+  const isRefreshing =
+    Boolean(timelineResult || trafficResult || ctrResult) &&
+    (isTimelineFetching || isTrafficFetching || isCtrFetching);
+
   if (isLoading) {
     return (
       <div className="space-y-3" aria-busy="true">
@@ -245,6 +253,7 @@ export function TimelineView() {
         <PerformancePeriodPicker />
       </div>
 
+      <DataRefreshingOverlay active={isRefreshing} className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Mots-clés"
@@ -562,6 +571,7 @@ export function TimelineView() {
           </ResponsiveContainer>
         </ChartCard>
       </div>
+      </DataRefreshingOverlay>
     </div>
   );
 }

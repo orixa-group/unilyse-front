@@ -1,6 +1,7 @@
 "use client";
 
 import { DataTableShell } from "@/components/ui/data-table-shell";
+import { DataRefreshingOverlay } from "@/components/ui/data-refreshing-overlay";
 import { InsightStrip } from "@/components/layout/insight-strip";
 import { LoadingSkeleton } from "@/components/common/loading-skeleton";
 import { StrategyKeywordTable } from "@/components/strategy/strategy-keyword-table";
@@ -34,6 +35,7 @@ export function StrategyView() {
   } = useStrategy(canFetchMetrics ? selectedProjectId : null, period);
 
   const strategy = strategyResult?.strategy;
+  const isRefreshing = isStrategyFetching && Boolean(strategyResult);
 
   const insights = useMemo(() => {
     if (!strategy) {
@@ -116,7 +118,7 @@ export function StrategyView() {
   const filterActive = recommendationFilter.size > 0;
 
   return (
-    <div className="space-y-6">
+    <DataRefreshingOverlay active={isRefreshing} className="space-y-6">
       <InsightStrip insights={insights} />
 
       {summaryCards.length > 0 ? (
@@ -136,7 +138,7 @@ export function StrategyView() {
         title="Recommandations par mot-clé"
         description={`${keywordCount} mot${keywordCount > 1 ? "s" : ""}-clé${
           filterActive ? ` sur ${totalKeywordCount}` : ""
-        }${isStrategyFetching ? " — actualisation…" : ""}`}
+        }${isRefreshing ? " — actualisation…" : ""}`}
         actions={
           <StrategyRecommendationFilter
             selected={recommendationFilter}
@@ -158,6 +160,6 @@ export function StrategyView() {
       >
         <StrategyOpportunityMatrix matrix={strategy.opportunity_matrix} />
       </DataTableShell>
-    </div>
+    </DataRefreshingOverlay>
   );
 }

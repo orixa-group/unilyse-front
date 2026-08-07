@@ -72,3 +72,42 @@ export function recommendationTone(
   }
   return "bg-muted/80 text-foreground dark:text-foreground";
 }
+
+export type ScoringLevelPolarity = "positive" | "cost";
+
+/**
+ * Tone pour low|medium|high.
+ * - positive (statut SEA, gain) : high = bon
+ * - cost (effort, délai) : high = coûteux / long
+ */
+export function scoringLevelTone(
+  level: string | null | undefined,
+  polarity: ScoringLevelPolarity = "positive",
+): string {
+  const key = level?.toLowerCase() ?? null;
+  if (!key) {
+    return "";
+  }
+  if (polarity === "cost") {
+    if (key === "high") {
+      return "bg-warning/30 text-warning dark:text-warning";
+    }
+    if (key === "medium") {
+      return "bg-muted/80 text-foreground dark:text-foreground";
+    }
+    if (key === "low") {
+      return "bg-success/30 text-success dark:text-success";
+    }
+    return "";
+  }
+  if (key === "high") {
+    return "bg-success/30 text-success dark:text-success";
+  }
+  if (key === "medium") {
+    return "bg-muted/80 text-foreground dark:text-foreground";
+  }
+  if (key === "low") {
+    return "bg-warning/30 text-warning dark:text-warning";
+  }
+  return "";
+}

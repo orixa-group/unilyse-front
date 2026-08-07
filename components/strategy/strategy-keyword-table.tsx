@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { MetricHeader } from "@/components/performances/metric-header";
+import { ScoringLevelBadge } from "@/components/strategy/scoring-level-badge";
 import { SeaTierBadge } from "@/components/strategy/sea-tier-badge";
 import { StrategyRecommendationBadge } from "@/components/strategy/strategy-recommendation-badge";
 import { ShareBar } from "@/components/ui/share-bar";
@@ -257,14 +258,12 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
           metricId="e4_delay"
         />
       ),
-      cell: ({ getValue }) => {
-        const value = getValue() as string | null;
-        return value ? (
-          <span className="capitalize">{value}</span>
-        ) : (
-          "—"
-        );
-      },
+      cell: ({ getValue }) => (
+        <ScoringLevelBadge
+          level={getValue() as string | null}
+          polarity="cost"
+        />
+      ),
     },
     {
       id: "e5_gain",
@@ -275,14 +274,12 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
           metricId="e5_gain"
         />
       ),
-      cell: ({ getValue }) => {
-        const value = getValue() as string | null;
-        return value ? (
-          <span className="capitalize">{value}</span>
-        ) : (
-          "—"
-        );
-      },
+      cell: ({ getValue }) => (
+        <ScoringLevelBadge
+          level={getValue() as string | null}
+          polarity="positive"
+        />
+      ),
     },
     {
       id: "s_seo_invest",
@@ -354,7 +351,7 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
         />
       ),
       cell: ({ getValue }) => (
-        <ShareBar value={getValue() as number | null} />
+        <ShareBar value={getValue() as number | null} variant="won" />
       ),
     },
     {
@@ -387,23 +384,12 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
           metricId="sea_status"
         />
       ),
-      cell: ({ getValue }) => {
-        const value = getValue() as string | null;
-        if (!value) {
-          return "—";
-        }
-        return (
-          <span
-            className={cn(
-              "rounded px-1.5 py-0.5 text-xs font-medium capitalize",
-              value === "high" && "bg-success/30 text-success",
-              value === "low" && "bg-warning/30 text-warning",
-            )}
-          >
-            {value}
-          </span>
-        );
-      },
+      cell: ({ getValue }) => (
+        <ScoringLevelBadge
+          level={getValue() as string | null}
+          polarity="positive"
+        />
+      ),
     },
     {
       id: "effort_status",
@@ -414,14 +400,12 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
           metricId="effort_status"
         />
       ),
-      cell: ({ getValue }) => {
-        const value = getValue() as string | null;
-        return value ? (
-          <span className="capitalize">{value}</span>
-        ) : (
-          "—"
-        );
-      },
+      cell: ({ getValue }) => (
+        <ScoringLevelBadge
+          level={getValue() as string | null}
+          polarity="cost"
+        />
+      ),
     },
   ];
 }

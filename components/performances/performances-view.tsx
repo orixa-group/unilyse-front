@@ -7,6 +7,7 @@ import { PerformancePeriodPicker } from "@/components/performances/performance-p
 import { PerformanceResultsTable } from "@/components/performances/performance-results-table";
 import { PerformanceSummary } from "@/components/performances/performance-summary";
 import { Button } from "@/components/ui/button";
+import { DataRefreshingOverlay } from "@/components/ui/data-refreshing-overlay";
 import { usePerformances } from "@/hooks/use-performances-api";
 import { useMonitoring } from "@/hooks/use-monitoring-api";
 import { useProjectContext } from "@/hooks/use-project-context";
@@ -19,6 +20,7 @@ export function PerformancesView() {
   const {
     data: performancesResult,
     isLoading: isPerformancesLoading,
+    isFetching: isPerformancesFetching,
     isError: isPerformancesError,
     error: performancesError,
   } = usePerformances(
@@ -35,6 +37,8 @@ export function PerformancesView() {
 
   const performances = performancesResult?.performances ?? [];
   const monitoring = monitoringResult?.monitoring ?? [];
+  const isRefreshing =
+    isPerformancesFetching && Boolean(performancesResult);
 
   if (isPerformancesLoading && !performancesResult) {
     return (
@@ -86,8 +90,10 @@ export function PerformancesView() {
           title="Rafraîchissement échoué"
         />
       ) : null}
-      <PerformanceSummary rows={performances} monitoring={monitoring} />
-      <PerformanceResultsTable rows={performances} />
+      <DataRefreshingOverlay active={isRefreshing} className="space-y-6">
+        <PerformanceSummary rows={performances} monitoring={monitoring} />
+        <PerformanceResultsTable rows={performances} />
+      </DataRefreshingOverlay>
     </div>
   );
 }

@@ -45,17 +45,17 @@ export const STRATEGY_COLUMN_LABELS = {
   conversion_rate: "Taux de conversion",
   sea_score: "Score SEA",
   sea_status: "Statut SEA",
-  d1_volume: "D1 Volume potentiel",
-  d2_budget: "D2 Budget injectable",
-  d3_conversion: "D3 Conversion",
-  d4_ad: "D4 Quality + conviv.",
-  d5_ctr: "D5 CTR incrémental",
+  d1_volume: "Volume potentiel",
+  d2_budget: "Budget injectable",
+  d3_conversion: "Conversion",
+  d4_ad: "Quality + conviv.",
+  d5_ctr: "CTR incrémental",
   seo_position: "Position SEO",
   content_label: "Contenu",
   popularity_label: "Popularité",
   effort_status: "Effort SEO",
-  e4_delay: "E4 Délai",
-  e5_gain: "E5 Gain potentiel",
+  e4_delay: "Délai",
+  e5_gain: "Gain potentiel",
   time_to_value_status: "Délai SEO",
   potential_gain_status: "Gain SEO",
   s_seo_invest: "S_SEO_invest",
@@ -96,6 +96,30 @@ export function formatStrategySeaTier(
   const key = normalizeSeaTierKey(
     typeof value === "string" ? value : (value ?? null),
   );
+  if (!key) {
+    return "—";
+  }
+  return TIER_LABELS[key] ?? value ?? "—";
+}
+
+/** Normalise low|medium|high (insensible à la casse). */
+export function normalizeScoringLevelKey(
+  value: string | null | undefined,
+): "low" | "medium" | "high" | null {
+  if (!value) {
+    return null;
+  }
+  const key = value.toLowerCase();
+  if (key === "low" || key === "medium" || key === "high") {
+    return key;
+  }
+  return null;
+}
+
+export function formatScoringLevel(
+  value: string | null | undefined,
+): string {
+  const key = normalizeScoringLevelKey(value);
   if (!key) {
     return "—";
   }

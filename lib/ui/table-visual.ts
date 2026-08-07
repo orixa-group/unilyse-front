@@ -3,7 +3,9 @@ import { competitorCountTone, volumeTone } from "@/lib/ui/metric-tone";
 
 export type ShareSeverity = "low" | "medium" | "high";
 
-/** Part d'impressions perdues (0–1) → niveau d'alerte visuelle. */
+export type ShareBarVariant = "lost" | "won";
+
+/** Part d'impressions perdues (0–1) → niveau d'alerte (élevé = mauvais). */
 export function getShareSeverity(share: number | null | undefined): ShareSeverity | null {
   if (share === null || share === undefined || Number.isNaN(share)) {
     return null;
@@ -17,6 +19,26 @@ export function getShareSeverity(share: number | null | undefined): ShareSeverit
   return "low";
 }
 
+/**
+ * Part d'impressions obtenue (0–1) → niveau (élevé = bon).
+ * Seuils miroir de getShareSeverity.
+ */
+export function getWonShareSeverity(
+  share: number | null | undefined,
+): ShareSeverity | null {
+  if (share === null || share === undefined || Number.isNaN(share)) {
+    return null;
+  }
+  if (share >= 0.35) {
+    return "high";
+  }
+  if (share >= 0.15) {
+    return "medium";
+  }
+  return "low";
+}
+
+/** Couleurs pour part perdue : high = rouge. */
 export const SHARE_BAR_CLASS: Record<ShareSeverity, string> = {
   low: "bg-chart-2",
   medium: "bg-warning",
@@ -27,6 +49,19 @@ export const SHARE_TEXT_CLASS: Record<ShareSeverity, string> = {
   low: "text-muted-foreground",
   medium: "text-warning dark:text-warning",
   high: "text-destructive dark:text-destructive font-medium",
+};
+
+/** Couleurs pour part obtenue : high = vert. */
+export const WON_SHARE_BAR_CLASS: Record<ShareSeverity, string> = {
+  low: "bg-destructive",
+  medium: "bg-warning",
+  high: "bg-success",
+};
+
+export const WON_SHARE_TEXT_CLASS: Record<ShareSeverity, string> = {
+  low: "text-destructive dark:text-destructive",
+  medium: "text-warning dark:text-warning",
+  high: "text-success dark:text-success font-medium",
 };
 
 export type TableChannel = "common" | "sea" | "seo";
