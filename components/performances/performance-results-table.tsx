@@ -12,6 +12,7 @@ import { useMemo, useState } from "react";
 import { MetricHeader } from "@/components/performances/metric-header";
 import { PerformanceColumnMenu } from "@/components/performances/performance-column-menu";
 import { ShareBar } from "@/components/ui/share-bar";
+import { UnavailableMetric } from "@/components/ui/unavailable-metric";
 import { DataTableShell } from "@/components/ui/data-table-shell";
 import {
   Table,
@@ -402,7 +403,7 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
           metricId="netlinking_score"
         />
       ),
-      cell: () => "—",
+      cell: () => <UnavailableMetric metricId="netlinking_score" />,
       enableSorting: false,
     },
     {
@@ -414,7 +415,7 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
           metricId="semantic_score"
         />
       ),
-      cell: () => "—",
+      cell: () => <UnavailableMetric metricId="semantic_score" />,
       enableSorting: false,
     },
     {

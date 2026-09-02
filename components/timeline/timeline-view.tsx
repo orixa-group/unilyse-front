@@ -32,7 +32,6 @@ import {
 } from "@/hooks/use-timeline-api";
 import { useProjectThemes } from "@/hooks/use-themes-api";
 import { useProjectContext } from "@/hooks/use-project-context";
-import { toKeywordValues } from "@/lib/projects/keywords";
 import {
   formatCurrencyEur,
   formatNumber,
@@ -133,21 +132,19 @@ function ChartCard({
 }
 
 export function TimelineView() {
-  const { canFetchMetrics, selectedProjectId, selectedProject, period } =
+  const { canFetchMetrics, selectedProjectId, period } =
     useProjectContext();
 
   const [canal, setCanal] = useState<CanalFilter>("all");
-  const [keyword, setKeyword] = useState<string | null>(null);
   const [theme, setTheme] = useState<string | null>(null);
 
   const ctrFilter = useMemo(
     () => ({
       from: period?.from,
       to: period?.to,
-      keyword: keyword ? [keyword] : undefined,
       theme: theme ? [theme] : undefined,
     }),
-    [period?.from, period?.to, keyword, theme],
+    [period?.from, period?.to, theme],
   );
 
   const {
@@ -177,10 +174,6 @@ export function TimelineView() {
     ctrFilter,
   );
 
-  const { data: themesResult } = useProjectThemes(
-    canFetchMetrics ? selectedProjectId : null,
-  );
-
   const timeline = timelineResult?.timeline ?? null;
   const trafficPoints = trafficResult?.points ?? [];
   const ctrPoints = ctrResult?.points ?? [];
@@ -194,10 +187,9 @@ export function TimelineView() {
     [ctrPoints, canal],
   );
 
-  const keywordOptions = useMemo(() => {
-    const values = toKeywordValues(selectedProject?.keywords ?? []);
-    return values.map((value) => ({ value, label: value }));
-  }, [selectedProject?.keywords]);
+  const { data: themesResult } = useProjectThemes(
+    canFetchMetrics ? selectedProjectId : null,
+  );
 
   const themeOptions = useMemo(
     () =>
@@ -419,20 +411,6 @@ export function TimelineView() {
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-[180px] flex-1">
-          <p className="text-muted-foreground mb-1 text-xs font-medium">
-            Mot-clé
-          </p>
-          <Autocomplete
-            options={keywordOptions}
-            value={keyword}
-            onValueChange={setKeyword}
-            placeholder="Tous les mots-clés"
-            clearable
-            clearLabel="Tous"
-            aria-label="Filtrer par mot-clé"
-          />
-        </div>
-        <div className="min-w-[160px] flex-1">
           <p className="text-muted-foreground mb-1 text-xs font-medium">
             Thématique
           </p>

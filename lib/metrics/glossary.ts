@@ -70,6 +70,13 @@ export const METRIC_GLOSSARY: Record<string, string> = {
   effort_status: "Niveau d'effort SEO (low / medium / high).",
   time_to_value_status: "Délai estimé avant valeur SEO (low / medium / high).",
   potential_gain_status: "Gain potentiel SEO (low / medium / high).",
+  s_seo_invest:
+    "Score d'investissement SEO (S_SEO_invest) — formule non encore exposée par l'API.",
+  note: "Note de synthèse stratégique — non encore exposée par l'API.",
+  content_label:
+    "Statut de couverture sémantique du contenu : Optimisé ou Sous-optimisé.",
+  popularity_label:
+    "Statut d'autorité / popularité de l'URL : Optimisé ou Sous-optimisé vs concurrents.",
 };
 
 export function getMetricGlossary(id: string): string | undefined {

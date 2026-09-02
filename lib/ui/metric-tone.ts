@@ -111,3 +111,19 @@ export function scoringLevelTone(
   }
   return "";
 }
+
+export function optimizationStatusTone(
+  status: "optimized" | "not_optimized" | string | null | undefined,
+): string {
+  const key =
+    typeof status === "string"
+      ? status.toLowerCase().replace(/-/g, "_")
+      : status ?? null;
+  if (key === "optimized") {
+    return "bg-success/30 text-success dark:text-success";
+  }
+  if (key === "not_optimized" || key === "under_optimized") {
+    return "bg-warning/30 text-warning dark:text-warning";
+  }
+  return "";
+}

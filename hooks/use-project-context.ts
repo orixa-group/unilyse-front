@@ -49,10 +49,8 @@ export function useProjectContext() {
 
   const period: UnilizePeriodQuery | undefined = useMemo(() => {
     if (!periodFrom && !periodTo) return undefined;
-    return {
-      from: periodFrom ?? undefined,
-      to: periodTo ?? undefined,
-    };
+    if (!periodFrom || !periodTo) return undefined;
+    return { from: periodFrom, to: periodTo };
   }, [periodFrom, periodTo]);
 
   const canFetchMetrics = Boolean(selectedProjectId);

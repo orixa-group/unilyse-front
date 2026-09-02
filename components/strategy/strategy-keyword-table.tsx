@@ -10,10 +10,12 @@ import {
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { MetricHeader } from "@/components/performances/metric-header";
+import { OptimizationStatusBadge } from "@/components/strategy/optimization-status-badge";
 import { ScoringLevelBadge } from "@/components/strategy/scoring-level-badge";
 import { SeaTierBadge } from "@/components/strategy/sea-tier-badge";
 import { StrategyRecommendationBadge } from "@/components/strategy/strategy-recommendation-badge";
 import { ShareBar } from "@/components/ui/share-bar";
+import { UnavailableMetric } from "@/components/ui/unavailable-metric";
 import {
   Table,
   TableBody,
@@ -87,10 +89,6 @@ function formatNullableScore(value: number | null | undefined): string {
     return "—";
   }
   return formatNumber(value);
-}
-
-function PlaceholderCell() {
-  return <span className="text-muted-foreground">—</span>;
 }
 
 function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
@@ -227,27 +225,35 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
     },
     {
       id: "content_label",
-      accessorFn: () => null,
+      accessorFn: (row) => row.seo?.semantic_status ?? null,
       header: () => (
         <MetricHeader
           label={STRATEGY_COLUMN_LABELS.content_label}
           metricId="content_label"
         />
       ),
-      cell: () => <PlaceholderCell />,
-      enableSorting: false,
+      cell: ({ getValue }) => (
+        <OptimizationStatusBadge
+          status={getValue() as string | null}
+          metricId="semantic_status"
+        />
+      ),
     },
     {
       id: "popularity_label",
-      accessorFn: () => null,
+      accessorFn: (row) => row.seo?.authority_status ?? null,
       header: () => (
         <MetricHeader
           label={STRATEGY_COLUMN_LABELS.popularity_label}
           metricId="popularity_label"
         />
       ),
-      cell: () => <PlaceholderCell />,
-      enableSorting: false,
+      cell: ({ getValue }) => (
+        <OptimizationStatusBadge
+          status={getValue() as string | null}
+          metricId="authority_status"
+        />
+      ),
     },
     {
       id: "e4_delay",
@@ -290,7 +296,7 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
           metricId="s_seo_invest"
         />
       ),
-      cell: () => <PlaceholderCell />,
+      cell: () => <UnavailableMetric metricId="s_seo_invest" />,
       enableSorting: false,
     },
     {
@@ -299,7 +305,7 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
       header: () => (
         <MetricHeader label={STRATEGY_COLUMN_LABELS.note} metricId="note" />
       ),
-      cell: () => <PlaceholderCell />,
+      cell: () => <UnavailableMetric metricId="note" />,
       enableSorting: false,
     },
     {
