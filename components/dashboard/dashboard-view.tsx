@@ -53,7 +53,7 @@ import {
   computeProjectReadiness,
   isProjectSetupComplete,
 } from "@/lib/projects/project-readiness";
-import { toKeywordValues } from "@/lib/projects/keywords";
+import { toKeywordValues, formatKeywordLabel } from "@/lib/projects/keywords";
 import {
   logUnilizeFetchSnapshot,
   summarizeKeywords,
@@ -138,7 +138,9 @@ export function DashboardView() {
 
       return (
         project.keywords?.some((keyword) =>
-          keyword.value.toLowerCase().includes(normalizedProjectSearch),
+          formatKeywordLabel(keyword)
+            .toLowerCase()
+            .includes(normalizedProjectSearch),
         ) ?? false
       );
     });

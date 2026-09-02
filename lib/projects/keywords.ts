@@ -23,7 +23,7 @@ export function toKeywordValues(
   if (!keywords?.length) {
     return [];
   }
-  return keywords.map((keyword) => keyword.value);
+  return keywords.map((keyword) => formatKeywordLabel(keyword));
 }
 
 /**

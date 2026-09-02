@@ -189,10 +189,10 @@ function KeywordsSection({
         Mots-clés
       </p>
       <ul className="line-clamp-2 flex flex-wrap items-center gap-1">
-        {visible.map((keyword) => (
-          <li key={keyword}>
+        {visible.map((keywordLabel, index) => (
+          <li key={`${keywordLabel}-${index}`}>
             <Badge variant="outline" className="max-w-[8rem] truncate text-xs font-normal">
-              {keyword}
+              {keywordLabel}
             </Badge>
           </li>
         ))}

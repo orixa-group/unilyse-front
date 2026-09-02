@@ -31,7 +31,7 @@ import {
   useTimelineTraffic,
 } from "@/hooks/use-timeline-api";
 import { useProjectThemes } from "@/hooks/use-themes-api";
-import { useProjectContext } from "@/hooks/use-project-context";
+import { formatKeywordLabel } from "@/lib/projects/keywords";
 import {
   formatCurrencyEur,
   formatNumber,
@@ -193,10 +193,10 @@ export function TimelineView() {
 
   const themeOptions = useMemo(
     () =>
-      (themesResult?.themes ?? []).map((value) => ({
-        value,
-        label: value,
-      })),
+      (themesResult?.themes ?? []).map((theme) => {
+        const label = formatKeywordLabel(theme);
+        return { value: label, label };
+      }),
     [themesResult?.themes],
   );
 
