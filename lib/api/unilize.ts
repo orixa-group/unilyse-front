@@ -20,6 +20,10 @@ import type {
   UnilizeTimelineFilterQuery,
   UnilizeTimelineTrafficPoint,
 } from "@/types/timeline";
+import {
+  normalizePeriodQuery,
+  normalizeTimelineFilterQuery,
+} from "@/lib/unilize/period-query";
 
 export const unilizeKeys = {
   all: ["unilize"] as const,
@@ -165,7 +169,7 @@ export async function listPerformances(
 ): Promise<UnilizePerformance[]> {
   const res = await apiClient.get<UnilizeApiEnvelope<UnilizePerformance[]>>(
     API.projectPerformances(projectId),
-    { query: period },
+    { query: normalizePeriodQuery(period) },
   );
   if (!Array.isArray(res?.data)) {
     throw new Error("Réponse API invalide pour les performances.");
@@ -179,7 +183,7 @@ export async function getStrategy(
 ): Promise<UnilizeStrategy> {
   const res = await apiClient.get<UnilizeApiEnvelope<UnilizeStrategy>>(
     API.projectStrategy(projectId),
-    { query: period },
+    { query: normalizePeriodQuery(period) },
   );
   if (!res?.data || typeof res.data !== "object") {
     throw new Error("Réponse API invalide pour la stratégie.");
@@ -193,7 +197,7 @@ export async function listKeywordMonitoring(
 ): Promise<UnilizeKeywordMonitoring[]> {
   const res = await apiClient.get<
     UnilizeApiEnvelope<UnilizeKeywordMonitoring[]>
-  >(API.projectMonitoring(projectId), { query: period });
+  >(API.projectMonitoring(projectId), { query: normalizePeriodQuery(period) });
   if (!Array.isArray(res?.data)) {
     throw new Error("Réponse API invalide pour le monitoring.");
   }
@@ -216,7 +220,7 @@ export async function getTimeline(
 ): Promise<UnilizeTimeline> {
   const res = await apiClient.get<UnilizeApiEnvelope<UnilizeTimeline>>(
     API.projectTimeline(projectId),
-    { query: period },
+    { query: normalizePeriodQuery(period) },
   );
   if (!res?.data || typeof res.data !== "object") {
     throw new Error("Réponse API invalide pour la timeline.");
@@ -230,7 +234,7 @@ export async function listTimelineTraffic(
 ): Promise<UnilizeTimelineTrafficPoint[]> {
   const res = await apiClient.get<
     UnilizeApiEnvelope<UnilizeTimelineTrafficPoint[]>
-  >(API.projectTimelineTraffic(projectId), { query: period });
+  >(API.projectTimelineTraffic(projectId), { query: normalizePeriodQuery(period) });
   if (!Array.isArray(res?.data)) {
     throw new Error("Réponse API invalide pour le trafic timeline.");
   }
@@ -241,14 +245,15 @@ export async function listTimelineCtrBudget(
   projectId: string,
   filter?: UnilizeTimelineFilterQuery,
 ): Promise<UnilizeTimelineCtrBudgetPoint[]> {
+  const normalized = normalizeTimelineFilterQuery(filter);
   const res = await apiClient.get<
     UnilizeApiEnvelope<UnilizeTimelineCtrBudgetPoint[]>
   >(API.projectTimelineCtrBudget(projectId), {
     query: {
-      from: filter?.from,
-      to: filter?.to,
-      keyword: filter?.keyword,
-      theme: filter?.theme,
+      from: normalized?.from,
+      to: normalized?.to,
+      keyword: normalized?.keyword,
+      theme: normalized?.theme,
     },
   });
   if (!Array.isArray(res?.data)) {

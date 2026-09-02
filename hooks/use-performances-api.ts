@@ -4,6 +4,7 @@ import { keepPreviousData, useQuery, type UseQueryOptions } from "@tanstack/reac
 import { fetchBffJson } from "@/lib/api/bff-fetch";
 import { logUnilizeEvent, summarizeUnilizePayload } from "@/lib/unilize/request-log";
 import { unilizeKeys } from "@/lib/api/unilize";
+import { appendPeriodSearchParams } from "@/lib/unilize/period-query";
 import type { ListPerformancesResult } from "@/types/performance";
 import type { UnilizePeriodQuery } from "@/types/unilize";
 
@@ -12,8 +13,7 @@ function buildUrl(projectId: string, period?: UnilizePeriodQuery): string {
     `/api/bff/projects/${encodeURIComponent(projectId)}/performances`,
     typeof window !== "undefined" ? window.location.origin : "http://localhost",
   );
-  if (period?.from) url.searchParams.set("from", period.from);
-  if (period?.to) url.searchParams.set("to", period.to);
+  appendPeriodSearchParams(url, period);
   return `${url.pathname}${url.search}`;
 }
 

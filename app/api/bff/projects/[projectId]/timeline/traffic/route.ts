@@ -6,6 +6,10 @@ import { withRetry } from "@/lib/api/async-utils";
 import { bffRouteErrorResponse } from "@/lib/api/bff-route-utils";
 import { logUnilizeEvent, summarizeUnilizePayload } from "@/lib/unilize/request-log";
 import { listTimelineTraffic } from "@/lib/api/unilize";
+import {
+  normalizePeriodQuery,
+  parsePeriodFromSearchParams,
+} from "@/lib/unilize/period-query";
 import type { ListTimelineTrafficResult } from "@/types/timeline";
 import type { UnilizePeriodQuery } from "@/types/unilize";
 
@@ -13,18 +17,11 @@ function getTrafficRequestUrl(
   projectId: string,
   period?: UnilizePeriodQuery,
 ): string {
+  const normalized = normalizePeriodQuery(period);
   return buildUnilizeUpstreamUrl(API.projectTimelineTraffic(projectId), {
-    from: period?.from,
-    to: period?.to,
+    from: normalized?.from,
+    to: normalized?.to,
   });
-}
-
-function parsePeriod(request: Request): UnilizePeriodQuery | undefined {
-  const { searchParams } = new URL(request.url);
-  const from = searchParams.get("from")?.trim() || undefined;
-  const to = searchParams.get("to")?.trim() || undefined;
-  if (!from && !to) return undefined;
-  return { from, to };
 }
 
 export async function GET(
@@ -33,7 +30,7 @@ export async function GET(
 ) {
   return withBffAuth(request, async () => {
     const { projectId } = await context.params;
-    const period = parsePeriod(request);
+    const period = parsePeriodFromSearchParams(new URL(request.url).searchParams);
     const requestUrl = getTrafficRequestUrl(projectId, period);
     const startedAt = Date.now();
     logUnilizeEvent("bff", "start", "GET /api/bff/.../timeline/traffic", {

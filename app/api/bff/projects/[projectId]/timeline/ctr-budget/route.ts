@@ -6,6 +6,10 @@ import { withRetry } from "@/lib/api/async-utils";
 import { bffRouteErrorResponse } from "@/lib/api/bff-route-utils";
 import { logUnilizeEvent, summarizeUnilizePayload } from "@/lib/unilize/request-log";
 import { listTimelineCtrBudget } from "@/lib/api/unilize";
+import {
+  normalizeTimelineFilterQuery,
+  parseTimelineFilterFromSearchParams,
+} from "@/lib/unilize/period-query";
 import type {
   ListTimelineCtrBudgetResult,
   UnilizeTimelineFilterQuery,
@@ -15,35 +19,13 @@ function getCtrBudgetRequestUrl(
   projectId: string,
   filter?: UnilizeTimelineFilterQuery,
 ): string {
+  const normalized = normalizeTimelineFilterQuery(filter);
   return buildUnilizeUpstreamUrl(API.projectTimelineCtrBudget(projectId), {
-    from: filter?.from,
-    to: filter?.to,
-    keyword: filter?.keyword,
-    theme: filter?.theme,
+    from: normalized?.from,
+    to: normalized?.to,
+    keyword: normalized?.keyword,
+    theme: normalized?.theme,
   });
-}
-
-function parseFilter(request: Request): UnilizeTimelineFilterQuery | undefined {
-  const { searchParams } = new URL(request.url);
-  const from = searchParams.get("from")?.trim() || undefined;
-  const to = searchParams.get("to")?.trim() || undefined;
-  const keyword = searchParams
-    .getAll("keyword")
-    .map((k) => k.trim())
-    .filter(Boolean);
-  const theme = searchParams
-    .getAll("theme")
-    .map((t) => t.trim())
-    .filter(Boolean);
-  if (!from && !to && keyword.length === 0 && theme.length === 0) {
-    return undefined;
-  }
-  return {
-    from,
-    to,
-    keyword: keyword.length ? keyword : undefined,
-    theme: theme.length ? theme : undefined,
-  };
 }
 
 export async function GET(
@@ -52,7 +34,9 @@ export async function GET(
 ) {
   return withBffAuth(request, async () => {
     const { projectId } = await context.params;
-    const filter = parseFilter(request);
+    const filter = parseTimelineFilterFromSearchParams(
+      new URL(request.url).searchParams,
+    );
     const requestUrl = getCtrBudgetRequestUrl(projectId, filter);
     const startedAt = Date.now();
     logUnilizeEvent("bff", "start", "GET /api/bff/.../timeline/ctr-budget", {

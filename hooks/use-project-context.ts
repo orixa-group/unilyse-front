@@ -5,6 +5,7 @@ import { useSyncProjectSelection } from "@/hooks/use-sync-project-selection";
 import { useProjects } from "@/hooks/use-unilize-api";
 import { useSelectionHydrated } from "@/hooks/use-selection-hydrated";
 import { normalizeProjectsFromQuery } from "@/lib/unilize/normalize";
+import { normalizePeriodQuery } from "@/lib/unilize/period-query";
 import { useSelectionStore } from "@/stores/selection.store";
 import type { UnilizePeriodQuery } from "@/types/unilize";
 
@@ -47,11 +48,14 @@ export function useProjectContext() {
     [projects, selectedProjectId],
   );
 
-  const period: UnilizePeriodQuery | undefined = useMemo(() => {
-    if (!periodFrom && !periodTo) return undefined;
-    if (!periodFrom || !periodTo) return undefined;
-    return { from: periodFrom, to: periodTo };
-  }, [periodFrom, periodTo]);
+  const period: UnilizePeriodQuery | undefined = useMemo(
+    () =>
+      normalizePeriodQuery({
+        from: periodFrom ?? undefined,
+        to: periodTo ?? undefined,
+      }),
+    [periodFrom, periodTo],
+  );
 
   const canFetchMetrics = Boolean(selectedProjectId);
 

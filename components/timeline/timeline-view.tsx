@@ -33,6 +33,7 @@ import {
 import { useProjectThemes } from "@/hooks/use-themes-api";
 import { useProjectContext } from "@/hooks/use-project-context";
 import { formatKeywordLabel } from "@/lib/projects/keywords";
+import { normalizeTimelineFilterQuery } from "@/lib/unilize/period-query";
 import {
   formatCurrencyEur,
   formatNumber,
@@ -140,12 +141,13 @@ export function TimelineView() {
   const [theme, setTheme] = useState<string | null>(null);
 
   const ctrFilter = useMemo(
-    () => ({
-      from: period?.from,
-      to: period?.to,
-      theme: theme ? [theme] : undefined,
-    }),
-    [period?.from, period?.to, theme],
+    () =>
+      normalizeTimelineFilterQuery({
+        from: period?.from,
+        to: period?.to,
+        theme: theme ? [theme] : undefined,
+      }),
+    [period, theme],
   );
 
   const {

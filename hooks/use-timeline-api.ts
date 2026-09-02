@@ -4,6 +4,10 @@ import { keepPreviousData, useQuery, type UseQueryOptions } from "@tanstack/reac
 import { fetchBffJson } from "@/lib/api/bff-fetch";
 import { logUnilizeEvent, summarizeUnilizePayload } from "@/lib/unilize/request-log";
 import { unilizeKeys } from "@/lib/api/unilize";
+import {
+  appendPeriodSearchParams,
+  normalizeTimelineFilterQuery,
+} from "@/lib/unilize/period-query";
 import type {
   GetTimelineResult,
   ListTimelineCtrBudgetResult,
@@ -21,8 +25,7 @@ function buildPeriodUrl(
     path,
     typeof window !== "undefined" ? window.location.origin : "http://localhost",
   );
-  if (period?.from) url.searchParams.set("from", period.from);
-  if (period?.to) url.searchParams.set("to", period.to);
+  appendPeriodSearchParams(url, period);
   return `${url.pathname}${url.search}`;
 }
 
@@ -35,12 +38,12 @@ function buildFilterUrl(
     path,
     typeof window !== "undefined" ? window.location.origin : "http://localhost",
   );
-  if (filter?.from) url.searchParams.set("from", filter.from);
-  if (filter?.to) url.searchParams.set("to", filter.to);
-  for (const keyword of filter?.keyword ?? []) {
+  const normalized = normalizeTimelineFilterQuery(filter);
+  appendPeriodSearchParams(url, normalized);
+  for (const keyword of normalized?.keyword ?? []) {
     url.searchParams.append("keyword", keyword);
   }
-  for (const theme of filter?.theme ?? []) {
+  for (const theme of normalized?.theme ?? []) {
     url.searchParams.append("theme", theme);
   }
   return `${url.pathname}${url.search}`;
