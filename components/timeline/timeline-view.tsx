@@ -31,6 +31,7 @@ import {
   useTimelineTraffic,
 } from "@/hooks/use-timeline-api";
 import { useProjectThemes } from "@/hooks/use-themes-api";
+import { useProjectContext } from "@/hooks/use-project-context";
 import { formatKeywordLabel } from "@/lib/projects/keywords";
 import {
   formatCurrencyEur,
