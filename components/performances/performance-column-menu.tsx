@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -30,13 +31,14 @@ export function PerformanceColumnMenu({
   onApplyPreset?: (presetId: PerformanceColumnPresetId) => void;
   onReset?: () => void;
 }) {
+  const [open, setOpen] = useState(false);
   const activePreset = matchPerformanceColumnPreset(visibleColumns);
   const triggerLabel = activePreset
     ? `Colonnes · ${PERFORMANCE_COLUMN_PRESET_LABELS[activePreset]}`
     : `Colonnes (${visibleColumns.size})`;
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button type="button" variant="outline" size="sm">
           {triggerLabel}
@@ -60,7 +62,10 @@ export function PerformanceColumnMenu({
                       isActive && "pointer-events-none",
                     )}
                     aria-pressed={isActive}
-                    onClick={() => onApplyPreset(presetId)}
+                    onClick={() => {
+                      onApplyPreset(presetId);
+                      setOpen(false);
+                    }}
                   >
                     <span>{PERFORMANCE_COLUMN_PRESET_LABELS[presetId]}</span>
                     {isActive ? (
@@ -98,7 +103,10 @@ export function PerformanceColumnMenu({
             <button
               type="button"
               className="text-muted-foreground hover:bg-accent hover:text-accent-foreground w-full rounded-sm px-2 py-1.5 text-left text-xs"
-              onClick={onReset}
+              onClick={() => {
+                onReset();
+                setOpen(false);
+              }}
             >
               Réinitialiser (Essentiel)
             </button>
