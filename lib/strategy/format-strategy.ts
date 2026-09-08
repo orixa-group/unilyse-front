@@ -1,4 +1,6 @@
 import type {
+  UnilizeSeaDimensionScore,
+  UnilizeSeaScoringStatus,
   UnilizeStrategyRecommendation,
   UnilizeStrategySeaTier,
 } from "@/types/strategy";
@@ -56,7 +58,7 @@ export const STRATEGY_COLUMN_LABELS = {
   effort_status: "Effort SEO",
   e4_delay: "Délai",
   e5_gain: "Gain potentiel",
-  time_to_value_status: "Délai SEO",
+  delay_status: "Délai SEO",
   potential_gain_status: "Gain SEO",
   s_seo_invest: "S_SEO_invest",
   note: "Note",
@@ -102,6 +104,36 @@ export function formatStrategySeaTier(
   return TIER_LABELS[key] ?? value ?? "—";
 }
 
+const DELAY_STATUS_LABELS: Record<string, string> = {
+  short: "Court",
+  medium: "Moyen",
+  long: "Long",
+};
+
+/** Normalise short|medium|long (insensible à la casse). */
+export function normalizeDelayStatusKey(
+  value: string | null | undefined,
+): "short" | "medium" | "long" | null {
+  if (!value) {
+    return null;
+  }
+  const key = value.toLowerCase();
+  if (key === "short" || key === "medium" || key === "long") {
+    return key;
+  }
+  return null;
+}
+
+export function formatDelayStatus(
+  value: string | null | undefined,
+): string {
+  const key = normalizeDelayStatusKey(value);
+  if (!key) {
+    return "—";
+  }
+  return DELAY_STATUS_LABELS[key] ?? value ?? "—";
+}
+
 /** Normalise low|medium|high (insensible à la casse). */
 export function normalizeScoringLevelKey(
   value: string | null | undefined,
@@ -124,4 +156,73 @@ export function formatScoringLevel(
     return "—";
   }
   return TIER_LABELS[key] ?? value ?? "—";
+}
+
+const SEA_DIMENSION_SCORES: UnilizeSeaDimensionScore[] = [1, 2, 3, 4, 5];
+
+const SEA_DIMENSION_SCORE_LABELS: Record<UnilizeSeaDimensionScore, string> = {
+  1: "Très faible",
+  2: "Faible",
+  3: "Moyen",
+  4: "Bien",
+  5: "Très bien",
+};
+
+/** Valide un score dimension SEA sur l'échelle 1–5. */
+export function normalizeSeaDimensionScore(
+  value: number | null | undefined,
+): UnilizeSeaDimensionScore | null {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return null;
+  }
+  const rounded = Math.round(value);
+  return SEA_DIMENSION_SCORES.includes(rounded as UnilizeSeaDimensionScore)
+    ? (rounded as UnilizeSeaDimensionScore)
+    : null;
+}
+
+export function formatSeaDimensionScore(
+  value: number | null | undefined,
+): string {
+  const level = normalizeSeaDimensionScore(value);
+  if (!level) {
+    return "—";
+  }
+  return SEA_DIMENSION_SCORE_LABELS[level];
+}
+
+const SEA_SCORING_STATUS_LABELS: Record<UnilizeSeaScoringStatus, string> = {
+  low: "Faible",
+  medium_low: "Moyen bas",
+  medium_high: "Moyen haut",
+  high: "Élevé",
+};
+
+/** Normalise low|medium_low|medium_high|high (insensible à la casse). */
+export function normalizeSeaScoringStatusKey(
+  value: string | null | undefined,
+): UnilizeSeaScoringStatus | null {
+  if (!value) {
+    return null;
+  }
+  const key = value.toLowerCase().replace(/-/g, "_");
+  if (
+    key === "low" ||
+    key === "medium_low" ||
+    key === "medium_high" ||
+    key === "high"
+  ) {
+    return key;
+  }
+  return null;
+}
+
+export function formatSeaScoringStatus(
+  value: string | null | undefined,
+): string {
+  const key = normalizeSeaScoringStatusKey(value);
+  if (!key) {
+    return "—";
+  }
+  return SEA_SCORING_STATUS_LABELS[key];
 }

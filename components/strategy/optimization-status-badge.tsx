@@ -1,29 +1,36 @@
 import {
   formatOptimizationStatus,
+  type SeoStatusKey,
 } from "@/lib/strategy/format-bas";
 import { optimizationStatusTone } from "@/lib/ui/metric-tone";
 import { cn } from "@/lib/utils/cn";
-import type { UnilizeOptimizationStatus } from "@/types/strategy";
+import type {
+  UnilizeAuthorityStatus,
+  UnilizeSemanticStatus,
+} from "@/types/strategy";
 import { UnavailableMetric } from "@/components/ui/unavailable-metric";
 
 function normalizeOptimizationKey(
-  value: UnilizeOptimizationStatus | string | null | undefined,
-): "optimized" | "not_optimized" | null {
-  if (value === "optimized" || value === "not_optimized") {
-    return value;
-  }
+  value:
+    | UnilizeSemanticStatus
+    | UnilizeAuthorityStatus
+    | string
+    | null
+    | undefined,
+): SeoStatusKey | null {
   if (value === null || value === undefined) {
     return null;
   }
-  const normalized = String(value).toLowerCase().replace(/-/g, "_");
-  if (normalized === "optimized") {
-    return "optimized";
-  }
+  const key = String(value).toLowerCase().replace(/-/g, "_");
   if (
-    normalized === "not_optimized" ||
-    normalized === "under_optimized"
+    key === "leader" ||
+    key === "optimized" ||
+    key === "to_optimize" ||
+    key === "fairly_degraded" ||
+    key === "degraded" ||
+    key === "not_optimized"
   ) {
-    return "not_optimized";
+    return key as SeoStatusKey;
   }
   return null;
 }
@@ -32,7 +39,12 @@ export function OptimizationStatusBadge({
   status,
   metricId,
 }: {
-  status: UnilizeOptimizationStatus | string | null | undefined;
+  status:
+    | UnilizeSemanticStatus
+    | UnilizeAuthorityStatus
+    | string
+    | null
+    | undefined;
   metricId?: string;
 }) {
   const key = normalizeOptimizationKey(status);

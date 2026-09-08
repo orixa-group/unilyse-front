@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatStrategyRecommendation } from "@/lib/strategy/format-strategy";
-import { formatNumber } from "@/lib/utils/formatting";
+import { formatDecimal, formatNumber } from "@/lib/utils/formatting";
 import type { UnilizeWorkGap } from "@/types/strategy";
 
 export type StrategyWorkPanelColumn = {
@@ -32,7 +32,7 @@ function cellValue(row: UnilizeWorkGap, columnId: string): string {
     case "keyword":
       return row.keyword;
     case "priority":
-      return formatNumber(row.priority);
+      return formatDecimal(row.priority);
     case "volume":
       return formatNumber(row.volume);
     case "target":

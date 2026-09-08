@@ -44,7 +44,7 @@ export const METRIC_GLOSSARY: Record<string, string> = {
   ctr_global:
     "CTR global dérivé : (clics SEA + clics SEO) / volume de recherche × 100.",
   authority_status:
-    "Statut d'autorité de l'URL : Optimisé ou Sous-optimisé vs concurrents.",
+    "Statut d'autorité / netlinking vs concurrents : leader, optimisé, à optimiser, plutôt dégradé ou dégradé.",
   competitor_count: "Nombre d'annonceurs actifs sur ce mot-clé.",
   status:
     "Recommandation monitoring : Cibler (forte opportunité), À évaluer, ou Ignorer.",
@@ -53,7 +53,7 @@ export const METRIC_GLOSSARY: Record<string, string> = {
   semantic_gap:
     "Mot-clé dont la couverture sémantique n’est pas optimisée vs concurrents.",
   semantic_status:
-    "Statut de couverture sémantique du contenu : Optimisé ou Sous-optimisé.",
+    "Statut de couverture sémantique du contenu : leader, optimisé, à optimiser ou dégradé.",
   ad_relevance:
     "Évaluation Google Ads de la pertinence de l'annonce par rapport au mot-clé.",
   expected_ctr:
@@ -66,17 +66,28 @@ export const METRIC_GLOSSARY: Record<string, string> = {
   page_intent_match:
     "La page cible correspond-elle à l'intention de recherche du mot-clé ?",
   sea_score: "Score composite SEA (S_SEA) dérivé des dimensions D1–D5.",
-  sea_status: "Statut SEA high/low selon le seuil de performance.",
+  d1_volume:
+    "Dimension D1 — volume potentiel SEA (Très faible → Très bien, échelle 1–5).",
+  d2_budget:
+    "Dimension D2 — budget injectable SEA (Très faible → Très bien, échelle 1–5).",
+  d3_conversion:
+    "Dimension D3 — conversion SEA (Très faible → Très bien, échelle 1–5).",
+  d4_ad:
+    "Dimension D4 — quality score + convivialité landing (Très faible → Très bien, échelle 1–5).",
+  d5_ctr:
+    "Dimension D5 — CTR incrémental SEA (Très faible → Très bien, échelle 1–5).",
+  sea_status:
+    "Statut SEA sur 4 niveaux : Faible, Moyen bas, Moyen haut, Élevé.",
   effort_status: "Niveau d'effort SEO (low / medium / high).",
-  time_to_value_status: "Délai estimé avant valeur SEO (low / medium / high).",
+  delay_status: "Délai estimé avant valeur SEO (short / medium / long).",
   potential_gain_status: "Gain potentiel SEO (low / medium / high).",
   s_seo_invest:
     "Score d'investissement SEO (S_SEO_invest) — formule non encore exposée par l'API.",
   note: "Note de synthèse stratégique — non encore exposée par l'API.",
   content_label:
-    "Statut de couverture sémantique du contenu : Optimisé ou Sous-optimisé.",
+    "Statut de couverture sémantique du contenu : leader, optimisé, à optimiser ou dégradé.",
   popularity_label:
-    "Statut d'autorité / popularité de l'URL : Optimisé ou Sous-optimisé vs concurrents.",
+    "Statut d'autorité / popularité de l'URL : leader, optimisé, à optimiser, plutôt dégradé ou dégradé.",
 };
 
 export function getMetricGlossary(id: string): string | undefined {

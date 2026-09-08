@@ -1,60 +1,57 @@
-import type { UnilizeOptimizationStatus } from "@/types/strategy";
+import type {
+  UnilizeAuthorityStatus,
+  UnilizeSemanticStatus,
+} from "@/types/strategy";
 
-const OPTIMIZED_LABEL = "Optimisé";
-const UNDER_OPTIMIZED_LABEL = "Sous-optimisé";
+const SEO_STATUS_LABELS: Record<
+  UnilizeSemanticStatus | UnilizeAuthorityStatus | "not_optimized",
+  string
+> = {
+  leader: "Leader",
+  optimized: "Optimisé",
+  to_optimize: "À optimiser",
+  fairly_degraded: "Plutôt dégradé",
+  degraded: "Dégradé",
+  not_optimized: "À optimiser",
+};
 
-function normalizeStatusText(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .trim();
-}
+export type SeoStatusKey = keyof typeof SEO_STATUS_LABELS;
 
-function statusFromString(value: string): string | null {
-  const normalized = normalizeStatusText(value);
-
-  if (
-    normalized === "optimized" ||
-    normalized === "optimise" ||
-    (normalized.includes("optimise") &&
-      !normalized.includes("sous") &&
-      !normalized.includes("not"))
-  ) {
-    return OPTIMIZED_LABEL;
+function normalizeSeoStatusKey(
+  value: string,
+): SeoStatusKey | null {
+  const key = value.toLowerCase().replace(/-/g, "_");
+  if (key in SEO_STATUS_LABELS) {
+    return key as SeoStatusKey;
   }
-
-  if (
-    normalized === "not_optimized" ||
-    normalized === "not-optimized" ||
-    normalized === "under_optimized" ||
-    normalized === "under-optimized" ||
-    normalized.includes("sous-optim") ||
-    normalized.includes("sous optim") ||
-    normalized.includes("not optim")
-  ) {
-    return UNDER_OPTIMIZED_LABEL;
-  }
-
-  if (value === OPTIMIZED_LABEL || value === UNDER_OPTIMIZED_LABEL) {
-    return value;
-  }
-
   return null;
 }
 
-/** Affiche un statut API (`optimized` / `not_optimized`) en français. */
+/** Affiche un statut sémantique ou autorité SEO en français. */
 export function formatOptimizationStatus(
-  value: UnilizeOptimizationStatus | string | null | undefined,
+  value:
+    | UnilizeSemanticStatus
+    | UnilizeAuthorityStatus
+    | string
+    | null
+    | undefined,
 ): string | null {
   if (value === null || value === undefined) {
     return null;
   }
-  return statusFromString(value);
+  const key = normalizeSeoStatusKey(String(value));
+  if (!key) {
+    return null;
+  }
+  return SEO_STATUS_LABELS[key];
 }
 
 export function formatAuthorityScoreLabel(
-  authorityStatus: UnilizeOptimizationStatus | string | null | undefined,
+  authorityStatus:
+    | UnilizeAuthorityStatus
+    | string
+    | null
+    | undefined,
 ): string | null {
   return formatOptimizationStatus(authorityStatus);
 }

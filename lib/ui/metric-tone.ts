@@ -1,4 +1,8 @@
-import type { UnilizeStrategySeaTier } from "@/types/strategy";
+import type {
+  UnilizeSeaDimensionScore,
+  UnilizeSeaScoringStatus,
+  UnilizeStrategySeaTier,
+} from "@/types/strategy";
 
 export function competitorCountTone(count: number): string {
   if (count >= 8) {
@@ -113,17 +117,82 @@ export function scoringLevelTone(
 }
 
 export function optimizationStatusTone(
-  status: "optimized" | "not_optimized" | string | null | undefined,
+  status: string | null | undefined,
 ): string {
   const key =
     typeof status === "string"
       ? status.toLowerCase().replace(/-/g, "_")
       : status ?? null;
-  if (key === "optimized") {
+  if (!key) {
+    return "";
+  }
+  if (key === "leader") {
     return "bg-success/30 text-success dark:text-success";
   }
-  if (key === "not_optimized" || key === "under_optimized") {
+  if (key === "optimized") {
+    return "bg-muted/80 text-foreground dark:text-foreground";
+  }
+  if (key === "to_optimize" || key === "not_optimized" || key === "under_optimized") {
+    return "bg-warning/30 text-warning dark:text-warning";
+  }
+  if (key === "fairly_degraded") {
+    return "bg-warning/20 text-warning dark:text-warning";
+  }
+  if (key === "degraded") {
+    return "bg-destructive/30 text-destructive dark:text-destructive";
+  }
+  return "";
+}
+
+export function delayStatusTone(status: string | null | undefined): string {
+  const key = status?.toLowerCase() ?? null;
+  if (!key) {
+    return "";
+  }
+  if (key === "short") {
+    return "bg-success/30 text-success dark:text-success";
+  }
+  if (key === "medium") {
+    return "bg-muted/80 text-foreground dark:text-foreground";
+  }
+  if (key === "long") {
     return "bg-warning/30 text-warning dark:text-warning";
   }
   return "";
+}
+
+export function seaDimensionScoreTone(
+  score: UnilizeSeaDimensionScore,
+): string {
+  switch (score) {
+    case 5:
+      return "bg-success/30 text-success dark:text-success";
+    case 4:
+      return "bg-success/15 text-success dark:text-success";
+    case 3:
+      return "bg-warning/15 text-warning dark:text-warning";
+    case 2:
+      return "bg-warning/30 text-warning dark:text-warning";
+    case 1:
+      return "bg-destructive/30 text-destructive dark:text-destructive";
+    default:
+      return "";
+  }
+}
+
+export function seaScoringStatusTone(
+  status: UnilizeSeaScoringStatus,
+): string {
+  switch (status) {
+    case "high":
+      return "bg-success/30 text-success dark:text-success";
+    case "medium_high":
+      return "bg-success/15 text-success dark:text-success";
+    case "medium_low":
+      return "bg-warning/30 text-warning dark:text-warning";
+    case "low":
+      return "bg-destructive/30 text-destructive dark:text-destructive";
+    default:
+      return "";
+  }
 }

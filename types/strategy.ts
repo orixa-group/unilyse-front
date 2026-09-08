@@ -1,5 +1,20 @@
-/** Statut d’optimisation SEO (OpenAPI StrategySEO). */
-export type UnilizeOptimizationStatus = "optimized" | "not_optimized";
+/** Statut sémantique SEO (OpenAPI StrategySEO.semantic_status). */
+export type UnilizeSemanticStatus =
+  | "leader"
+  | "optimized"
+  | "to_optimize"
+  | "degraded";
+
+/** Statut autorité / netlinking SEO (OpenAPI StrategySEO.authority_status). */
+export type UnilizeAuthorityStatus =
+  | "leader"
+  | "optimized"
+  | "to_optimize"
+  | "fairly_degraded"
+  | "degraded";
+
+/** Délai avant valeur SEO (OpenAPI KeywordComparisonScoringSEO.delay_status). */
+export type UnilizeDelayStatus = "short" | "medium" | "long";
 
 /** Recommandation stratégique par mot-clé (OpenAPI KeywordComparison). */
 export type UnilizeStrategyRecommendation =
@@ -23,7 +38,14 @@ export type UnilizeStrategySeaTier =
   | "ABOVE_AVERAGE";
 
 export type UnilizeScoringLevel = "low" | "medium" | "high";
-export type UnilizeSeaScoringStatus = "high" | "low";
+export type UnilizeSeaScoringStatus =
+  | "low"
+  | "medium_low"
+  | "medium_high"
+  | "high";
+
+/** Score dimension SEA D1–D5 (échelle 1–5). */
+export type UnilizeSeaDimensionScore = 1 | 2 | 3 | 4 | 5;
 
 /** Indicateurs SEA stratégie (OpenAPI StrategySEA). */
 export interface UnilizeStrategySea {
@@ -41,8 +63,8 @@ export interface UnilizeStrategySea {
 export interface UnilizeStrategySeo {
   position?: number;
   page_intent_match?: boolean;
-  semantic_status?: UnilizeOptimizationStatus;
-  authority_status?: UnilizeOptimizationStatus;
+  semantic_status?: UnilizeSemanticStatus;
+  authority_status?: UnilizeAuthorityStatus;
 }
 
 /** Scores intermédiaires SEA (OpenAPI KeywordComparisonScoringSEA). */
@@ -60,8 +82,8 @@ export interface UnilizeKeywordComparisonScoringSea {
 export interface UnilizeKeywordComparisonScoringSeo {
   effort_score?: number;
   effort_status?: UnilizeScoringLevel;
-  time_to_value_score?: number;
-  time_to_value_status?: UnilizeScoringLevel;
+  delay_score?: number;
+  delay_status?: UnilizeDelayStatus;
   potential_gain_score?: number;
   potential_gain_status?: UnilizeScoringLevel;
   semantic_score?: number;

@@ -10,8 +10,11 @@ import {
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { MetricHeader } from "@/components/performances/metric-header";
+import { DelayStatusBadge } from "@/components/strategy/delay-status-badge";
 import { OptimizationStatusBadge } from "@/components/strategy/optimization-status-badge";
 import { ScoringLevelBadge } from "@/components/strategy/scoring-level-badge";
+import { SeaDimensionScoreBadge } from "@/components/strategy/sea-dimension-score-badge";
+import { SeaScoringStatusBadge } from "@/components/strategy/sea-scoring-status-badge";
 import { SeaTierBadge } from "@/components/strategy/sea-tier-badge";
 import { StrategyRecommendationBadge } from "@/components/strategy/strategy-recommendation-badge";
 import { ShareBar } from "@/components/ui/share-bar";
@@ -166,7 +169,9 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
           metricId="d1_volume"
         />
       ),
-      cell: ({ getValue }) => formatNullableScore(getValue() as number | null),
+      cell: ({ getValue }) => (
+        <SeaDimensionScoreBadge score={getValue() as number | null} />
+      ),
     },
     {
       id: "d2_budget",
@@ -177,7 +182,9 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
           metricId="d2_budget"
         />
       ),
-      cell: ({ getValue }) => formatNullableScore(getValue() as number | null),
+      cell: ({ getValue }) => (
+        <SeaDimensionScoreBadge score={getValue() as number | null} />
+      ),
     },
     {
       id: "d3_conversion",
@@ -188,7 +195,9 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
           metricId="d3_conversion"
         />
       ),
-      cell: ({ getValue }) => formatNullableScore(getValue() as number | null),
+      cell: ({ getValue }) => (
+        <SeaDimensionScoreBadge score={getValue() as number | null} />
+      ),
     },
     {
       id: "d4_ad",
@@ -199,7 +208,9 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
           metricId="d4_ad"
         />
       ),
-      cell: ({ getValue }) => formatNullableScore(getValue() as number | null),
+      cell: ({ getValue }) => (
+        <SeaDimensionScoreBadge score={getValue() as number | null} />
+      ),
     },
     {
       id: "d5_ctr",
@@ -210,7 +221,9 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
           metricId="d5_ctr"
         />
       ),
-      cell: ({ getValue }) => formatNullableScore(getValue() as number | null),
+      cell: ({ getValue }) => (
+        <SeaDimensionScoreBadge score={getValue() as number | null} />
+      ),
     },
     {
       id: "seo_position",
@@ -257,18 +270,15 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
     },
     {
       id: "e4_delay",
-      accessorFn: (row) => row.scoring?.seo?.time_to_value_status ?? null,
+      accessorFn: (row) => row.scoring?.seo?.delay_status ?? null,
       header: () => (
         <MetricHeader
           label={STRATEGY_COLUMN_LABELS.e4_delay}
-          metricId="e4_delay"
+          metricId="delay_status"
         />
       ),
       cell: ({ getValue }) => (
-        <ScoringLevelBadge
-          level={getValue() as string | null}
-          polarity="cost"
-        />
+        <DelayStatusBadge status={getValue() as string | null} />
       ),
     },
     {
@@ -391,10 +401,7 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
         />
       ),
       cell: ({ getValue }) => (
-        <ScoringLevelBadge
-          level={getValue() as string | null}
-          polarity="positive"
-        />
+        <SeaScoringStatusBadge status={getValue() as string | null} />
       ),
     },
     {
