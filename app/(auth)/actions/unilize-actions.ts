@@ -61,7 +61,7 @@ const createProjectSchema = z.object({
   ga4_property_id: nonEmptyString,
   ctr_benchmark: z.coerce
     .number({ invalid_type_error: "Le CTR benchmark doit être un nombre." })
-    .min(0, "Le CTR benchmark doit être positif ou nul.")
+    .gt(0, "Le CTR benchmark doit être strictement positif.")
     .max(100, "Le CTR benchmark ne peut pas dépasser 100 %."),
 });
 

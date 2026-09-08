@@ -145,15 +145,15 @@ export function CreateProjectDialog({
               required
               disabled={isCreatePending}
               type="number"
-              min={0}
+              min={0.01}
               max={100}
               step="0.01"
               inputMode="decimal"
               autoComplete="off"
             />
             <p className="text-muted-foreground text-xs">
-              CTR de référence du projet (0–100 %) utilisé pour les comparaisons
-              et analyses.
+              CTR de référence du projet (strictement entre 0 et 100 %). Sert
+              de seuil pour le score D5 (CTR incrémental).
             </p>
           </div>
           <div className="min-w-0 space-y-2">
