@@ -57,6 +57,21 @@ export function parseKeywordsRaw(
   return keywords;
 }
 
+/** Filtre client-side des lignes de tableau par mot-clé (correspondance partielle). */
+export function filterRowsByKeywordQuery<T>(
+  rows: readonly T[],
+  getKeyword: (row: T) => unknown,
+  query: string,
+): T[] {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) {
+    return [...rows];
+  }
+  return rows.filter((row) =>
+    formatKeywordLabel(getKeyword(row)).toLowerCase().includes(normalized),
+  );
+}
+
 /**
  * Préserve les `theme` des mots-clés existants dont la `value` est conservée.
  */

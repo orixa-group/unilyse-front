@@ -14,6 +14,7 @@ import { PerformanceColumnMenu } from "@/components/performances/performance-col
 import { ShareBar } from "@/components/ui/share-bar";
 import { UnavailableMetric } from "@/components/ui/unavailable-metric";
 import { DataTableShell } from "@/components/ui/data-table-shell";
+import { KeywordTableFilter } from "@/components/ui/keyword-table-filter";
 import {
   Table,
   TableBody,
@@ -33,15 +34,16 @@ import {
 } from "@/lib/performances/column-presets";
 import {
   stickyBodyColumnClass,
-  stickyFirstColumnClass,
+  stickyHeaderCellClass,
+  stickyHeaderFirstColumnClass,
 } from "@/lib/ui/table-visual";
 import { volumeTone } from "@/lib/ui/metric-tone";
 import {
   formatCurrencyEur,
   formatNumber,
 } from "@/lib/utils/formatting";
-import { formatKeywordLabel } from "@/lib/projects/keywords";
 import { cn } from "@/lib/utils/cn";
+import { filterRowsByKeywordQuery, formatKeywordLabel } from "@/lib/projects/keywords";
 import { useSelectionStore } from "@/stores/selection.store";
 import type {
   UnilizeCollectionStatus,
@@ -281,12 +283,10 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
     },
     {
       id: "match_type",
-      accessorFn: (row) => row.sea?.match_type ?? null,
+      accessorFn: () => null,
       header: () => <MetricHeader label="Match" metricId="match_type" />,
-      cell: ({ getValue }) => {
-        const value = getValue() as string | null;
-        return value ?? "—";
-      },
+      cell: () => <UnavailableMetric metricId="match_type" />,
+      enableSorting: false,
     },
     {
       id: "budget_lost_impression_share",
@@ -471,6 +471,7 @@ export function PerformanceResultsTable({
   rows: UnilizePerformance[];
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [keywordQuery, setKeywordQuery] = useState("");
   const performanceVisibleColumns = useSelectionStore(
     (s) => s.performanceVisibleColumns,
   );
@@ -491,7 +492,10 @@ export function PerformanceResultsTable({
   const applyPreset = (presetId: PerformanceColumnPresetId) => {
     setPerformanceVisibleColumns(PERFORMANCE_COLUMN_PRESETS[presetId]);
   };
-  const data = useMemo(() => rows, [rows]);
+  const data = useMemo(
+    () => filterRowsByKeywordQuery(rows, (row) => row.keyword, keywordQuery),
+    [rows, keywordQuery],
+  );
   const allColumns = useMemo(() => buildColumns(), []);
   const columnsById = useMemo(() => {
     const map = new Map<string, (typeof allColumns)[number]>();
@@ -532,18 +536,43 @@ export function PerformanceResultsTable({
     );
   }
 
+  if (data.length === 0) {
+    return (
+      <DataTableShell
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <KeywordTableFilter value={keywordQuery} onChange={setKeywordQuery} />
+            <PerformanceColumnMenu
+              visibleColumns={visibleColumnSet}
+              onToggleColumn={setPerformanceVisibleColumn}
+              onApplyPreset={applyPreset}
+              onReset={resetPerformanceVisibleColumns}
+            />
+          </div>
+        }
+      >
+        <p className="text-muted-foreground px-4 py-6 text-sm">
+          Aucun mot-clé ne correspond au filtre.
+        </p>
+      </DataTableShell>
+    );
+  }
+
   return (
     <DataTableShell
       actions={
-        <PerformanceColumnMenu
-          visibleColumns={visibleColumnSet}
-          onToggleColumn={setPerformanceVisibleColumn}
-          onApplyPreset={applyPreset}
-          onReset={resetPerformanceVisibleColumns}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <KeywordTableFilter value={keywordQuery} onChange={setKeywordQuery} />
+          <PerformanceColumnMenu
+            visibleColumns={visibleColumnSet}
+            onToggleColumn={setPerformanceVisibleColumn}
+            onApplyPreset={applyPreset}
+            onReset={resetPerformanceVisibleColumns}
+          />
+        </div>
       }
     >
-      <Table>
+      <Table disableContainerScroll>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="bg-muted hover:bg-muted">
@@ -560,7 +589,9 @@ export function PerformanceResultsTable({
                         ? "max-w-[9.5rem] whitespace-normal"
                         : "whitespace-nowrap",
                       sticky ? "text-left" : "text-center",
-                      sticky && stickyFirstColumnClass("header"),
+                      sticky
+                        ? stickyHeaderFirstColumnClass("header")
+                        : stickyHeaderCellClass(),
                     )}
                   >
                     {header.isPlaceholder ? null : header.column.getCanSort() ? (

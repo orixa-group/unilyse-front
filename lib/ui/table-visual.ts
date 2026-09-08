@@ -98,6 +98,22 @@ export function stickyFirstColumnClass(tone: StickyColumnTone): string {
   return cn(STICKY_COLUMN_POSITION, STICKY_COLUMN_BG[tone]);
 }
 
+/** En-tête de colonne figé au scroll vertical (hors première colonne). */
+export function stickyHeaderCellClass(extra?: string): string {
+  return cn("sticky top-0 z-10 bg-muted", extra);
+}
+
+/** Coin supérieur gauche : sticky horizontal + vertical. */
+export function stickyHeaderFirstColumnClass(
+  tone: StickyColumnTone = "header",
+): string {
+  return cn(
+    STICKY_COLUMN_POSITION,
+    "top-0 z-30",
+    STICKY_COLUMN_BG[tone],
+  );
+}
+
 export function stickyBodyColumnClass(
   rowIndex: number,
   options?: { highlight?: boolean },

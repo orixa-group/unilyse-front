@@ -4,9 +4,17 @@ import { cn } from "@/lib/utils/cn"
 
 const Table = React.forwardRef<
   HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
+  React.HTMLAttributes<HTMLTableElement> & {
+    /** Désactive le scroll interne quand le parent (ex. DataTableShell) gère le défilement. */
+    disableContainerScroll?: boolean;
+  }
+>(({ className, disableContainerScroll = false, ...props }, ref) => (
+  <div
+    className={cn(
+      "relative w-full",
+      disableContainerScroll ? undefined : "overflow-auto",
+    )}
+  >
     <table
       ref={ref}
       className={cn("w-full caption-bottom text-sm", className)}

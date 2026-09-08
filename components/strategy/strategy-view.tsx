@@ -1,5 +1,6 @@
 "use client";
 
+import { KeywordTableFilter } from "@/components/ui/keyword-table-filter";
 import { DataTableShell } from "@/components/ui/data-table-shell";
 import { DataRefreshingOverlay } from "@/components/ui/data-refreshing-overlay";
 import { InsightStrip } from "@/components/layout/insight-strip";
@@ -14,6 +15,7 @@ import { StrategyWorkPanels } from "@/components/strategy/strategy-work-panels";
 import { StatCard } from "@/components/ui/stat-card";
 import { BffErrorAlert } from "@/components/common/bff-error-alert";
 import { computeExpectedTotalTraffic } from "@/lib/strategy/compute-summary";
+import { filterRowsByKeywordQuery } from "@/lib/projects/keywords";
 import { computeHybridInsights } from "@/lib/insights/compute-insights";
 import { formatNumber } from "@/lib/utils/formatting";
 import { useStrategy } from "@/hooks/use-strategy-api";
@@ -25,6 +27,7 @@ export function StrategyView() {
   const [recommendationFilter, setRecommendationFilter] = useState<
     Set<StrategyRecommendationFilterValue>
   >(() => new Set());
+  const [keywordQuery, setKeywordQuery] = useState("");
 
   const {
     data: strategyResult,
@@ -48,15 +51,20 @@ export function StrategyView() {
     if (!strategy) {
       return [];
     }
-    if (recommendationFilter.size === 0) {
-      return strategy.keyword_comparisons;
-    }
-    return strategy.keyword_comparisons.filter((row) =>
-      recommendationFilter.has(
-        row.recommendation as StrategyRecommendationFilterValue,
-      ),
+    const byRecommendation =
+      recommendationFilter.size === 0
+        ? strategy.keyword_comparisons
+        : strategy.keyword_comparisons.filter((row) =>
+            recommendationFilter.has(
+              row.recommendation as StrategyRecommendationFilterValue,
+            ),
+          );
+    return filterRowsByKeywordQuery(
+      byRecommendation,
+      (row) => row.keyword,
+      keywordQuery,
     );
-  }, [strategy, recommendationFilter]);
+  }, [strategy, recommendationFilter, keywordQuery]);
 
   if (isStrategyLoading && !strategyResult) {
     return (
@@ -115,7 +123,8 @@ export function StrategyView() {
 
   const keywordCount = filteredComparisons.length;
   const totalKeywordCount = strategy.keyword_comparisons.length;
-  const filterActive = recommendationFilter.size > 0;
+  const filterActive =
+    recommendationFilter.size > 0 || keywordQuery.trim().length > 0;
 
   return (
     <DataRefreshingOverlay active={isRefreshing} className="space-y-6">
@@ -140,13 +149,26 @@ export function StrategyView() {
           filterActive ? ` sur ${totalKeywordCount}` : ""
         }${isRefreshing ? " — actualisation…" : ""}`}
         actions={
-          <StrategyRecommendationFilter
-            selected={recommendationFilter}
-            onChange={setRecommendationFilter}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <KeywordTableFilter
+              value={keywordQuery}
+              onChange={setKeywordQuery}
+              disabled={isRefreshing}
+            />
+            <StrategyRecommendationFilter
+              selected={recommendationFilter}
+              onChange={setRecommendationFilter}
+            />
+          </div>
         }
       >
-        <StrategyKeywordTable rows={filteredComparisons} />
+        {filteredComparisons.length === 0 ? (
+          <p className="text-muted-foreground px-4 py-6 text-sm">
+            Aucun mot-clé ne correspond aux filtres.
+          </p>
+        ) : (
+          <StrategyKeywordTable rows={filteredComparisons} />
+        )}
       </DataTableShell>
 
       <StrategyWorkPanels
