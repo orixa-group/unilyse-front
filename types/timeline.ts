@@ -1,3 +1,5 @@
+import type { UnilizeDecision } from "@/types/strategy";
+
 /** Synthèse Timeline (OpenAPI Timeline). */
 export interface UnilizeTimelineGlobal {
   keyword_count: number;
@@ -17,6 +19,8 @@ export interface UnilizeTimeline {
   global: UnilizeTimelineGlobal;
   sea: UnilizeTimelineChannel;
   seo: UnilizeTimelineChannel;
+  /** Journal des décisions expert sur la période (OpenAPI Timeline.decisions). */
+  decisions?: UnilizeDecision[];
 }
 
 export interface UnilizeTimelineTrafficPoint {

@@ -26,6 +26,32 @@ export type UnilizeStrategyRecommendation =
   | "HUMAN_ARBITRATION"
   | "UNKNOWN";
 
+/** Règle qui a produit `recommendation` (OpenAPI KeywordComparison.trigger). */
+export type UnilizeRecommendationTrigger =
+  | "quality_score"
+  | "no_data"
+  | "no_conversions"
+  | "matrix";
+
+/** Action applicable par un expert (OpenAPI Decision.applied — sans UNKNOWN). */
+export type UnilizeDecisionApplied = Exclude<
+  UnilizeStrategyRecommendation,
+  "UNKNOWN"
+>;
+
+/** Décision expert (OpenAPI Decision). */
+export interface UnilizeDecision {
+  id: string;
+  keyword: string;
+  applied: UnilizeDecisionApplied;
+  recommended: UnilizeStrategyRecommendation;
+  justification: string;
+  decided_by: string;
+  decided_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
 /** Objectif d’un gap netlinking / contenu. */
 export type UnilizeGapObjective = "LAUNCH_SEO" | "DOUBLE_PRESENCE";
 
@@ -86,6 +112,10 @@ export interface UnilizeKeywordComparisonScoringSeo {
   delay_status?: UnilizeDelayStatus;
   potential_gain_score?: number;
   potential_gain_status?: UnilizeScoringLevel;
+  /** E3 inversé 0–1 — `1 - effort_score / 6`, entrée de `invest_score`. */
+  accessibility_score?: number;
+  /** S_SEO_invest (0–10) — priorisation SEO au sein du fichier recommandation. */
+  invest_score?: number;
   semantic_score?: number;
   authority_score?: number;
 }
@@ -98,6 +128,8 @@ export interface UnilizeKeywordComparisonScoring {
 export interface UnilizeKeywordComparison {
   keyword: string;
   recommendation: UnilizeStrategyRecommendation;
+  /** Règle qui a produit la recommandation — omis si `UNKNOWN`. */
+  trigger?: UnilizeRecommendationTrigger;
   /** Volume de recherche estimé sur la période (OpenAPI KeywordComparison). */
   search_volume: number;
   sea?: UnilizeStrategySea | null;

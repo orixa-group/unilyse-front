@@ -1,9 +1,17 @@
 import type {
+  UnilizeRecommendationTrigger,
   UnilizeSeaDimensionScore,
   UnilizeSeaScoringStatus,
   UnilizeStrategyRecommendation,
   UnilizeStrategySeaTier,
 } from "@/types/strategy";
+
+const TRIGGER_LABELS: Record<UnilizeRecommendationTrigger, string> = {
+  quality_score: "Quality Score",
+  no_data: "Données insuffisantes",
+  no_conversions: "Sans conversion",
+  matrix: "Matrice",
+};
 
 const RECOMMENDATION_LABELS: Record<UnilizeStrategyRecommendation, string> = {
   OPTIMIZE_ADS: "Optimiser Ads",
@@ -61,7 +69,7 @@ export const STRATEGY_COLUMN_LABELS = {
   delay_status: "Délai SEO",
   potential_gain_status: "Gain SEO",
   s_seo_invest: "S_SEO_invest",
-  note: "Note",
+  note: "Règle",
 } as const;
 
 export const OPPORTUNITY_BUCKET_LABELS = {
@@ -90,6 +98,16 @@ export function formatStrategyRecommendation(
   }
   const key = value.toUpperCase() as UnilizeStrategyRecommendation;
   return RECOMMENDATION_LABELS[key] ?? String(value);
+}
+
+export function formatRecommendationTrigger(
+  value: UnilizeRecommendationTrigger | string | null | undefined,
+): string {
+  if (!value) {
+    return "—";
+  }
+  const key = value.toLowerCase().replace(/-/g, "_") as UnilizeRecommendationTrigger;
+  return TRIGGER_LABELS[key] ?? String(value);
 }
 
 export function formatStrategySeaTier(

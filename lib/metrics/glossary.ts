@@ -9,7 +9,8 @@ export const METRIC_GLOSSARY: Record<string, string> = {
   conversions: "Nombre de conversions attribuées.",
   roas: "Retour sur dépense publicitaire (revenu / dépense).",
   quality_score: "Score qualité Google (0 = non attribué, 1–10).",
-  match_type: "Type de correspondance : BROAD, PHRASE ou EXACT.",
+  match_type:
+    "Ancien type de correspondance Google Ads — retiré de l’API Performances.",
   budget_lost_impression_share:
     "Part des impressions éligibles perdues faute de budget (Google Ads, 0–100 %). Enchères où l'annonce aurait pu s'afficher mais le budget journalier ou la répartition budgétaire l'en a empêché.",
   rank_lost_impression_share:
@@ -67,23 +68,25 @@ export const METRIC_GLOSSARY: Record<string, string> = {
     "La page cible correspond-elle à l'intention de recherche du mot-clé ?",
   sea_score: "Score composite SEA (S_SEA) dérivé des dimensions D1–D5.",
   d1_volume:
-    "Dimension D1 — volume potentiel SEA (Très faible → Très bien, échelle 1–5).",
+    "Dimension D1 — volume de recherche vs moyenne compte (API : 1, 2 ou 3).",
   d2_budget:
-    "Dimension D2 — budget injectable SEA (Très faible → Très bien, échelle 1–5).",
+    "Dimension D2 — part d'impressions perdues budget (API : 1, 2 ou 3).",
   d3_conversion:
-    "Dimension D3 — conversion SEA (Très faible → Très bien, échelle 1–5).",
+    "Dimension D3 — taux et volume de conversion vs moyenne compte (API : 1 à 4).",
   d4_ad:
-    "Dimension D4 — quality score + convivialité landing (Très faible → Très bien, échelle 1–5).",
+    "Dimension D4 — quality score + convivialité landing (API : 1 à 5).",
   d5_ctr:
-    "Dimension D5 — CTR incrémental SEA (Très faible → Très bien, échelle 1–5).",
+    "Dimension D5 — part d'impressions perdues rang, modulée par le CTR benchmark (API : 1 à 3).",
   sea_status:
     "Statut SEA sur 4 niveaux : Faible, Moyen bas, Moyen haut, Élevé.",
   effort_status: "Niveau d'effort SEO (low / medium / high).",
   delay_status: "Délai estimé avant valeur SEO (short / medium / long).",
   potential_gain_status: "Gain potentiel SEO (low / medium / high).",
   s_seo_invest:
-    "Score d'investissement SEO (S_SEO_invest) — formule non encore exposée par l'API.",
-  note: "Note de synthèse stratégique — non encore exposée par l'API.",
+    "Score d'investissement SEO (S_SEO_invest, 0–10) — `scoring.seo.invest_score`, priorisation au sein du fichier recommandation.",
+  note: "Règle qui a produit la recommandation (trigger API).",
+  trigger:
+    "Règle à l'origine de la recommandation : Quality Score, données insuffisantes, sans conversion, ou matrice de décision.",
   content_label:
     "Statut de couverture sémantique du contenu : leader, optimisé, à optimiser ou dégradé.",
   popularity_label:

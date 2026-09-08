@@ -19,7 +19,6 @@ export interface UnilizeSeaMetrics {
   conversions: number;
   conversion_value: number;
   quality_score: number;
-  match_type: "BROAD" | "PHRASE" | "EXACT";
   search_budget_lost_impression_share: number;
   search_rank_lost_impression_share: number;
   ad_relevance: string;

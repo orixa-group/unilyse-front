@@ -28,15 +28,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { STRATEGY_COLUMN_CHANNEL } from "@/lib/strategy/column-presets";
-import { STRATEGY_COLUMN_LABELS } from "@/lib/strategy/format-strategy";
+import {
+  formatRecommendationTrigger,
+  STRATEGY_COLUMN_LABELS,
+} from "@/lib/strategy/format-strategy";
 import { volumeTone } from "@/lib/ui/metric-tone";
 import {
   stickyBodyColumnClass,
   stickyFirstColumnClass,
+  stickyHeaderCellClass,
+  stickyHeaderFirstColumnClass,
   STRATEGY_CHANNEL_HEAD_CLASS,
 } from "@/lib/ui/table-visual";
 import {
   formatCurrencyEur,
+  formatDecimal,
   formatNumber,
   formatPercentValue,
 } from "@/lib/utils/formatting";
@@ -299,24 +305,40 @@ function buildColumns(): ColumnDef<UnilizeKeywordComparison>[] {
     },
     {
       id: "s_seo_invest",
-      accessorFn: () => null,
+      accessorFn: (row) => row.scoring?.seo?.invest_score ?? null,
       header: () => (
         <MetricHeader
           label={STRATEGY_COLUMN_LABELS.s_seo_invest}
           metricId="s_seo_invest"
         />
       ),
-      cell: () => <UnavailableMetric metricId="s_seo_invest" />,
-      enableSorting: false,
+      cell: ({ getValue }) => {
+        const value = getValue() as number | null;
+        if (value === null || value === undefined || !Number.isFinite(value)) {
+          return <UnavailableMetric metricId="s_seo_invest" />;
+        }
+        return (
+          <span className="tabular-nums">{formatDecimal(value)}</span>
+        );
+      },
     },
     {
       id: "note",
-      accessorFn: () => null,
+      accessorFn: (row) => row.trigger ?? null,
       header: () => (
-        <MetricHeader label={STRATEGY_COLUMN_LABELS.note} metricId="note" />
+        <MetricHeader label={STRATEGY_COLUMN_LABELS.note} metricId="trigger" />
       ),
-      cell: () => <UnavailableMetric metricId="note" />,
-      enableSorting: false,
+      cell: ({ getValue }) => {
+        const trigger = getValue() as string | null;
+        if (!trigger) {
+          return "—";
+        }
+        return (
+          <span className="text-muted-foreground text-xs">
+            {formatRecommendationTrigger(trigger)}
+          </span>
+        );
+      },
     },
     {
       id: "ad_relevance",
@@ -451,7 +473,7 @@ export function StrategyKeywordTable({
   }
 
   return (
-    <Table>
+    <Table disableContainerScroll>
       <TableHeader>
         {table.getHeaderGroups().map((headerGroup) => (
           <TableRow key={headerGroup.id} className="bg-muted hover:bg-muted">
@@ -473,8 +495,13 @@ export function StrategyKeywordTable({
                       ? "max-w-[9.5rem] whitespace-normal"
                       : "whitespace-nowrap",
                     leftAlign ? "text-left" : "text-center",
-                    channel !== "common" && STRATEGY_CHANNEL_HEAD_CLASS[channel],
-                    sticky && stickyFirstColumnClass("header"),
+                    sticky
+                      ? stickyHeaderFirstColumnClass("header")
+                      : stickyHeaderCellClass(
+                          channel !== "common"
+                            ? STRATEGY_CHANNEL_HEAD_CLASS[channel]
+                            : undefined,
+                        ),
                   )}
                 >
                   {header.isPlaceholder ? null : header.column.getCanSort() ? (

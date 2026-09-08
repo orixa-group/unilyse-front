@@ -13,10 +13,12 @@ import { formatStrategyRecommendation } from "@/lib/strategy/format-strategy";
 import type { UnilizeStrategyRecommendation } from "@/types/strategy";
 
 export const STRATEGY_RECOMMENDATION_FILTER_OPTIONS = [
-  "REVIEW_STRATEGY",
+  "OPTIMIZE_ADS",
   "MAINTAIN_ADS",
   "LAUNCH_SEO",
   "DOUBLE_PRESENCE",
+  "REVIEW_STRATEGY",
+  "HUMAN_ARBITRATION",
 ] as const satisfies readonly UnilizeStrategyRecommendation[];
 
 export type StrategyRecommendationFilterValue =
