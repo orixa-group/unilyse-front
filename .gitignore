@@ -40,3 +40,6 @@ firebase.build.env
 
 # local exemples
 app/exemples/
+
+# Ne pas pousser les fichiers de documentation
+/docs/
