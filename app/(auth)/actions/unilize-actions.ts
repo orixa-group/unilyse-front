@@ -59,6 +59,10 @@ const createProjectSchema = z.object({
   url: z.string().trim().min(1, "Sélectionnez un site Search Console."),
   customer_id: nonEmptyString,
   ga4_property_id: nonEmptyString,
+  ctr_benchmark: z.coerce
+    .number({ invalid_type_error: "Le CTR benchmark doit être un nombre." })
+    .min(0, "Le CTR benchmark doit être positif ou nul.")
+    .max(100, "Le CTR benchmark ne peut pas dépasser 100 %."),
 });
 
 const deleteProjectSchema = z.object({
@@ -213,6 +217,7 @@ export async function createProjectAction(
     url: formData.get("url"),
     customer_id: formData.get("customer_id"),
     ga4_property_id: formData.get("ga4_property_id"),
+    ctr_benchmark: formData.get("ctr_benchmark"),
   });
 
   if (!parsed.success) {
@@ -223,6 +228,9 @@ export async function createProjectAction(
     const ga4Issue = parsed.error.issues.find(
       (i) => i.path[0] === "ga4_property_id",
     );
+    const ctrIssue = parsed.error.issues.find(
+      (i) => i.path[0] === "ctr_benchmark",
+    );
     return {
       success: false,
       error: urlIssue
@@ -231,7 +239,9 @@ export async function createProjectAction(
           ? "Le Customer ID Google Ads est requis."
           : ga4Issue
             ? "L’ID de propriété GA4 est requis."
-            : "Le client, le nom, l’URL, le Customer ID et la propriété GA4 sont requis.",
+            : ctrIssue
+              ? (ctrIssue.message as string)
+              : "Le client, le nom, l’URL, le Customer ID, la propriété GA4 et le CTR benchmark sont requis.",
     };
   }
 
@@ -251,6 +261,7 @@ export async function createProjectAction(
       url: parsed.data.url,
       customer_id: parsed.data.customer_id,
       ga4_property_id: parsed.data.ga4_property_id,
+      ctr_benchmark: parsed.data.ctr_benchmark,
     });
     revalidateDashboard();
     return {

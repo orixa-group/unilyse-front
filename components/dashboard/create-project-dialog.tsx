@@ -136,6 +136,26 @@ export function CreateProjectDialog({
               conversions seront synchronisées depuis cette propriété.
             </p>
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="project-ctr-benchmark">CTR benchmark (%)</Label>
+            <Input
+              id="project-ctr-benchmark"
+              name="ctr_benchmark"
+              placeholder="2,5"
+              required
+              disabled={isCreatePending}
+              type="number"
+              min={0}
+              max={100}
+              step="0.01"
+              inputMode="decimal"
+              autoComplete="off"
+            />
+            <p className="text-muted-foreground text-xs">
+              CTR de référence du projet (0–100 %) utilisé pour les comparaisons
+              et analyses.
+            </p>
+          </div>
           <div className="min-w-0 space-y-2">
             <Label htmlFor="project-site-url">Site Search Console</Label>
             {isSitesLoading ? (

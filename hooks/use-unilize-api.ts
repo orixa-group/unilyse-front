@@ -172,6 +172,7 @@ async function fetchProjectDetails(
         url: "",
         customer_id: "",
         ga4_property_id: "",
+        ctr_benchmark: 0,
         created_at: "",
         updated_at: "",
         keywords: [],

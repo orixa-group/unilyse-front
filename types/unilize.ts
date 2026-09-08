@@ -22,6 +22,8 @@ export interface UnilizeProject {
   customer_id: string;
   /** Google Analytics (GA4) property ID lié au projet. */
   ga4_property_id: string;
+  /** CTR de référence du projet (0–100 %). */
+  ctr_benchmark: number;
   created_at: string;
   updated_at: string;
   /** Présent après mise à jour des mots-clés ou selon réponse API. */
@@ -55,6 +57,8 @@ export interface CreateProjectPayload {
   customer_id: string;
   /** Google Analytics (GA4) property ID. */
   ga4_property_id: string;
+  /** CTR de référence du projet (0–100 %). */
+  ctr_benchmark: number;
 }
 
 /** Query params optionnels pour les endpoints analytics (période). */
