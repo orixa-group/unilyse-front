@@ -56,6 +56,7 @@ import type {
 } from "@/types/timeline";
 
 type CanalFilter = "all" | "seo" | "sea";
+type TrafficMetric = "clicks" | "sessions";
 
 function formatAxisDate(value: string): string {
   try {
@@ -114,14 +115,19 @@ function ChartCard({
   title,
   children,
   empty,
+  actions,
 }: {
   title: string;
   children: ReactNode;
   empty?: boolean;
+  actions?: ReactNode;
 }) {
   return (
     <section className="border-border bg-card rounded-xl border p-4">
-      <h2 className="text-foreground mb-3 text-sm font-medium">{title}</h2>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-foreground text-sm font-medium">{title}</h2>
+        {actions}
+      </div>
       {empty ? (
         <p className="text-muted-foreground flex h-56 items-center justify-center text-sm">
           Aucune donnée sur cette période.
@@ -138,6 +144,7 @@ export function TimelineView() {
     useProjectContext();
 
   const [canal, setCanal] = useState<CanalFilter>("all");
+  const [trafficMetric, setTrafficMetric] = useState<TrafficMetric>("clicks");
   const [theme, setTheme] = useState<string | null>(null);
 
   const ctrFilter = useMemo(
@@ -308,7 +315,33 @@ export function TimelineView() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <ChartCard title="Trafic (clics & sessions)" empty={trafficRows.length === 0}>
+        <ChartCard
+          title={
+            trafficMetric === "clicks" ? "Trafic — clics" : "Trafic — sessions"
+          }
+          empty={trafficRows.length === 0}
+          actions={
+            <div className="flex gap-1">
+              {(
+                [
+                  ["clicks", "Clics"],
+                  ["sessions", "Sessions"],
+                ] as const
+              ).map(([id, label]) => (
+                <Button
+                  key={id}
+                  type="button"
+                  size="sm"
+                  variant={trafficMetric === id ? "default" : "outline"}
+                  className={cn(trafficMetric === id && "pointer-events-none")}
+                  onClick={() => setTrafficMetric(id)}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          }
+        >
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={trafficRows}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -329,35 +362,41 @@ export function TimelineView() {
                 )}
               />
               <Legend content={<ChartLegend />} />
-              <Bar
-                dataKey="seaClicks"
-                name="Clics SEA"
-                fill={CHART_SEA}
-                radius={[2, 2, 0, 0]}
-              />
-              <Bar
-                dataKey="seoClicks"
-                name="Clics SEO"
-                fill={CHART_SEO}
-                radius={[2, 2, 0, 0]}
-              />
-              <Line
-                type="monotone"
-                dataKey="seaSessions"
-                name="Sessions SEA"
-                stroke={CHART_SEA_SESSIONS}
-                strokeWidth={2}
-                strokeDasharray="4 4"
-                dot={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="seoSessions"
-                name="Sessions SEO"
-                stroke={CHART_SEO_SESSIONS}
-                strokeWidth={2}
-                dot={false}
-              />
+              {trafficMetric === "clicks" ? (
+                <>
+                  <Bar
+                    dataKey="seaClicks"
+                    name="Clics SEA"
+                    stackId="traffic"
+                    fill={CHART_SEA}
+                    radius={[0, 0, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="seoClicks"
+                    name="Clics SEO"
+                    stackId="traffic"
+                    fill={CHART_SEO}
+                    radius={[2, 2, 0, 0]}
+                  />
+                </>
+              ) : (
+                <>
+                  <Bar
+                    dataKey="seaSessions"
+                    name="Sessions SEA"
+                    stackId="traffic"
+                    fill={CHART_SEA_SESSIONS}
+                    radius={[0, 0, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="seoSessions"
+                    name="Sessions SEO"
+                    stackId="traffic"
+                    fill={CHART_SEO_SESSIONS}
+                    radius={[2, 2, 0, 0]}
+                  />
+                </>
+              )}
             </ComposedChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -474,18 +513,31 @@ export function TimelineView() {
                 )}
               />
               <Legend content={<ChartLegend />} />
-              <Bar
-                dataKey="clicks"
-                name={
-                  canal === "seo"
-                    ? "Clics SEO"
-                    : canal === "sea"
-                      ? "Clics SEA"
-                      : "Clics"
-                }
-                fill={canal === "seo" ? CHART_SEO : CHART_SEA}
-                radius={[2, 2, 0, 0]}
-              />
+              {canal === "all" ? (
+                <>
+                  <Bar
+                    dataKey="seaClicks"
+                    name="Clics SEA"
+                    stackId="clicks"
+                    fill={CHART_SEA}
+                    radius={[0, 0, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="seoClicks"
+                    name="Clics SEO"
+                    stackId="clicks"
+                    fill={CHART_SEO}
+                    radius={[2, 2, 0, 0]}
+                  />
+                </>
+              ) : (
+                <Bar
+                  dataKey={canal === "seo" ? "seoClicks" : "seaClicks"}
+                  name={canal === "seo" ? "Clics SEO" : "Clics SEA"}
+                  fill={canal === "seo" ? CHART_SEO : CHART_SEA}
+                  radius={[2, 2, 0, 0]}
+                />
+              )}
             </ComposedChart>
           </ResponsiveContainer>
         </ChartCard>
