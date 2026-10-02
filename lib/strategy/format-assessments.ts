@@ -31,6 +31,76 @@ const CONVERSIONS_LABELS: Record<string, string> = {
   none: "Aucune",
 };
 
+/** Échelle Google Ads (pertinence, CTR attendu, UX landing). */
+const UNILIZE_RATING_LABELS: Record<string, string> = {
+  below_average: "Inférieur à la moyenne",
+  average: "Dans la moyenne",
+  above_average: "Supérieur à la moyenne",
+  unspecified: "Non évalué",
+  unknown: "Non évalué",
+  poor: "Inférieur à la moyenne",
+  good: "Supérieur à la moyenne",
+  excellent: "Supérieur à la moyenne",
+};
+
+function normalizeUnilizeRatingKey(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const snake = trimmed
+    .toLowerCase()
+    .replace(/-/g, "_")
+    .replace(/\s+/g, "_");
+
+  if (UNILIZE_RATING_LABELS[snake]) {
+    return snake;
+  }
+
+  if (
+    snake.includes("below_average") ||
+    snake.includes("below") ||
+    snake.includes("inferieur") ||
+    snake.includes("inférieur")
+  ) {
+    return "below_average";
+  }
+  if (
+    snake.includes("above_average") ||
+    snake.includes("above") ||
+    snake.includes("superieur") ||
+    snake.includes("supérieur")
+  ) {
+    return "above_average";
+  }
+  if (snake === "average" || snake.endsWith("_average")) {
+    return "average";
+  }
+  if (snake.includes("unspecified") || snake.includes("unknown")) {
+    return "unspecified";
+  }
+  if (snake.includes("moyenne")) {
+    if (
+      snake.includes("sous") ||
+      snake.includes("infer") ||
+      snake.includes("below")
+    ) {
+      return "below_average";
+    }
+    if (
+      snake.includes("super") ||
+      snake.includes("above") ||
+      snake.includes("au_dessus")
+    ) {
+      return "above_average";
+    }
+    return "average";
+  }
+
+  return snake in UNILIZE_RATING_LABELS ? snake : null;
+}
+
 const INCREMENTAL_CTR_LABELS: Record<string, string> = {
   threshold_reached: "Seuil atteint",
   rank_constrained: "Rang limitant",
@@ -57,6 +127,30 @@ export function formatAuthorityGap(value: string | null | undefined): string {
 export function formatDelayStatus(value: string | null | undefined): string {
   if (!value) return "—";
   return DELAY_LABELS[value] ?? value;
+}
+
+export function formatUnilizeRating(
+  value: string | null | undefined,
+): string {
+  if (value == null || String(value).trim() === "") {
+    return "—";
+  }
+  const raw = String(value);
+  const key = normalizeUnilizeRatingKey(raw);
+  if (key) {
+    return UNILIZE_RATING_LABELS[key] ?? "—";
+  }
+  return "—";
+}
+
+/** Clé normalisée pour les tons (`seaTierTone`). */
+export function unilizeRatingToneKey(
+  value: string | null | undefined,
+): string | null {
+  if (value == null || String(value).trim() === "") {
+    return null;
+  }
+  return normalizeUnilizeRatingKey(String(value));
 }
 
 export function formatPaidConversions(

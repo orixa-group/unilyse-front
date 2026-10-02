@@ -161,7 +161,7 @@ export function delayStatusTone(status: string | null | undefined): string {
   if (key === "medium") {
     return "bg-muted/80 text-foreground dark:text-foreground";
   }
-  if (key === "long") {
+  if (key === "long" || key === "very_long") {
     return "bg-warning/30 text-warning dark:text-warning";
   }
   return "";
@@ -184,6 +184,67 @@ export function seaDimensionScoreTone(
     default:
       return "";
   }
+}
+
+/** Score 0–10 (reco SEA/SEO). */
+export function numericScoreTone(score: number | null | undefined): string {
+  if (score === null || score === undefined || !Number.isFinite(score)) {
+    return "";
+  }
+  if (score >= 7) {
+    return "bg-success/30 text-success dark:text-success";
+  }
+  if (score >= 4) {
+    return "bg-muted/80 text-foreground dark:text-foreground";
+  }
+  return "bg-destructive/30 text-destructive dark:text-destructive";
+}
+
+export function semanticGapTone(gap: string | null | undefined): string {
+  const key = gap?.toLowerCase();
+  if (key === "even") {
+    return "bg-success/30 text-success dark:text-success";
+  }
+  if (key === "catchable") {
+    return "bg-warning/30 text-warning dark:text-warning";
+  }
+  if (key === "rebuild") {
+    return "bg-destructive/30 text-destructive dark:text-destructive";
+  }
+  return "";
+}
+
+export function authorityGapTone(gap: string | null | undefined): string {
+  const key = gap?.toLowerCase();
+  if (key === "even") {
+    return "bg-success/30 text-success dark:text-success";
+  }
+  if (key === "targeted_links") {
+    return "bg-warning/30 text-warning dark:text-warning";
+  }
+  if (key === "long_term") {
+    return "bg-destructive/30 text-destructive dark:text-destructive";
+  }
+  return "";
+}
+
+export function paidConversionsTone(
+  status: string | null | undefined,
+): string {
+  const key = status?.toLowerCase();
+  if (key === "performing") {
+    return "bg-success/30 text-success dark:text-success";
+  }
+  if (key === "inefficient") {
+    return "bg-destructive/30 text-destructive dark:text-destructive";
+  }
+  if (key === "underfed") {
+    return "bg-warning/30 text-warning dark:text-warning";
+  }
+  if (key === "none") {
+    return "bg-muted/50 text-muted-foreground";
+  }
+  return "";
 }
 
 export function seaScoringStatusTone(

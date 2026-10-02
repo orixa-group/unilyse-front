@@ -2,6 +2,11 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import {
+  StrategyFunnelFilters,
+  themeOptionsFromKeywords,
+} from "@/components/strategy/strategy-funnel-filters";
+import { TimelineRecommendationEvents } from "@/components/timeline/timeline-recommendation-events";
+import {
   Area,
   Bar,
   CartesianGrid,
@@ -20,7 +25,6 @@ import { BffErrorAlert } from "@/components/common/bff-error-alert";
 import { LoadingSkeleton } from "@/components/common/loading-skeleton";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PerformancePeriodPicker } from "@/components/performances/performance-period-picker";
-import { Autocomplete } from "@/components/ui/autocomplete";
 import { Button } from "@/components/ui/button";
 import { ChartLegend } from "@/components/ui/chart-legend";
 import { ChartTooltip } from "@/components/ui/chart-tooltip";
@@ -31,8 +35,12 @@ import {
   useTimelineCtrBudget,
   useTimelineTraffic,
 } from "@/hooks/use-timeline-api";
+import { useRecommendations } from "@/hooks/use-recommendations-api";
 import { useProjectThemes } from "@/hooks/use-themes-api";
 import { useProjectContext } from "@/hooks/use-project-context";
+import { useProjectsDetails } from "@/hooks/use-unilize-api";
+import { buildRecommendationTimelineEvents } from "@/lib/strategy/recommendation-events";
+import { useSelectionStore } from "@/stores/selection.store";
 import { formatKeywordLabel } from "@/lib/projects/keywords";
 import { normalizeTimelineFilterQuery } from "@/lib/unilize/period-query";
 import { formatFractionPercent } from "@/lib/performances/format-metrics";
@@ -133,23 +141,51 @@ function ChartCard({
 }
 
 export function TimelineView() {
-  const { canFetchMetrics, selectedProjectId, period } =
-    useProjectContext();
+  const {
+    canFetchMetrics,
+    selectedProjectId,
+    period,
+    recommendationAsOfDate,
+    recommendationDate,
+  } = useProjectContext();
+
+  const selectedTheme = useSelectionStore((s) => s.selectedTheme);
+  const selectedKeyword = useSelectionStore((s) => s.selectedKeyword);
+  const [keywordQuery, setKeywordQuery] = useState("");
 
   const [canal, setCanal] = useState<CanalFilter>("all");
   const [trafficMetric, setTrafficMetric] = useState<TrafficMetric>("clicks");
-  const [theme, setTheme] = useState<string | null>(null);
 
   const ctrFilter = useMemo(
     () =>
       normalizeTimelineFilterQuery({
         from: period?.from,
         until: period?.until,
-        theme: theme ? [theme] : undefined,
+        theme: selectedTheme ? [selectedTheme] : undefined,
+        keyword: selectedKeyword ? [selectedKeyword] : undefined,
       }),
-    [period, theme],
+    [period, selectedTheme, selectedKeyword],
   );
 
+  const dateContext = useMemo(
+    () => ({
+      recommendationAsOfDate,
+      period,
+    }),
+    [recommendationAsOfDate, period],
+  );
+
+  const { data: recommendationsResult } = useRecommendations(
+    canFetchMetrics ? selectedProjectId : null,
+    dateContext,
+  );
+
+  const projectDetailsQuery = useProjectsDetails(
+    selectedProjectId ? [selectedProjectId] : [],
+    { enabled: canFetchMetrics },
+  );
+  const projectKeywords =
+    projectDetailsQuery[0]?.data?.project?.keywords ?? [];
   const {
     data: timelineResult,
     isLoading: isTimelineLoading,
@@ -194,14 +230,22 @@ export function TimelineView() {
     canFetchMetrics ? selectedProjectId : null,
   );
 
-  const themeOptions = useMemo(
-    () =>
-      (themesResult?.themes ?? []).map((theme) => {
-        const label = formatKeywordLabel(theme);
-        return { value: label, label };
-      }),
-    [themesResult?.themes],
-  );
+  const themeOptions = useMemo(() => {
+    const fromApi = (themesResult?.themes ?? []).map((theme) => ({
+      value: theme,
+      label: formatKeywordLabel(theme),
+    }));
+    if (fromApi.length > 0) {
+      return fromApi;
+    }
+    return themeOptionsFromKeywords(projectKeywords);
+  }, [themesResult?.themes, projectKeywords]);
+
+  const recommendationEvents = useMemo(() => {
+    const keywords =
+      recommendationsResult?.projectRecommendations?.keywords ?? [];
+    return buildRecommendationTimelineEvents(keywords);
+  }, [recommendationsResult?.projectRecommendations?.keywords]);
 
   const isLoading =
     (isTimelineLoading && !timelineResult) ||
@@ -255,7 +299,7 @@ export function TimelineView() {
         <PerformancePeriodPicker />
       </div>
 
-      <DataRefreshingOverlay active={isRefreshing} className="space-y-6">
+      <DataRefreshingOverlay active={isRefreshing} className="space-y-8">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Mots-clés"
@@ -264,6 +308,7 @@ export function TimelineView() {
         <StatCard
           label="Volume de recherche"
           value={formatNumber(global?.search_volume ?? 0)}
+          hint="Estimation mensuelle agrégée (non proratisée sur la période)"
         />
         <StatCard
           label="Clics SEA"
@@ -310,6 +355,21 @@ export function TimelineView() {
         />
       )}
 
+      <TimelineRecommendationEvents
+        events={recommendationEvents}
+        readAsOf={recommendationDate}
+      />
+
+      <section className="border-border bg-muted/20 space-y-4 rounded-xl border p-4">
+        <div>
+          <h2 className="text-foreground text-sm font-medium">
+            Vue d&apos;ensemble trafic &amp; conversions
+          </h2>
+          <p className="text-muted-foreground mt-0.5 text-xs">
+            Agrégat projet sur la période — indépendant des filtres thématique /
+            mot-clé.
+          </p>
+        </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <ChartCard
           title={
@@ -446,48 +506,54 @@ export function TimelineView() {
           </ResponsiveContainer>
         </ChartCard>
       </div>
+      </section>
 
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="min-w-[180px] flex-1">
-          <p className="text-muted-foreground mb-1 text-xs font-medium">
-            Thématique
-          </p>
-          <Autocomplete
-            options={themeOptions}
-            value={theme}
-            onValueChange={setTheme}
-            placeholder="Toutes les thématiques"
-            clearable
-            clearLabel="Toutes"
-            aria-label="Filtrer par thématique"
+      <section className="border-border space-y-4 border-t pt-8">
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-foreground text-sm font-medium">
+              Répartition &amp; efficacité
+            </h2>
+            <p className="text-muted-foreground mt-0.5 text-xs">
+              Thématique et mot-clé appliqués aux deux graphiques (API clics /
+              CTR).
+            </p>
+          </div>
+          <StrategyFunnelFilters
+            keywords={projectKeywords}
+            themeOptions={themeOptions}
+            keywordQuery={keywordQuery}
+            onKeywordQueryChange={setKeywordQuery}
+            disabled={isRefreshing}
           />
         </div>
-        <div className="flex gap-1">
-          {(
-            [
-              ["all", "SEO + SEA"],
-              ["seo", "SEO only"],
-              ["sea", "SEA only"],
-            ] as const
-          ).map(([id, label]) => (
-            <Button
-              key={id}
-              type="button"
-              size="sm"
-              variant={canal === id ? "default" : "outline"}
-              className={cn(canal === id && "pointer-events-none")}
-              onClick={() => setCanal(id)}
-            >
-              {label}
-            </Button>
-          ))}
-        </div>
-      </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ChartCard
           title="Répartition des clics"
           empty={ctrRows.length === 0}
+          actions={
+            <div className="flex gap-1">
+              {(
+                [
+                  ["all", "SEO + SEA"],
+                  ["seo", "SEO only"],
+                  ["sea", "SEA only"],
+                ] as const
+              ).map(([id, label]) => (
+                <Button
+                  key={id}
+                  type="button"
+                  size="sm"
+                  variant={canal === id ? "default" : "outline"}
+                  className={cn(canal === id && "pointer-events-none")}
+                  onClick={() => setCanal(id)}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          }
         >
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={ctrRows}>
@@ -600,6 +666,7 @@ export function TimelineView() {
           </ResponsiveContainer>
         </ChartCard>
       </div>
+      </section>
       </DataRefreshingOverlay>
     </div>
   );

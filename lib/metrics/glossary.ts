@@ -1,6 +1,7 @@
 export const METRIC_GLOSSARY: Record<string, string> = {
   keyword: "Mot-clé ciblé dans le périmètre du projet.",
-  search_volume: "Volume de recherche mensuel estimé.",
+  search_volume:
+    "Volume de recherche mensuel estimé par mot-clé. Non proratisé sur la période d’analyse : les graphiques Timeline (clics, CTR, coûts) restent journaliers ou hebdomadaires, sans volume hebdo natif.",
   impressions: "Nombre d'affichages de l'annonce (SEA).",
   clicks: "Nombre de clics sur l'annonce (SEA).",
   spend: "Dépense totale sur la période (alias legacy « spend »).",
@@ -54,7 +55,7 @@ export const METRIC_GLOSSARY: Record<string, string> = {
   ad_relevance:
     "Évaluation Google Ads de la pertinence de l'annonce par rapport au mot-clé.",
   expected_ctr:
-    "CTR attendu selon Google Ads (below_average, average, above_average).",
+    "CTR attendu selon Google Ads : inférieur, dans ou supérieur à la moyenne des annonces comparables.",
   landing_page_ux:
     "Qualité perçue de l'expérience sur la page de destination.",
   impression_share: "Part d'impressions obtenue sur le mot-clé (SEA).",

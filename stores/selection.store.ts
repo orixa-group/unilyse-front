@@ -19,6 +19,11 @@ interface SelectionState {
   /** Date de lecture des analyses reco (YYYY-MM-DD). */
   recommendationAsOfDate: string | null;
   setRecommendationAsOfDate: (date: string | null) => void;
+  /** Filtre entonnoir (Stratégie / Timeline). */
+  selectedTheme: string | null;
+  setSelectedTheme: (theme: string | null) => void;
+  selectedKeyword: string | null;
+  setSelectedKeyword: (keyword: string | null) => void;
   hasHydrated: boolean;
   setHasHydrated: (value: boolean) => void;
 }
@@ -31,9 +36,16 @@ export const useSelectionStore = create<SelectionState>()(
         set({
           selectedClientId: id,
           selectedProjectId: null,
+          selectedTheme: null,
+          selectedKeyword: null,
         }),
       selectedProjectId: null,
-      setSelectedProjectId: (id) => set({ selectedProjectId: id }),
+      setSelectedProjectId: (id) =>
+        set({
+          selectedProjectId: id,
+          selectedTheme: null,
+          selectedKeyword: null,
+        }),
       performanceVisibleColumns: null,
       setPerformanceVisibleColumn: (columnId, checked) =>
         set((state) => {
@@ -57,6 +69,11 @@ export const useSelectionStore = create<SelectionState>()(
       recommendationAsOfDate: null,
       setRecommendationAsOfDate: (date) =>
         set({ recommendationAsOfDate: date }),
+      selectedTheme: null,
+      setSelectedTheme: (theme) =>
+        set({ selectedTheme: theme, selectedKeyword: null }),
+      selectedKeyword: null,
+      setSelectedKeyword: (keyword) => set({ selectedKeyword: keyword }),
       hasHydrated: false,
       setHasHydrated: (value) => set({ hasHydrated: value }),
     }),
@@ -69,6 +86,8 @@ export const useSelectionStore = create<SelectionState>()(
         periodFrom: state.periodFrom,
         periodTo: state.periodTo,
         recommendationAsOfDate: state.recommendationAsOfDate,
+        selectedTheme: state.selectedTheme,
+        selectedKeyword: state.selectedKeyword,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {

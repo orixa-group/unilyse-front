@@ -5,7 +5,10 @@ import { BffErrorAlert } from "@/components/common/bff-error-alert";
 import { LoadingSkeleton } from "@/components/common/loading-skeleton";
 import { DataRefreshingOverlay } from "@/components/ui/data-refreshing-overlay";
 import { DataTableShell } from "@/components/ui/data-table-shell";
-import { KeywordTableFilter } from "@/components/ui/keyword-table-filter";
+import {
+  StrategyFunnelFilters,
+  themeOptionsFromKeywords,
+} from "@/components/strategy/strategy-funnel-filters";
 import { StatCard } from "@/components/ui/stat-card";
 import { StrategyOpportunityMatrix } from "@/components/strategy/strategy-opportunity-matrix";
 import { StrategyRecommendationFilter } from "@/components/strategy/strategy-recommendation-filter";
@@ -14,7 +17,14 @@ import { StrategyRecommendationsTable } from "@/components/strategy/strategy-rec
 import { StrategyWorkPanels } from "@/components/strategy/strategy-work-panels";
 import { useRecommendations } from "@/hooks/use-recommendations-api";
 import { useProjectContext } from "@/hooks/use-project-context";
-import { filterRowsByKeywordQuery } from "@/lib/projects/keywords";
+import {
+  buildKeywordThemeMap,
+  filterRowsByThemeAndKeyword,
+} from "@/lib/projects/funnel-filter";
+import { useProjectThemes } from "@/hooks/use-themes-api";
+import { useProjectsDetails } from "@/hooks/use-unilize-api";
+import { useSelectionStore } from "@/stores/selection.store";
+import { formatKeywordLabel } from "@/lib/projects/keywords";
 import { computeExpectedTotalTraffic } from "@/lib/strategy/compute-summary";
 import { mapRecommendationGapsToWorkRows } from "@/lib/strategy/map-recommendation-gaps";
 import { shouldShowProjectSkeleton } from "@/lib/unilize/query-loading";
@@ -33,6 +43,33 @@ export function StrategyHubView() {
     Set<StrategyRecommendationFilterValue>
   >(() => new Set());
   const [keywordQuery, setKeywordQuery] = useState("");
+  const selectedTheme = useSelectionStore((s) => s.selectedTheme);
+  const selectedKeyword = useSelectionStore((s) => s.selectedKeyword);
+
+  const projectDetailsQuery = useProjectsDetails(
+    selectedProjectId ? [selectedProjectId] : [],
+    { enabled: canFetchMetrics },
+  );
+  const projectKeywords =
+    projectDetailsQuery[0]?.data?.project?.keywords ?? [];
+  const themeMap = useMemo(
+    () => buildKeywordThemeMap(projectKeywords),
+    [projectKeywords],
+  );
+
+  const { data: themesResult } = useProjectThemes(
+    canFetchMetrics ? selectedProjectId : null,
+  );
+  const themeOptions = useMemo(() => {
+    const fromApi = (themesResult?.themes ?? []).map((theme) => ({
+      value: theme,
+      label: formatKeywordLabel(theme),
+    }));
+    if (fromApi.length > 0) {
+      return fromApi;
+    }
+    return themeOptionsFromKeywords(projectKeywords);
+  }, [themesResult?.themes, projectKeywords]);
 
   const dateContext = useMemo(
     () => ({
@@ -93,12 +130,22 @@ export function StrategyHubView() {
               action as StrategyRecommendationFilterValue,
             );
           });
-    return filterRowsByKeywordQuery(
+    return filterRowsByThemeAndKeyword(
       byAction,
       (row) => row.keyword,
+      themeMap,
+      selectedTheme,
+      selectedKeyword,
       keywordQuery,
     );
-  }, [keywords, recommendationFilter, keywordQuery]);
+  }, [
+    keywords,
+    recommendationFilter,
+    keywordQuery,
+    themeMap,
+    selectedTheme,
+    selectedKeyword,
+  ]);
 
   if (showSkeleton) {
     return (
@@ -159,7 +206,10 @@ export function StrategyHubView() {
   const keywordCount = filteredRecommendations.length;
   const totalKeywordCount = keywords.length;
   const filterActive =
-    recommendationFilter.size > 0 || keywordQuery.trim().length > 0;
+    recommendationFilter.size > 0 ||
+    keywordQuery.trim().length > 0 ||
+    Boolean(selectedTheme) ||
+    Boolean(selectedKeyword);
 
   return (
     <DataRefreshingOverlay active={isRefreshing} className="space-y-6">
@@ -176,6 +226,27 @@ export function StrategyHubView() {
         </div>
       ) : null}
 
+      <div className="space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold tracking-tight">
+            Matrice d&apos;opportunités
+          </h3>
+          <p className="text-muted-foreground text-xs">
+            Répartition des mots-clés par recommandation actionnable (volume
+            agrégé).
+          </p>
+        </div>
+        <StrategyOpportunityMatrix matrix={opportunityMatrix} />
+      </div>
+
+      <StrategyFunnelFilters
+        keywords={projectKeywords}
+        themeOptions={themeOptions}
+        keywordQuery={keywordQuery}
+        onKeywordQueryChange={setKeywordQuery}
+        disabled={isRefreshing}
+      />
+
       <DataTableShell
         title="Recommandations par mot-clé"
         description={`${keywordCount} mot${keywordCount > 1 ? "s" : ""}-clé${
@@ -184,17 +255,10 @@ export function StrategyHubView() {
           isRefreshing ? " — actualisation…" : ""
         }`}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <KeywordTableFilter
-              value={keywordQuery}
-              onChange={setKeywordQuery}
-              disabled={isRefreshing}
-            />
-            <StrategyRecommendationFilter
-              selected={recommendationFilter}
-              onChange={setRecommendationFilter}
-            />
-          </div>
+          <StrategyRecommendationFilter
+            selected={recommendationFilter}
+            onChange={setRecommendationFilter}
+          />
         }
       >
         {filteredRecommendations.length === 0 ? (
@@ -213,13 +277,6 @@ export function StrategyHubView() {
         netlinkingRows={netlinkingRows}
         semanticRows={semanticRows}
       />
-
-      <DataTableShell
-        title="Matrice d'opportunités"
-        description="Répartition des mots-clés par recommandation actionnable (volume agrégé)."
-      >
-        <StrategyOpportunityMatrix matrix={opportunityMatrix} />
-      </DataTableShell>
     </DataRefreshingOverlay>
   );
 }
