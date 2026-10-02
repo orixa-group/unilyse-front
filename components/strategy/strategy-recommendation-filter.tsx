@@ -9,20 +9,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { formatStrategyRecommendation } from "@/lib/strategy/format-strategy";
-import type { UnilizeStrategyRecommendation } from "@/types/strategy";
-
-export const STRATEGY_RECOMMENDATION_FILTER_OPTIONS = [
-  "OPTIMIZE_ADS",
-  "MAINTAIN_ADS",
-  "LAUNCH_SEO",
-  "DOUBLE_PRESENCE",
-  "REVIEW_STRATEGY",
-  "HUMAN_ARBITRATION",
-] as const satisfies readonly UnilizeStrategyRecommendation[];
-
-export type StrategyRecommendationFilterValue =
-  (typeof STRATEGY_RECOMMENDATION_FILTER_OPTIONS)[number];
+import {
+  formatRecommendationAction,
+  STRATEGY_RECOMMENDATION_FILTER_OPTIONS,
+  type StrategyRecommendationFilterValue,
+} from "@/lib/strategy/format-recommendations";
 
 export function StrategyRecommendationFilter({
   selected,
@@ -50,7 +41,7 @@ export function StrategyRecommendationFilter({
   const triggerLabel = allSelected
     ? "Toutes les recommandations"
     : selected.size === 1
-      ? formatStrategyRecommendation([...selected][0])
+      ? formatRecommendationAction([...selected][0])
       : `${selected.size} recommandations`;
 
   return (
@@ -61,16 +52,11 @@ export function StrategyRecommendationFilter({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>Filtrer par recommandation</DropdownMenuLabel>
+        <DropdownMenuLabel>Filtrer par action</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuCheckboxItem
           checked={allSelected}
-          onSelect={(event) => event.preventDefault()}
-          onCheckedChange={(checked) => {
-            if (checked) {
-              selectAll();
-            }
-          }}
+          onCheckedChange={() => selectAll()}
         >
           Toutes
         </DropdownMenuCheckboxItem>
@@ -79,10 +65,9 @@ export function StrategyRecommendationFilter({
           <DropdownMenuCheckboxItem
             key={value}
             checked={!allSelected && selected.has(value)}
-            onSelect={(event) => event.preventDefault()}
             onCheckedChange={() => toggle(value)}
           >
-            {formatStrategyRecommendation(value)}
+            {formatRecommendationAction(value)}
           </DropdownMenuCheckboxItem>
         ))}
       </DropdownMenuContent>

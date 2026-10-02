@@ -4,7 +4,12 @@ import { buildUnilizeUpstreamUrl } from "@/lib/api/resolve-server-api-url";
 import { withBffAuth } from "@/lib/api/bff-auth";
 import { mapWithConcurrency, withRetry } from "@/lib/api/async-utils";
 import { getApiErrorMessage, bffRouteErrorResponse } from "@/lib/api/bff-route-utils";
-import { getClient, getProject, listProjects } from "@/lib/api/unilize";
+import {
+  getClient,
+  getProject,
+  listProjectKeywords,
+  listProjects,
+} from "@/lib/api/unilize";
 import type { UnilizeKeyword } from "@/types/unilize";
 import type { UnilizeDashboardPayload } from "@/types/unilize-dashboard";
 
@@ -34,10 +39,12 @@ async function loadProjectRow(
   let keywords: UnilizeKeyword[] = [];
   let keywordsError: string | null = null;
   try {
-    const detail = await withRetry(() => getProject(project.id), {
+    await withRetry(() => getProject(project.id), {
       attempts: UPSTREAM_RETRY_ATTEMPTS,
     });
-    keywords = detail.keywords ?? [];
+    keywords = await withRetry(() => listProjectKeywords(project.id), {
+      attempts: UPSTREAM_RETRY_ATTEMPTS,
+    });
   } catch (error) {
     keywordsError = getApiErrorMessage(error);
   }

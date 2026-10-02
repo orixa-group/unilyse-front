@@ -1,5 +1,5 @@
 import { API } from "@/lib/constants/api-endpoints";
-import { apiClient } from "@/lib/api/client";
+import { ApiClientError, apiClient } from "@/lib/api/client";
 import type {
   CreateClientPayload,
   CreateProjectPayload,
@@ -11,19 +11,29 @@ import type {
   UnilizeProjectDetail,
 } from "@/types/unilize";
 import type { UnilizePerformance } from "@/types/performance";
-import type { UnilizeKeywordMonitoring } from "@/types/monitoring";
-import type { UnilizeSearchConsoleSite } from "@/types/sites";
-import type { UnilizeStrategy } from "@/types/strategy";
 import type {
-  UnilizeTimeline,
-  UnilizeTimelineCtrBudgetPoint,
+  UnilizeProjectRecommendations,
+  UnilizeRecommendationsQuery,
+} from "@/types/recommendations";
+import { normalizeProjectRecommendations } from "@/lib/strategy/normalize-project-recommendations";
+import type { UnilizeGoogleAdsAccount } from "@/types/google-ads";
+import type { UnilizeSearchConsoleSite } from "@/types/sites";
+import type {
+  UnilizeClicksPoint,
+  UnilizeSummary,
   UnilizeTimelineFilterQuery,
-  UnilizeTimelineTrafficPoint,
+  UnilizeTrafficPoint,
 } from "@/types/timeline";
 import {
-  normalizePeriodQuery,
   normalizeTimelineFilterQuery,
+  resolveEffectivePeriod,
 } from "@/lib/unilize/period-query";
+import { resolveRecommendationsQuery } from "@/lib/unilize/recommendations-query";
+
+function periodKey(period?: UnilizePeriodQuery): string {
+  const resolved = resolveEffectivePeriod(period);
+  return `${resolved.from}:${resolved.until}`;
+}
 
 export const unilizeKeys = {
   all: ["unilize"] as const,
@@ -34,62 +44,45 @@ export const unilizeKeys = {
   project: (id: string) => [...unilizeKeys.all, "project", id] as const,
   projectDetails: (id: string) =>
     [...unilizeKeys.all, "project", "detail", id] as const,
+  projectKeywords: (projectId: string) =>
+    [...unilizeKeys.all, "keywords", projectId] as const,
   performances: (projectId: string, period?: UnilizePeriodQuery) =>
     [
       ...unilizeKeys.all,
       "performances",
       projectId,
-      period?.from ?? "",
-      period?.to ?? "",
+      periodKey(period),
     ] as const,
-  strategy: (projectId: string, period?: UnilizePeriodQuery) =>
+  recommendations: (projectId: string, query?: UnilizeRecommendationsQuery) =>
     [
       ...unilizeKeys.all,
-      "strategy",
+      "recommendations",
       projectId,
-      period?.from ?? "",
-      period?.to ?? "",
+      query?.date ?? "",
     ] as const,
-  monitoring: (projectId: string, period?: UnilizePeriodQuery) =>
-    [
-      ...unilizeKeys.all,
-      "monitoring",
-      projectId,
-      period?.from ?? "",
-      period?.to ?? "",
-    ] as const,
-  timeline: (projectId: string, period?: UnilizePeriodQuery) =>
-    [
-      ...unilizeKeys.all,
-      "timeline",
-      projectId,
-      period?.from ?? "",
-      period?.to ?? "",
-    ] as const,
-  timelineTraffic: (projectId: string, period?: UnilizePeriodQuery) =>
-    [
-      ...unilizeKeys.all,
-      "timeline-traffic",
-      projectId,
-      period?.from ?? "",
-      period?.to ?? "",
-    ] as const,
-  timelineCtrBudget: (
+  summary: (projectId: string, period?: UnilizePeriodQuery) =>
+    [...unilizeKeys.all, "summary", projectId, periodKey(period)] as const,
+  traffic: (projectId: string, period?: UnilizePeriodQuery) =>
+    [...unilizeKeys.all, "traffic", projectId, periodKey(period)] as const,
+  clicks: (
     projectId: string,
     filter?: UnilizeTimelineFilterQuery,
   ) =>
     [
       ...unilizeKeys.all,
-      "timeline-ctr-budget",
+      "clicks",
       projectId,
       filter?.from ?? "",
-      filter?.to ?? "",
+      filter?.until ?? "",
       ...(filter?.keyword ?? []),
       ...(filter?.theme ?? []).map((t) => `t:${t}`),
     ] as const,
   themes: (projectId: string) =>
     [...unilizeKeys.all, "themes", projectId] as const,
-  sites: () => [...unilizeKeys.all, "sites"] as const,
+  searchConsoleProperties: () =>
+    [...unilizeKeys.all, "search-console-properties"] as const,
+  googleAdsAccounts: () =>
+    [...unilizeKeys.all, "google-ads-accounts"] as const,
 };
 
 export async function listClients(): Promise<UnilizeClient[]> {
@@ -116,8 +109,19 @@ export async function createClient(
   return res.data;
 }
 
+async function deleteResourceIgnoringNotFound(path: string): Promise<void> {
+  try {
+    await apiClient.delete(path);
+  } catch (error) {
+    if (error instanceof ApiClientError && error.status === 404) {
+      return;
+    }
+    throw error;
+  }
+}
+
 export async function deleteClient(id: string): Promise<void> {
-  await apiClient.delete(API.client(id));
+  await deleteResourceIgnoringNotFound(API.client(id));
 }
 
 export async function listProjects(clientId: string): Promise<UnilizeProject[]> {
@@ -149,17 +153,32 @@ export async function createProject(
 }
 
 export async function deleteProject(id: string): Promise<void> {
-  await apiClient.delete(API.project(id));
+  await deleteResourceIgnoringNotFound(API.project(id));
+}
+
+export async function listProjectKeywords(
+  projectId: string,
+): Promise<UnilizeKeyword[]> {
+  const res = await apiClient.get<UnilizeApiEnvelope<UnilizeKeyword[]>>(
+    API.projectKeywords(projectId),
+  );
+  if (!Array.isArray(res?.data)) {
+    throw new Error("Réponse API invalide pour les mots-clés.");
+  }
+  return res.data;
 }
 
 export async function updateProjectKeywords(
   projectId: string,
   keywords: UnilizeKeyword[],
-): Promise<UnilizeProjectDetail> {
-  const res = await apiClient.put<UnilizeApiEnvelope<UnilizeProjectDetail>>(
+): Promise<UnilizeKeyword[]> {
+  const res = await apiClient.put<UnilizeApiEnvelope<UnilizeKeyword[]>>(
     API.projectKeywords(projectId),
     { body: keywords },
   );
+  if (!Array.isArray(res?.data)) {
+    throw new Error("Réponse API invalide pour la mise à jour des mots-clés.");
+  }
   return res.data;
 }
 
@@ -169,7 +188,7 @@ export async function listPerformances(
 ): Promise<UnilizePerformance[]> {
   const res = await apiClient.get<UnilizeApiEnvelope<UnilizePerformance[]>>(
     API.projectPerformances(projectId),
-    { query: normalizePeriodQuery(period) },
+    { query: resolveEffectivePeriod(period) },
   );
   if (!Array.isArray(res?.data)) {
     throw new Error("Réponse API invalide pour les performances.");
@@ -177,87 +196,100 @@ export async function listPerformances(
   return res.data;
 }
 
-export async function getStrategy(
+export async function listProjectRecommendations(
   projectId: string,
-  period?: UnilizePeriodQuery,
-): Promise<UnilizeStrategy> {
-  const res = await apiClient.get<UnilizeApiEnvelope<UnilizeStrategy>>(
-    API.projectStrategy(projectId),
-    { query: normalizePeriodQuery(period) },
+  query?: UnilizeRecommendationsQuery,
+): Promise<UnilizeProjectRecommendations> {
+  const resolved = resolveRecommendationsQuery(
+    query?.date ? { recommendationAsOfDate: query.date } : {},
   );
-  if (!res?.data || typeof res.data !== "object") {
-    throw new Error("Réponse API invalide pour la stratégie.");
-  }
-  return res.data;
-}
-
-export async function listKeywordMonitoring(
-  projectId: string,
-  period?: UnilizePeriodQuery,
-): Promise<UnilizeKeywordMonitoring[]> {
   const res = await apiClient.get<
-    UnilizeApiEnvelope<UnilizeKeywordMonitoring[]>
-  >(API.projectMonitoring(projectId), { query: normalizePeriodQuery(period) });
-  if (!Array.isArray(res?.data)) {
-    throw new Error("Réponse API invalide pour le monitoring.");
+    UnilizeApiEnvelope<UnilizeProjectRecommendations>
+  >(API.projectRecommendations(projectId), {
+    query: resolved.date ? { date: resolved.date } : undefined,
+  });
+  if (!res?.data || typeof res.data !== "object") {
+    throw new Error("Réponse API invalide pour les recommandations.");
   }
-  return res.data;
+  return normalizeProjectRecommendations(res.data);
 }
 
-export async function listSearchConsoleSites(): Promise<UnilizeSearchConsoleSite[]> {
+export async function listSearchConsoleProperties(): Promise<
+  UnilizeSearchConsoleSite[]
+> {
   const res = await apiClient.get<
     UnilizeApiEnvelope<UnilizeSearchConsoleSite[]>
-  >(API.SITES);
+  >(API.SEARCH_CONSOLE_PROPERTIES);
   if (!Array.isArray(res?.data)) {
-    throw new Error("Réponse API invalide pour les sites Search Console.");
+    throw new Error(
+      "Réponse API invalide pour les propriétés Search Console.",
+    );
   }
   return res.data;
 }
 
-export async function getTimeline(
+/** @deprecated Utiliser listSearchConsoleProperties. */
+export const listSearchConsoleSites = listSearchConsoleProperties;
+
+export async function listGoogleAdsAccounts(): Promise<
+  UnilizeGoogleAdsAccount[]
+> {
+  const res = await apiClient.get<
+    UnilizeApiEnvelope<UnilizeGoogleAdsAccount[]>
+  >(API.GOOGLE_ADS_ACCOUNTS);
+  if (!Array.isArray(res?.data)) {
+    throw new Error("Réponse API invalide pour les comptes Google Ads.");
+  }
+  return res.data;
+}
+
+export async function getSummary(
   projectId: string,
   period?: UnilizePeriodQuery,
-): Promise<UnilizeTimeline> {
-  const res = await apiClient.get<UnilizeApiEnvelope<UnilizeTimeline>>(
-    API.projectTimeline(projectId),
-    { query: normalizePeriodQuery(period) },
+): Promise<UnilizeSummary> {
+  const res = await apiClient.get<UnilizeApiEnvelope<UnilizeSummary>>(
+    API.projectSummary(projectId),
+    { query: resolveEffectivePeriod(period) },
   );
   if (!res?.data || typeof res.data !== "object") {
-    throw new Error("Réponse API invalide pour la timeline.");
+    throw new Error("Réponse API invalide pour la synthèse.");
   }
   return res.data;
 }
 
-export async function listTimelineTraffic(
+export async function listTraffic(
   projectId: string,
   period?: UnilizePeriodQuery,
-): Promise<UnilizeTimelineTrafficPoint[]> {
-  const res = await apiClient.get<
-    UnilizeApiEnvelope<UnilizeTimelineTrafficPoint[]>
-  >(API.projectTimelineTraffic(projectId), { query: normalizePeriodQuery(period) });
+): Promise<UnilizeTrafficPoint[]> {
+  const res = await apiClient.get<UnilizeApiEnvelope<UnilizeTrafficPoint[]>>(
+    API.projectTraffic(projectId),
+    { query: resolveEffectivePeriod(period) },
+  );
   if (!Array.isArray(res?.data)) {
-    throw new Error("Réponse API invalide pour le trafic timeline.");
+    throw new Error("Réponse API invalide pour le trafic.");
   }
   return res.data;
 }
 
-export async function listTimelineCtrBudget(
+export async function listClicks(
   projectId: string,
   filter?: UnilizeTimelineFilterQuery,
-): Promise<UnilizeTimelineCtrBudgetPoint[]> {
+): Promise<UnilizeClicksPoint[]> {
   const normalized = normalizeTimelineFilterQuery(filter);
-  const res = await apiClient.get<
-    UnilizeApiEnvelope<UnilizeTimelineCtrBudgetPoint[]>
-  >(API.projectTimelineCtrBudget(projectId), {
-    query: {
-      from: normalized?.from,
-      to: normalized?.to,
-      keyword: normalized?.keyword,
-      theme: normalized?.theme,
+  const period = resolveEffectivePeriod(normalized);
+  const res = await apiClient.get<UnilizeApiEnvelope<UnilizeClicksPoint[]>>(
+    API.projectClicks(projectId),
+    {
+      query: {
+        from: period.from,
+        until: period.until,
+        keyword: normalized?.keyword,
+        theme: normalized?.theme,
+      },
     },
-  });
+  );
   if (!Array.isArray(res?.data)) {
-    throw new Error("Réponse API invalide pour CTR / budget timeline.");
+    throw new Error("Réponse API invalide pour les clics.");
   }
   return res.data;
 }
@@ -270,13 +302,4 @@ export async function listProjectThemes(projectId: string): Promise<string[]> {
     throw new Error("Réponse API invalide pour les thématiques.");
   }
   return res.data;
-}
-
-export async function refreshProjectMetrics(
-  projectId: string,
-  keywords?: string[],
-): Promise<void> {
-  await apiClient.post(API.projectRefresh(projectId), {
-    query: keywords?.length ? { keyword: keywords } : undefined,
-  });
 }

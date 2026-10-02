@@ -2,12 +2,17 @@ export type { PaginatedResponse, ApiError } from "./api";
 export type { ListSitesResult, UnilizeSearchConsoleSite } from "./sites";
 export type {
   UnilizePerformance,
-  UnilizeSeaMetrics,
+  UnilizePaidPerformances,
+  UnilizeOrganicPerformances,
   UnilizeSearchVolume,
-  UnilizeSeoMetrics,
-  UnilizeCollectionStatus,
-  UnilizeCollectionState,
+  UnilizeOrganicRanking,
+  UnilizeAcquisitions,
+  UnilizeAcquisitionState,
   UnilizeCompetitorScores,
+  UnilizeSpread,
+  UnilizeUrlAuthorities,
+  UnilizePreviousPerformances,
+  UnilizePageSemantics,
   ListPerformancesResult,
 } from "./performance";
 export type {
@@ -21,3 +26,14 @@ export type {
   CreateProjectPayload,
   UnilizePeriodQuery,
 } from "./unilize";
+export type { StrategyWorkGapRow } from "./strategy-work";
+export type {
+  UnilizeKeywordRecommendation,
+  UnilizeRecommendation,
+  UnilizeRecommendationAction,
+  UnilizeProjectRecommendations,
+  UnilizeStrategySummary,
+  UnilizeOpportunityMatrix,
+  UnilizeRecommendationGap,
+  ListRecommendationsResult,
+} from "./recommendations";

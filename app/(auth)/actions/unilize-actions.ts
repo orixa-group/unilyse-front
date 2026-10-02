@@ -13,14 +13,12 @@ import {
   deleteClient,
   deleteProject,
   getClient,
-  getProject,
   listProjects,
-  listSearchConsoleSites,
+  listSearchConsoleProperties,
   updateProjectKeywords,
 } from "@/lib/api/unilize";
 import {
-  mergeKeywordThemes,
-  parseKeywordsRaw,
+  parseKeywordsJson,
 } from "@/lib/projects/keywords";
 import {
   logUnilizeEvent,
@@ -53,16 +51,33 @@ const listProjectsSchema = z.object({
   clientId: nonEmptyString,
 });
 
+const optionalTrimmedString = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) => (value ? value : undefined));
+
 const createProjectSchema = z.object({
   clientId: nonEmptyString,
   name: nonEmptyString,
-  url: z.string().trim().min(1, "Sélectionnez un site Search Console."),
-  customer_id: nonEmptyString,
-  ga4_property_id: nonEmptyString,
-  ctr_benchmark: z.coerce
-    .number({ invalid_type_error: "Le CTR benchmark doit être un nombre." })
-    .gt(0, "Le CTR benchmark doit être strictement positif.")
-    .max(100, "Le CTR benchmark ne peut pas dépasser 100 %."),
+  search_console_url: z
+    .string()
+    .trim()
+    .min(1, "Sélectionnez une propriété Search Console."),
+  gads_customer_id: nonEmptyString,
+  ga4_property_id: optionalTrimmedString,
+  ctr_benchmark: z
+    .union([
+      z.literal(""),
+      z.coerce
+        .number({ invalid_type_error: "Le CTR benchmark doit être un nombre." })
+        .min(0, "Le CTR benchmark ne peut pas être négatif.")
+        .max(100, "Le CTR benchmark ne peut pas dépasser 100 %."),
+    ])
+    .optional()
+    .transform((value) =>
+      value === "" || value === undefined ? undefined : value,
+    ),
 });
 
 const deleteProjectSchema = z.object({
@@ -72,14 +87,12 @@ const deleteProjectSchema = z.object({
 
 const updateProjectKeywordsSchema = z.object({
   projectId: nonEmptyString,
-  keywordsRaw: z.string(),
+  keywordsJson: z.string().min(1),
 });
 
 const AUTH_LAYOUT_PATHS = [
   "/dashboard",
   "/performances",
-  "/strategie",
-  "/monitoring",
 ] as const;
 
 function revalidateAuthLayouts() {
@@ -214,19 +227,18 @@ export async function createProjectAction(
   const parsed = createProjectSchema.safeParse({
     clientId: formData.get("clientId"),
     name: formData.get("name"),
-    url: formData.get("url"),
-    customer_id: formData.get("customer_id"),
+    search_console_url: formData.get("search_console_url"),
+    gads_customer_id: formData.get("gads_customer_id"),
     ga4_property_id: formData.get("ga4_property_id"),
     ctr_benchmark: formData.get("ctr_benchmark"),
   });
 
   if (!parsed.success) {
-    const urlIssue = parsed.error.issues.find((i) => i.path[0] === "url");
-    const customerIssue = parsed.error.issues.find(
-      (i) => i.path[0] === "customer_id",
+    const urlIssue = parsed.error.issues.find(
+      (i) => i.path[0] === "search_console_url",
     );
-    const ga4Issue = parsed.error.issues.find(
-      (i) => i.path[0] === "ga4_property_id",
+    const customerIssue = parsed.error.issues.find(
+      (i) => i.path[0] === "gads_customer_id",
     );
     const ctrIssue = parsed.error.issues.find(
       (i) => i.path[0] === "ctr_benchmark",
@@ -234,32 +246,32 @@ export async function createProjectAction(
     return {
       success: false,
       error: urlIssue
-        ? "Sélectionnez un site Search Console valide."
+        ? "Sélectionnez une propriété Search Console valide."
         : customerIssue
-          ? "Le Customer ID Google Ads est requis."
-          : ga4Issue
-            ? "L’ID de propriété GA4 est requis."
-            : ctrIssue
-              ? (ctrIssue.message as string)
-              : "Le client, le nom, l’URL, le Customer ID, la propriété GA4 et le CTR benchmark sont requis.",
+          ? "Le compte Google Ads est requis."
+          : ctrIssue
+            ? (ctrIssue.message as string)
+            : "Le client, le nom, la propriété Search Console et le compte Google Ads sont requis.",
     };
   }
 
   try {
-    const sites = await listSearchConsoleSites();
-    const urlAllowed = sites.some((site) => site.url === parsed.data.url);
+    const sites = await listSearchConsoleProperties();
+    const urlAllowed = sites.some(
+      (site) => site.url === parsed.data.search_console_url,
+    );
     if (!urlAllowed) {
       return {
         success: false,
         error:
-          "L’URL du projet doit correspondre à un site de votre Google Search Console.",
+          "La propriété doit correspondre à un site de votre Google Search Console.",
       };
     }
 
     const project = await createProject(parsed.data.clientId, {
       name: parsed.data.name,
-      url: parsed.data.url,
-      customer_id: parsed.data.customer_id,
+      search_console_url: parsed.data.search_console_url,
+      gads_customer_id: parsed.data.gads_customer_id,
       ga4_property_id: parsed.data.ga4_property_id,
       ctr_benchmark: parsed.data.ctr_benchmark,
     });
@@ -343,7 +355,7 @@ export async function updateProjectKeywordsAction(
   return runAuthenticatedServerAction(async () => {
   const parsed = updateProjectKeywordsSchema.safeParse({
     projectId: formData.get("projectId"),
-    keywordsRaw: formData.get("keywordsRaw"),
+    keywordsJson: formData.get("keywordsJson"),
   });
 
   if (!parsed.success) {
@@ -353,7 +365,7 @@ export async function updateProjectKeywordsAction(
     };
   }
 
-  const keywordsResult = parseKeywordsRaw(parsed.data.keywordsRaw);
+  const keywordsResult = parseKeywordsJson(parsed.data.keywordsJson);
   if ("error" in keywordsResult) {
     return {
       success: false,
@@ -362,23 +374,13 @@ export async function updateProjectKeywordsAction(
   }
 
   try {
-    let existingKeywords;
-    try {
-      const detail = await getProject(parsed.data.projectId);
-      existingKeywords = detail.keywords;
-    } catch {
-      existingKeywords = undefined;
-    }
-
-    const keywords = mergeKeywordThemes(keywordsResult, existingKeywords);
-    const project = await updateProjectKeywords(
+    const keywords = await updateProjectKeywords(
       parsed.data.projectId,
-      keywords,
+      keywordsResult,
     );
     revalidateDashboard();
     return {
       success: true,
-      project,
       projectId: parsed.data.projectId,
       keywords,
     };

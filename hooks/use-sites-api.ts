@@ -45,7 +45,7 @@ export function useSearchConsoleSites(
   >,
 ) {
   return useQuery({
-    queryKey: unilizeKeys.sites(),
+    queryKey: unilizeKeys.searchConsoleProperties(),
     queryFn: fetchSearchConsoleSites,
     staleTime: 5 * 60_000,
     ...options,

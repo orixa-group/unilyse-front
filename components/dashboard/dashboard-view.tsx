@@ -20,8 +20,10 @@ import {
 import {
   initialDeleteProjectState,
   initialUpdateProjectKeywordsState,
+  type GetProjectResult,
 } from "@/app/(auth)/actions/unilize-action-state";
 import { CreateProjectDialog } from "@/components/dashboard/create-project-dialog";
+import { ProjectKeywordsDialog } from "@/components/dashboard/project-keywords-dialog";
 import { DashboardHealthSummary } from "@/components/dashboard/dashboard-health-summary";
 import { ProjectCard } from "@/components/dashboard/project-card";
 import {
@@ -39,8 +41,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   shouldBlockDashboardView,
   toUserFacingApiError,
@@ -149,6 +149,21 @@ export function DashboardView() {
     () => new Map(projects.map((project, index) => [project.id, index])),
     [projects],
   );
+
+  const keywordsDialogInitial = useMemo(() => {
+    if (!projectForKeywords) {
+      return [];
+    }
+    const fromDetails =
+      projectDetailsQueries[
+        projectQueryIndexById.get(projectForKeywords.id) ?? 0
+      ]?.data?.project?.keywords;
+    return fromDetails ?? projectForKeywords.keywords ?? [];
+  }, [
+    projectForKeywords,
+    projectDetailsQueries,
+    projectQueryIndexById,
+  ]);
 
   const syncProbeTargets = useMemo(() => {
     return projects.map((project, index) => {
@@ -352,6 +367,9 @@ export function DashboardView() {
     void queryClient.refetchQueries({
       queryKey: unilizeKeys.projectDetails(projectId),
     });
+    void queryClient.invalidateQueries({
+      queryKey: unilizeKeys.themes(projectId),
+    });
   };
 
 
@@ -407,11 +425,29 @@ export function DashboardView() {
     if (!keywordsState.success || !keywordsState.projectId) {
       return;
     }
-    const key = `${keywordsState.projectId}:${toKeywordValues(keywordsState.keywords).join(",")}`;
+    const key = `${keywordsState.projectId}:${JSON.stringify(keywordsState.keywords ?? [])}`;
     if (processedKeywordsIdRef.current === key) {
       return;
     }
     processedKeywordsIdRef.current = key;
+
+    if (keywordsState.keywords) {
+      queryClient.setQueryData<GetProjectResult>(
+        unilizeKeys.projectDetails(keywordsState.projectId),
+        (current) => {
+          if (!current?.project) {
+            return current;
+          }
+          return {
+            ...current,
+            project: {
+              ...current.project,
+              keywords: keywordsState.keywords,
+            },
+          };
+        },
+      );
+    }
 
     invalidateProjectDetails(keywordsState.projectId);
     setKeywordsOpen(false);
@@ -642,7 +678,7 @@ export function DashboardView() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
+      <ProjectKeywordsDialog
         open={keywordsOpen}
         onOpenChange={(open) => {
           setKeywordsOpen(open);
@@ -650,74 +686,12 @@ export function DashboardView() {
             setProjectForKeywords(null);
           }
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Mettre à jour les mots clés</DialogTitle>
-            <DialogDescription>
-              {projectForKeywords ? (
-                <>
-                  Remplace la liste complète des mots-clés du projet{" "}
-                  <span className="text-foreground font-medium">
-                    {projectForKeywords.name}
-                  </span>
-                  . Un mot-clé par ligne, sans doublons.
-                </>
-              ) : (
-                "Aucun projet sélectionné."
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          {projectForKeywords ? (
-            <form action={keywordsFormAction} className="space-y-4">
-              <input
-                type="hidden"
-                name="projectId"
-                value={projectForKeywords.id}
-              />
-              <div className="space-y-2">
-                <Label htmlFor="project-keywords">Mots clés</Label>
-                <Textarea
-                  id="project-keywords"
-                  name="keywordsRaw"
-                  key={projectForKeywords.id}
-                  defaultValue={(() => {
-                    const fromDetails =
-                      projectDetailsQueries[
-                        projectQueryIndexById.get(projectForKeywords.id) ?? 0
-                      ]?.data?.project?.keywords;
-                    const source =
-                      fromDetails ?? projectForKeywords.keywords ?? [];
-                    return toKeywordValues(source).join("\n");
-                  })()}
-                  placeholder={"seo\nsea\nppc"}
-                  required
-                  disabled={isKeywordsPending}
-                  autoFocus
-                />
-              </div>
-              {keywordsState.error ? (
-                <p className="text-destructive text-sm" role="alert">
-                  {keywordsState.error}
-                </p>
-              ) : null}
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setKeywordsOpen(false)}
-                  disabled={isKeywordsPending}
-                >
-                  Annuler
-                </Button>
-                <Button type="submit" disabled={isKeywordsPending}>
-                  {isKeywordsPending ? "Enregistrement…" : "Enregistrer"}
-                </Button>
-              </DialogFooter>
-            </form>
-          ) : null}
-        </DialogContent>
-      </Dialog>
+        project={projectForKeywords}
+        initialKeywords={keywordsDialogInitial}
+        formAction={keywordsFormAction}
+        isPending={isKeywordsPending}
+        error={keywordsState.error}
+      />
     </div>
   );
 }

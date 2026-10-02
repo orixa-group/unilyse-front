@@ -16,8 +16,7 @@ export type NavSection = {
 
 export const siteConfig = {
   name: "Unilyse",
-  description:
-    "Analyse performance, stratégie et monitoring de vos campagnes",
+  description: "Analyse performance et pilotage de vos campagnes",
   navSections: [
     {
       label: "Pilotage",
@@ -43,7 +42,7 @@ export const siteConfig = {
           href: ROUTES.STRATEGY,
           title: "Stratégie",
           description:
-            "Recommandations par mot-clé, leviers netlinking / contenu et opportunités.",
+            "Écarts de contenu et de netlinking par mot-clé, à partir des performances observées.",
           requiresContext: "project",
         },
         {
@@ -54,20 +53,12 @@ export const siteConfig = {
             "Évolution du trafic, des conversions, du CTR et des budgets sur la période.",
           requiresContext: "project",
         },
-        {
-          label: "Monitoring",
-          href: ROUTES.MONITORING,
-          title: "Monitoring",
-          description:
-            "Surveillance concurrentielle Google Ads : volume, annonceurs actifs et mots-clés à cibler.",
-          requiresContext: "project",
-        },
       ],
     },
   ] as const satisfies NavSection[],
 } as const;
 
-/** Meta pages hors nav principale (sous-routes Stratégie, etc.). */
+/** Meta pages hors nav principale (sous-routes Stratégie). */
 const pageMetaExtras: NavItem[] = [
   {
     label: "Netlinking",
@@ -89,8 +80,8 @@ export const primaryNavItems = siteConfig.navSections[0]!.items;
 
 export function findNavItemByHref(href: string): NavItem | undefined {
   const candidates: NavItem[] = [
-    ...pageMetaExtras,
     ...siteConfig.navSections.flatMap((section) => [...section.items]),
+    ...pageMetaExtras,
   ];
 
   const matches = candidates.filter(

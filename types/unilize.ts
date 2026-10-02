@@ -1,4 +1,4 @@
-/** Entités Unilize (OpenAPI). */
+/** Entités Unilize (OpenAPI v2). */
 export interface UnilizeClient {
   id: string;
   name: string;
@@ -9,31 +9,29 @@ export interface UnilizeClient {
 /** Mot-clé projet (OpenAPI Keyword). */
 export interface UnilizeKeyword {
   value: string;
-  /** Thématique optionnelle regroupant ce mot-clé. */
-  theme?: string;
+  /** Thématique obligatoire à l'écriture (OpenAPI v2). */
+  theme: string;
 }
 
 export interface UnilizeProject {
   id: string;
   name: string;
-  /** URL du site associé au projet (Search Console). */
-  url: string;
-  /** Google Ads customer ID lié au projet (sync SEA au niveau compte). */
-  customer_id: string;
-  /** Google Analytics (GA4) property ID lié au projet. */
-  ga4_property_id: string;
-  /** CTR de référence du projet (0–100 %). */
-  ctr_benchmark: number;
+  /** Propriété Search Console (ex. sc-domain:exemple.fr). */
+  search_console_url: string;
+  /** Google Ads customer ID lié au projet. */
+  gads_customer_id: string;
+  /** Google Analytics (GA4) property ID — facultatif. */
+  ga4_property_id?: string;
+  /** CTR de référence du projet (0–100 %), facultatif. */
+  ctr_benchmark?: number;
   created_at: string;
   updated_at: string;
-  /** Présent après mise à jour des mots-clés ou selon réponse API. */
+  /** Présent côté client après enrichissement keywords. */
   keywords?: UnilizeKeyword[];
 }
 
-/** Réponse détail projet (OpenAPI ProjectDetail — keywords requis). */
-export interface UnilizeProjectDetail extends UnilizeProject {
-  keywords: UnilizeKeyword[];
-}
+/** Détail projet — les mots-clés passent par GET /keywords. */
+export type UnilizeProjectDetail = UnilizeProject;
 
 export interface UnilizeApiEnvelope<T> {
   data: T;
@@ -51,18 +49,15 @@ export interface CreateClientPayload {
 
 export interface CreateProjectPayload {
   name: string;
-  /** URL du site associé au projet (requis par l’API). */
-  url: string;
-  /** Google Ads customer ID — sync SEA au niveau compte. */
-  customer_id: string;
-  /** Google Analytics (GA4) property ID. */
-  ga4_property_id: string;
-  /** CTR de référence du projet (0–100 %). */
-  ctr_benchmark: number;
+  search_console_url: string;
+  gads_customer_id: string;
+  ga4_property_id?: string;
+  ctr_benchmark?: number;
 }
 
-/** Query params optionnels pour les endpoints analytics (période). */
+/** Query params pour les endpoints analytics (période). */
 export type UnilizePeriodQuery = {
   from?: string;
-  to?: string;
+  /** Borne inclusive (API v2 : `until`). */
+  until?: string;
 };

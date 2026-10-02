@@ -1,294 +1,552 @@
-# Synthèse — Migration API Unilize (front Unilyse)
+# Migration de l'API Unilize — v1 → v2
 
-> **Date** : juin 2026  
-> **Référence** : [OpenAPI Unilize](https://public-api-531732557398.europe-west9.run.app/openapi.yaml)  
-> **Statut** : changements locaux prêts, **non encore commités / déployés** (46 fichiers, ~−1 480 lignes nettes)
+Ce document liste tout ce qui change entre l'ancienne API et la nouvelle. Les
+points marqués ⚠️ cassent le code existant en silence : la requête part, la
+réponse arrive, mais la donnée n'a plus la même forme ou la même unité.
 
----
+La documentation complète de la nouvelle API se lit sur `/docs`, et le
+descripteur OpenAPI se télécharge sur `/openapi.yaml`.
 
-## Contexte
+- [Les routes en un coup d'œil](#les-routes-en-un-coup-dœil)
+- [Changements transverses](#changements-transverses)
+- [Routes de métriques, avant / après](#routes-de-métriques-avant--après)
+- [Autres routes](#autres-routes)
+- [Ce qui disparaît sans remplacement](#ce-qui-disparaît-sans-remplacement)
+- [Checklist](#checklist)
 
-L’API Unilize a évolué : la notion de **campagne liée au projet** est supprimée. Les métriques analytics (performances, stratégie, monitoring) sont désormais au **niveau projet**, avec une période optionnelle `from` / `to`. Le front a été refactoré en conséquence.
+## Les routes en un coup d'œil
 
-En parallèle, un correctif infra a été appliqué (déjà commité) pour que les appels API fonctionnent en production Cloud Run.
-
----
-
-## Changement architectural (avant → après)
-
-| Domaine | Avant | Après |
+| Ancienne route | Nouvelle route | |
 |---|---|---|
-| Contexte analytics | Client → Projet → **Campagne** | Client → **Projet** |
-| Performances | `GET /projects/{id}/campaigns/{campaignId}/performances` | `GET /projects/{projectId}/performances` |
-| Stratégie | `GET …/campaigns/{campaignId}/strategy` | `GET /projects/{projectId}/strategy` |
-| Monitoring | `GET …/campaigns/{campaignId}/monitoring` | `GET /projects/{projectId}/monitoring` |
-| Campagnes | CRUD + link/unlink campagne | **Supprimé** |
-| Période | Non gérée | Query params `from` / `to` (YYYY-MM-DD) |
-| Setup projet | `customer_id` + mots-clés + **campagne** | `customer_id` + mots-clés |
-| Sync SEA | Par campagne liée | Au niveau compte Google Ads (`customer_id`) |
+| `GET /clients` | inchangée | |
+| `POST /clients` | inchangée | |
+| `GET /clients/{id}` | inchangée | |
+| — | `PUT /clients/{id}` | nouvelle : renommer un client |
+| `DELETE /clients/{id}` | inchangée | ⚠️ ne répond plus `404` |
+| `GET /clients/{id}/projects` | inchangée | ⚠️ champs du projet renommés |
+| `POST /clients/{id}/projects` | inchangée | ⚠️ corps renommé, plus de `409` |
+| `GET /projects/{id}` | inchangée | ⚠️ ne renvoie plus les mots-clés |
+| `DELETE /projects/{id}` | inchangée | ⚠️ ne répond plus `404` |
+| — | `GET /projects/{id}/keywords` | nouvelle : lire les mots-clés |
+| `PUT /projects/{id}/keywords` | inchangée | ⚠️ `theme` obligatoire |
+| `GET /projects/{id}/themes` | inchangée | |
+| `GET /projects/{id}/performances` | inchangée | ⚠️ réponse refaite |
+| `GET /projects/{id}/timeline` | `GET /projects/{id}/summary` | ⚠️ réponse refaite |
+| `GET /projects/{id}/timeline/traffic` | `GET /projects/{id}/traffic` | ⚠️ réponse refaite |
+| `GET /projects/{id}/timeline/ctr-budget` | `GET /projects/{id}/clicks` | ⚠️ réponse refaite |
+| `GET /sites` | `GET /search-console/properties` | |
+| — | `GET /google-ads/accounts` | nouvelle : les comptes Google Ads |
+| `GET /projects/{id}/strategy` | supprimée | remplacée en partie par `GET /projects/{id}/recommendations` |
+| — | `GET /projects/{id}/recommendations` | nouvelle : `ProjectRecommendations` (keywords, summary, matrix, gaps ; query `date`) |
+| `POST /projects/{id}/decisions` | supprimée | |
+| `GET /projects/{id}/monitoring` | supprimée | |
+| `POST /projects/{id}/refresh` | supprimée | |
 
----
+Ce qui ne bouge pas : l'authentification (jeton Firebase en `Authorization:
+Bearer`), l'enveloppe `{"data": …}` des succès et `{"error": {"message": …}}`
+des erreurs, l'en-tête `X-Request-ID`, et les identifiants KSUID. L'ancienne
+documentation écrivait `{projectId}` là où la nouvelle écrit `{id}` : l'URL
+appelée est la même.
 
-## Infrastructure & production (commits précédents)
+## Changements transverses
 
-Ces changements corrigent le 404 / « Erreur API » en prod :
+### ⚠️ La période devient obligatoire, et `to` devient `until`
 
-### Proxy explicite `/api/unilize/*`
+Avant, `from` et `to` étaient facultatifs : sans eux, l'API répondait sur le
+mois glissant finissant hier. Maintenant, `from` et `until` sont **requis** sur
+les quatre routes de métriques, au format `2006-01-02`, bornes incluses, et
+`until` ne doit pas précéder `from`.
 
-- **Ajout** : `app/api/unilize/[...path]/route.ts` — proxy vers l’API upstream.
-- **Suppression** : rewrites dans `next.config.ts` (ignorés par Google Cloud Buildpacks).
-- **Fix `API_URL` vide** : garde-fou `serverUrl?.startsWith("http")` dans le proxy et `lib/api/client.ts` (évite `Invalid URL` quand `API_URL=""` en Cloud Run).
-
-### Fichiers concernés (déjà commités)
-
-- `app/api/unilize/[...path]/route.ts`
-- `next.config.ts`
-- `lib/api/client.ts`
-
----
-
-## Endpoints (`lib/constants/api-endpoints.ts`)
-
-**Supprimés :**
-
-- `projectCampaigns`
-- `projectCampaign`
-- `campaignPerformances`
-- `campaignStrategy`
-- `campaignMonitoring`
-
-**Ajoutés :**
-
-- `projectPerformances(projectId)`
-- `projectStrategy(projectId)`
-- `projectMonitoring(projectId)`
-
-**Inchangés :** `CLIENTS`, `client`, `clientProjects`, `project`, `projectKeywords`, `SITES`.
-
----
-
-## SDK API (`lib/api/unilize.ts`)
-
-**Supprimé :**
-
-- `listCampaigns`, `getCampaign`, `linkCampaign`, `unlinkCampaign`
-- Clés React Query `campaign*`
-
-**Modifié :**
-
-- `listPerformances(projectId, period?)`
-- `getStrategy(projectId, period?)`
-- `listKeywordMonitoring(projectId, period?)`
-- Clés `unilizeKeys` incluent `from` / `to` pour le cache
-
----
-
-## Types TypeScript
-
-### `types/unilize.ts`
-
-- Suppression : `UnilizeCampaign`, `LinkCampaignPayload`
-- `UnilizeProject.url` et `customer_id` **requis**
-- Ajout : `UnilizePeriodQuery { from?, to? }`
-
-### `types/performance.ts`
-
-- `UnilizeSeaMetrics` simplifié (plus de champs campagne/mot-clé/période)
-- `UnilizeSearchVolume` : `{ volume }` uniquement
-- `UnilizeSeoMetrics` : `impressions`, `clicks`, `ctr` (plus de BAS)
-- `UnilizePerformance.search_volume` et `.seo` toujours présents
-- `ListPerformancesResult` : plus de `campaignId`
-
-### `types/strategy.ts`
-
-- Nouvelles recommandations : `OPTIMIZE_ADS`, `MAINTAIN_ADS`, `LAUNCH_SEO`, `DOUBLE_PRESENCE`, `REVIEW_STRATEGY`, `HUMAN_ARBITRATION`, `UNKNOWN`
-- `UnilizeStrategySeaTier` : `UNSPECIFIED`, `UNKNOWN`, `BELOW_AVERAGE`, etc.
-- `semantic_score` → `semantic_status`, `authority_score` → `authority_status`
-- `KeywordComparison.search_volume` requis
-- `GetStrategyResult` : plus de `campaignId`
-
-### `types/monitoring.ts`
-
-- `ListMonitoringResult` : plus de `campaignId`
-
-### `types/unilize-dashboard.ts`
-
-- Payload dashboard : plus de `campaigns` / `campaignsError` par projet
-
-### `types/workspace.ts`
-
-- `ContextRequirement` : `"project-campaign"` conservé pour rétrocompatibilité, routes analytics passent à `"project"`
-
----
-
-## Routes BFF
-
-### Supprimées
-
-```
-app/api/bff/projects/[projectId]/campaigns/route.ts
-app/api/bff/projects/[projectId]/campaigns/[campaignId]/performances/route.ts
-app/api/bff/projects/[projectId]/campaigns/[campaignId]/strategy/route.ts
-app/api/bff/projects/[projectId]/campaigns/[campaignId]/monitoring/route.ts
+```diff
+- GET /projects/{id}/performances
+- GET /projects/{id}/performances?from=2026-08-01&to=2026-08-31
++ GET /projects/{id}/performances?from=2026-08-01&until=2026-08-31
 ```
 
-### Ajoutées
+Un appel sans période répondait `200`, il répond désormais `400` :
 
-```
-app/api/bff/projects/[projectId]/performances/route.ts
-app/api/bff/projects/[projectId]/strategy/route.ts
-app/api/bff/projects/[projectId]/monitoring/route.ts
+```json
+{"error": {"message": "from must be a date, written 2006-01-02"}}
 ```
 
-→ Appellent l’upstream au niveau projet, transmettent `from` / `to`.
+C'est au front de choisir la période par défaut qu'affichait l'API.
 
-### Modifiée
+### ⚠️ Les taux passent du pourcentage à la fraction
 
-- `app/api/bff/clients/[clientId]/dashboard/route.ts` — plus de chargement campagnes par projet
+Tous les taux valent maintenant entre 0 et 1. Un `3.24` devient `0.0324` : il
+faut multiplier par 100 à l'affichage.
 
----
+| Champ | Avant | Après |
+|---|---|---|
+| `ctr` (SEA, SEO, global) | `3.0` | `0.03` |
+| `conversion_rate` | `5.0` | `0.05` |
+| `no_click_rate` | `91.9` | `0.919` |
+| `conversions_share` → `conversion_share` | `71.4` | `0.714` |
 
-## Hooks
+Les parts d'impressions perdues, `search_budget_lost_impression_share` et
+`search_rank_lost_impression_share`, étaient déjà des fractions : elles ne
+changent pas.
 
-| Fichier | Changement |
+### ⚠️ `sea` et `seo` deviennent `paid` et `organic`
+
+Partout dans les réponses. Dans les performances par mot-clé, les blocs
+s'appellent `paid_performances` et `organic_performances`.
+
+### ⚠️ Tout bloc d'observation peut être `null`
+
+Avant, seul `sea` pouvait valoir `null` ; `seo` et `search_volume` renvoyaient
+des zéros quand rien n'avait été observé, ce qui ne se distinguait pas d'un
+vrai zéro. Maintenant, les six blocs valent `null` tant que rien n'est connu,
+et l'affichage doit traiter le cas.
+
+### ⚠️ La collecte en cours change de nom et d'états
+
+`status` devient `acquisitions`, ses clés changent, et ses valeurs passent de
+deux à quatre, plus `null` quand rien n'a jamais été demandé.
+
+| Avant | Après |
 |---|---|
-| `hooks/use-project-context.ts` | **Nouveau** — remplace la logique projet+campagne |
-| `hooks/use-sync-project-selection.ts` | **Nouveau** — sync sélection projet seule |
-| `hooks/use-project-campaign-context.ts` | Alias `@deprecated` → `useProjectContext` |
-| `hooks/use-sync-project-campaign-selection.ts` | **Supprimé** |
-| `hooks/use-strategy-api.ts` | `projectId` + `period`, plus de `campaignId` |
-| `hooks/use-performances-api.ts` | idem |
-| `hooks/use-monitoring-api.ts` | idem |
-| `hooks/use-unilize-api.ts` | Suppression hooks campagnes (`useCampaigns`, `useLinkCampaignMutation`, etc.) |
-| `hooks/use-project-sync-probe.ts` | Probe sur `/performances` projet, plus de `campaignId` |
+| `status.sea` | `acquisitions.paid_performances` |
+| `status.seo` | `acquisitions.organic_performances` |
+| `status.search_volume` | `acquisitions.search_volumes` |
+| `status.organic_ranking` | `acquisitions.organic_rankings` |
+| `status.url_authority` | `acquisitions.url_authorities` |
+| `status.semantic` | `acquisitions.page_semantics` |
+| `in_progress` \| `completed` | `pending` \| `running` \| `succeeded` \| `failed` \| `null` |
 
----
+Pour garder l'indicateur « collecte en cours » : `pending` et `running`
+remplacent `in_progress`, `succeeded` et `failed` remplacent `completed`, et
+`failed` permet enfin de montrer qu'une collecte a échoué.
 
-## Store Zustand (`stores/selection.store.ts`)
+### Champs renommés, hors blocs
 
-**Supprimé :**
-
-- `selectedCampaignId`, `setSelectedCampaignId`
-
-**Ajouté :**
-
-- `periodFrom`, `periodTo`, `setPeriod(from, to)` — persistés
-
----
-
-## Server Actions
-
-### `app/(auth)/actions/unilize-actions.ts`
-
-- Suppression : `linkCampaignAction`, `unlinkCampaignAction`, schémas Zod associés
-
-### `app/(auth)/actions/unilize-action-state.ts`
-
-- Suppression : `ListCampaignsResult`, `LinkCampaignActionState`, `UnlinkCampaignActionState`
-
----
-
-## Composants UI
-
-### Layout & navigation
-
-- `workspace-context-bar.tsx` — sélecteur campagne retiré ; filtres date Du/Au + réinitialiser
-- `context-guard.tsx` — analytics accessibles avec projet seul (plus de campagne requise)
-- `config/site.config.ts` — `requiresContext: "project"` pour Performances / Stratégie / Monitoring
-
-### Dashboard
-
-- `dashboard-view.tsx` — plus de gestion campagnes (link/unlink, stats)
-- `project-card.tsx` — section campagnes supprimée
-- `project-setup-banner.tsx` — plus d’exigence « campagne disponible »
-- `dashboard-health-summary.tsx` — stats campagnes retirées
-
-### Vues analytics
-
-- `performances-view.tsx`, `strategy-view.tsx`, `monitoring-view.tsx` — `useProjectContext` + `period`
-
-### Stratégie
-
-- `strategy-keyword-table.tsx` — colonnes `semantic_status` / `authority_status`, nouvelles recommandations
-- `strategy-recommendation-badge.tsx` — mapping des 7 enums
-- `format-strategy.ts`, `metric-tone.ts` — labels et tons mis à jour
-
----
-
-## Lib utilitaires
-
-| Fichier | Changement |
+| Avant | Après |
 |---|---|
-| `lib/projects/project-readiness.ts` | Setup = `customer_id` + mots-clés (plus campagne) |
-| `lib/strategy/format-bas.ts` | Suppression BAS legacy ; `formatAuthorityScoreLabel` via `authority_status` |
-| `lib/strategy/resolve-bas-label.ts` | `resolveStrategyAuthorityLabel` / `resolveStrategySemanticLabel` |
-| `lib/strategy/column-presets.ts` | Colonnes `authority_status`, `semantic_status` |
-| `lib/metrics/glossary.ts` | Descriptions mises à jour |
-| `lib/unilize/request-log.ts` | Logs campagnes supprimés |
-| `lib/insights/compute-insights.ts` | Adapté au modèle projet |
+| `spend` | `cost` |
+| `no_click_count` | `no_clicks` |
+| `average_score`, `max_score`, `min_score` | `average`, `max`, `min`, sous `competitors` |
+| `url` (projet) | `search_console_url` |
+| `customer_id` (projet) | `gads_customer_id` |
 
----
+## Routes de métriques, avant / après
 
-## Documentation
+### `GET /projects/{id}/performances`
 
-- **Ajout** : `.env.example` (`API_URL`, Firebase, `NEXT_PUBLIC_REQUIRE_AUTH`)
-- **Mise à jour** : `README.md` — architecture API, proxy, déploiement Cloud Run, note Bearer JWT non branché
+Même route, réponse refaite. Toujours une entrée par mot-clé du projet, dans
+l'ordre où ils ont été enregistrés.
 
----
+**Avant** — `GET /projects/{id}/performances?from=&to=`
 
-## Inventaire fichiers (git status)
+```json
+{
+  "data": [
+    {
+      "keyword": "café en grain",
+      "sea": {
+        "impressions": 12500,
+        "clicks": 375,
+        "spend": 562.50,
+        "conversions": 18.5,
+        "conversion_value": 2775.00,
+        "quality_score": 7,
+        "search_budget_lost_impression_share": 0.18,
+        "search_rank_lost_impression_share": 0.14,
+        "ad_relevance": "ABOVE_AVERAGE",
+        "expected_ctr": "AVERAGE",
+        "landing_page_ux": "AVERAGE",
+        "ctr": 3.0,
+        "cpc": 0.72,
+        "conversion_rate": 5.0,
+        "cost_per_conversion": 14.40,
+        "roas": 3.47,
+        "potential_impressions_with_full_budget": 1285.71,
+        "potential_impressions_with_full_rank": 1142.86
+      },
+      "search_volume": { "volume": 49500 },
+      "seo": {
+        "impressions": 8400,
+        "clicks": 252,
+        "ctr": 3.0,
+        "average_position": 4.7,
+        "real_time_position": 4,
+        "netlinking_competitors": { "average_score": 62.4, "max_score": 78, "min_score": 40 },
+        "semantic_competitors":   { "average_score": 71.2, "max_score": 88, "min_score": 55 }
+      },
+      "status": {
+        "sea": "completed",
+        "seo": "completed",
+        "search_volume": "completed",
+        "organic_ranking": "in_progress",
+        "url_authority": "in_progress",
+        "semantic": "completed"
+      },
+      "no_click_rate": 91.9
+    }
+  ]
+}
+```
 
-**Modifiés (42)** — voir `git diff --name-only HEAD`
+**Après** — `GET /projects/{id}/performances?from=&until=`
 
-**Supprimés (5)**
+```json
+{
+  "data": [
+    {
+      "keyword": "café en grain",
+      "paid_performances": {
+        "impressions": 12500,
+        "clicks": 375,
+        "cost": 562.50,
+        "conversions": 18.5,
+        "conversion_value": 2775.00,
+        "quality_score": 7,
+        "search_budget_lost_impression_share": 0.18,
+        "search_rank_lost_impression_share": 0.14,
+        "ad_relevance": "ABOVE_AVERAGE",
+        "expected_ctr": "AVERAGE",
+        "landing_page_ux": "AVERAGE",
+        "ctr": 0.03,
+        "cpc": 0.72,
+        "conversion_rate": 0.05,
+        "cost_per_conversion": 14.40,
+        "roas": 3.47,
+        "potential_impressions_with_full_budget": 1285.71,
+        "potential_impressions_with_full_rank": 1142.86
+      },
+      "organic_performances": {
+        "impressions": 8400,
+        "clicks": 252,
+        "ctr": 0.03,
+        "average_position": 4.7
+      },
+      "search_volume": { "volume": 49500 },
+      "organic_ranking": { "position": 4 },
+      "url_authorities": { "competitors": { "average": 62.4, "max": 78, "min": 40 } },
+      "page_semantics":  { "competitors": { "average": 71.2, "max": 88, "min": 55 } },
+      "no_click_rate": 0.919,
+      "acquisitions": {
+        "paid_performances": "succeeded",
+        "organic_performances": "succeeded",
+        "search_volumes": "succeeded",
+        "organic_rankings": "running",
+        "url_authorities": "pending",
+        "page_semantics": "succeeded"
+      }
+    }
+  ]
+}
+```
 
-- 4 routes BFF campagnes
-- `hooks/use-sync-project-campaign-selection.ts`
+Ce qui change, point par point :
 
-**Ajoutés (7)**
+- `sea` → `paid_performances`, `seo` → `organic_performances`, `status` → `acquisitions`.
+- ⚠️ `spend` → `cost`.
+- ⚠️ `ctr`, `conversion_rate` et `no_click_rate` sont des fractions.
+- ⚠️ `no_click_rate` vaut `null` quand le volume est inconnu ou nul, là où il valait `0`.
+- ⚠️ `real_time_position` quitte le bloc SEO : c'est `organic_ranking.position`, qui vaut `null` quand le projet ne se classe pas. Le bloc `organic_ranking` entier vaut `null` quand aucune page de résultats n'a encore été observée.
+- ⚠️ `netlinking_competitors` → `url_authorities`, `semantic_competitors` → `page_semantics`, tous deux sortis du bloc SEO, avec leurs scores sous `competitors` et renommés `average` / `max` / `min`.
+- ⚠️ `ad_relevance`, `expected_ctr` et `landing_page_ux` valent `null` quand Google n'a pas noté, là où ils valaient `"UNSPECIFIED"` ou `"UNKNOWN"`. Les trois autres valeurs ne changent pas.
+- ⚠️ Chacun des six blocs vaut `null` quand rien n'est connu, `search_volume` et `organic_performances` compris.
 
-- `.env.example`
-- 3 routes BFF projet (performances, strategy, monitoring)
-- `hooks/use-project-context.ts`
-- `hooks/use-sync-project-selection.ts`
+### `GET /projects/{id}/timeline` → `GET /projects/{id}/summary`
 
-**Statistiques** : 46 fichiers, +327 / −1 807 lignes
+**Avant**
 
----
+```json
+{
+  "data": {
+    "global": {
+      "keyword_count": 24,
+      "search_volume": 154000,
+      "ctr": 3.24,
+      "no_click_count": 149000,
+      "conversions": 42.0
+    },
+    "sea": { "clicks": 3200, "conversions": 30.0, "conversions_share": 71.4 },
+    "seo": { "clicks": 1800, "conversions": 12.0, "conversions_share": 28.6 },
+    "decisions": [
+      {
+        "id": "2cFQKWmMXlm1vLPuFLe2M5BkNEV",
+        "keyword": "café en grain",
+        "applied": "SEA",
+        "recommended": "SEO",
+        "justification": "…",
+        "decided_by": "…",
+        "decided_at": "2026-08-17T09:24:31Z",
+        "created_at": "2026-08-17T09:24:31Z",
+        "updated_at": "2026-08-17T09:24:31Z"
+      }
+    ]
+  }
+}
+```
 
-## Écarts restants (post-migration)
+**Après**
 
-| Point | Détail |
+```json
+{
+  "data": {
+    "global": {
+      "keyword_count": 24,
+      "search_volume": 154000,
+      "ctr": 0.0324,
+      "no_clicks": 149000,
+      "conversions": 42.0
+    },
+    "paid":    { "clicks": 3200, "conversions": 30.0, "conversion_share": 0.714 },
+    "organic": { "clicks": 1800, "conversions": 12.0, "conversion_share": 0.286 }
+  }
+}
+```
+
+- ⚠️ `sea` → `paid`, `seo` → `organic`.
+- ⚠️ `no_click_count` → `no_clicks`.
+- ⚠️ `conversions_share` → `conversion_share`, au singulier, et en fraction.
+- ⚠️ `global.ctr` en fraction.
+- ⚠️ `decisions` disparaît, avec le reste du moteur de recommandation.
+
+### `GET /projects/{id}/timeline/traffic` → `GET /projects/{id}/traffic`
+
+Toujours une entrée par jour calendaire de la période, les jours sans donnée à
+zéro.
+
+**Avant**
+
+```json
+{
+  "data": [
+    {
+      "date": "2026-08-17",
+      "global": { "conversions": 5.0 },
+      "sea": { "clicks": 108, "sessions": 95, "conversions": 4.0 },
+      "seo": { "clicks": 62,  "sessions": 54, "conversions": 1.0 }
+    }
+  ]
+}
+```
+
+**Après**
+
+```json
+{
+  "data": [
+    {
+      "date": "2026-08-17",
+      "global":  { "sessions": 149, "conversions": 5.0 },
+      "paid":    { "clicks": 108, "sessions": 95, "conversions": 4.0 },
+      "organic": { "clicks": 62,  "sessions": 54, "conversions": 1.0 }
+    }
+  ]
+}
+```
+
+- ⚠️ `sea` → `paid`, `seo` → `organic`.
+- `global` porte désormais `sessions`, la somme des deux canaux de la recherche.
+
+### `GET /projects/{id}/timeline/ctr-budget` → `GET /projects/{id}/clicks`
+
+Les filtres `keyword` et `theme` ne changent pas : répétables, facultatifs, et
+combinés en union — les mots-clés nommés, plus ceux des thèmes nommés. Sans
+aucun des deux, tous les mots-clés du projet sont comptés.
+
+**Avant**
+
+```json
+{
+  "data": [
+    {
+      "date": "2026-08-17",
+      "global": { "ctr": 3.24 },
+      "sea": { "clicks": 108, "cost": 42.3 },
+      "seo": { "clicks": 62 }
+    }
+  ]
+}
+```
+
+**Après**
+
+```json
+{
+  "data": [
+    {
+      "date": "2026-08-17",
+      "global":  { "ctr": 0.0324 },
+      "paid":    { "clicks": 108, "cost": 42.3 },
+      "organic": { "clicks": 62 }
+    }
+  ]
+}
+```
+
+- ⚠️ `sea` → `paid`, `seo` → `organic`.
+- ⚠️ `global.ctr` en fraction.
+
+## Autres routes
+
+### Clients
+
+`GET /clients`, `POST /clients` et `GET /clients/{id}` ne changent pas : un
+client est toujours `{id, name, created_at, updated_at}`, et créer un client
+du nom d'un autre répond toujours `409`.
+
+**Nouveau** — `PUT /clients/{id}` renomme un client :
+
+```http
+PUT /clients/2cFQKWmMXlm1vLPuFLe2M5BkNEV
+{"name": "Acme"}
+```
+
+Il répond le client renommé, `404` s'il n'existe pas, `400` pour un nom vide,
+`409` pour un nom qu'un autre client porte déjà.
+
+⚠️ `DELETE /clients/{id}` ne répond plus `404` : supprimer un client qui
+n'existe pas répond `204`, comme supprimer celui qui existe. Le front n'a plus
+à traiter le `404` de cette route.
+
+### Projets
+
+⚠️ Les champs du projet sont renommés, et deux deviennent facultatifs à la
+création.
+
+| Avant | Après | |
+|---|---|---|
+| `url` | `search_console_url` | la propriété Search Console, telle que Search Console la nomme : `sc-domain:exemple.fr` ou `https://www.exemple.fr/`, et non plus une URL quelconque |
+| `customer_id` | `gads_customer_id` | inchangé quant au contenu |
+| `ga4_property_id` | `ga4_property_id` | devient facultatif : un projet peut n'avoir pas de Google Analytics, et n'a alors ni session ni conversion |
+| `ctr_benchmark` | `ctr_benchmark` | devient facultatif, et `0` est accepté ; toujours un pourcentage entre 0 et 100 |
+| `name` | `name` | inchangé |
+
+```http
+POST /clients/{id}/projects
+{
+  "name": "acme.com",
+  "search_console_url": "sc-domain:acme.com",
+  "gads_customer_id": "1234567890",
+  "ga4_property_id": "312345678",
+  "ctr_benchmark": 4.5
+}
+```
+
+⚠️ La création de projet ne répond plus `409` : deux projets d'un même client
+peuvent porter le même nom.
+
+⚠️ `DELETE /projects/{id}` ne répond plus `404`, comme pour les clients.
+
+⚠️ `GET /projects/{id}` ne renvoie plus les mots-clés du projet. C'est le
+changement à traiter en même temps que la nouvelle route ci-dessous.
+
+### Mots-clés
+
+**Nouveau** — `GET /projects/{id}/keywords` répond les mots-clés du projet,
+dans l'ordre où ils ont été enregistrés :
+
+```json
+{"data": [{"value": "café en grain", "theme": "boissons"}]}
+```
+
+C'est par là que passe ce que `GET /projects/{id}` portait sous `keywords`.
+
+⚠️ `PUT /projects/{id}/keywords` exige désormais un `theme` sur chaque
+mot-clé. Un mot-clé sans thème était accepté, il répond maintenant `400` :
+
+```json
+{"error": {"message": "portfolio: keywords without a theme at 2"}}
+```
+
+Le message nomme les positions fautives dans le tableau envoyé, en partant
+de 0. De même pour les valeurs vides, et pour un doublon :
+
+```json
+{"error": {"message": "portfolio: duplicate keywords: café en grain"}}
+```
+
+⚠️ Les valeurs sont normalisées avant d'être enregistrées : minuscules,
+espaces et apostrophes ramenés à une seule forme. Ce que la route répond peut
+donc différer de ce qui a été envoyé — `"L'Hôtel  Paris"` revient
+`"l'hôtel paris"` — et c'est la valeur normalisée qu'il faut afficher et
+renvoyer. Les accents et les pluriels sont conservés : `café` et `cafe`
+restent deux mots-clés.
+
+Le corps reste un tableau JSON nu, et un tableau vide vide le projet. ⚠️ En
+revanche `null` est refusé, là où il passait.
+
+`GET /projects/{id}/themes` ne change pas : les thèmes du projet, triés,
+chacun une fois.
+
+### `GET /sites` → `GET /search-console/properties`
+
+Les champs ne changent pas — `{url, domain, permission_level}` — et les quatre
+niveaux de permission non plus, `siteUnverifiedUser` compris.
+
+Deux différences :
+
+- `domain` est le domaine enregistrable, sous-domaines mis de côté, et non
+  plus l'URL débarrassée de son `www.`. Il peut être vide quand aucun domaine
+  ne peut être tiré de l'URL.
+- Les propriétés sont triées par domaine puis par URL, celles sans domaine en
+  dernier, de sorte que les propriétés d'un même site se suivent.
+
+### Nouveau — `GET /google-ads/accounts`
+
+Les comptes Google Ads qu'un projet peut suivre, pour les proposer au choix à
+la création d'un projet, comme les propriétés Search Console :
+
+```json
+{"data": [{"id": "1234567890", "name": "Exemple FR", "status": "ENABLED"}]}
+```
+
+Les comptes administrateurs sont écartés : ils ne diffusent pas d'annonces.
+Les autres sont tous listés, quel que soit leur statut, à charge pour le front
+de griser ceux qui ne sont pas `ENABLED`. Ils sont triés par nom puis par
+identifiant, ceux sans nom en dernier.
+
+
+> **Note (OpenAPI à jour)** : `GET /projects/{id}/strategy` n'existe plus. Les recommandations par mot-clé passent par **`GET /projects/{id}/recommendations`**. Les écrans **Contenu** / **Netlinking** s'appuient sur `url_authorities`, `page_semantics` et `previous` dans **`GET /projects/{id}/performances`**.
+
+## Ce qui disparaît sans remplacement
+
+L'agrégat `/strategy` et certains écrans dérivés n'ont pas d'équivalent direct :
+
+| Route | Ce qu'elle servait |
 |---|---|
-| **Prod non déployée** | Le [dashboard live](https://admin-531732557398.europe-west1.run.app/dashboard) utilise encore l’ancien modèle campagnes |
-| **Textes UI** | Messages vides « projet / campagne » ; `site.config.ts` mentionne encore « campagnes » |
-| **Bearer JWT** | OpenAPI l’exige ; front ne l’envoie pas (documenté README — OK tant que staging est ouvert) |
-| **`API_URL` dans BFF** | Routes BFF n’ont pas encore le garde-fou `startsWith("http")` du proxy |
-| **`project-campaign`** | Type conservé dans `types/workspace.ts` pour compatibilité |
+| `GET /projects/{id}/strategy` | tableau comparatif 24 colonnes, matrice d'opportunités, gaps sémantiques/netlinking pré-calculés (les reco seules sont sur `/recommendations`) |
+| `POST /projects/{id}/decisions` | l'enregistrement d'une décision prise sur un mot-clé |
+| `GET /projects/{id}/monitoring` | le suivi concurrentiel par mot-clé |
+| `POST /projects/{id}/refresh` | le rafraîchissement à la demande des métriques d'un projet |
 
----
+Le tableau `decisions` de l'ancien `/timeline` disparaît avec eux.
 
-## Déploiement recommandé
+Les données brutes sur lesquelles ces calculs s'appuyaient restent lisibles :
+`GET /projects/{id}/performances` porte, pour chaque mot-clé, les
+performances payantes et naturelles, le volume de recherche, le classement, et
+les scores d'autorité et de sémantique des concurrents.
 
-1. Committer tous les changements locaux
-2. Pousser sur la branche suivie par le trigger Cloud Build
-3. Vérifier `API_URL` en Cloud Run (URL complète ou absent → fallback staging)
-4. Tester : clients, projets, dashboard, performances/stratégie/monitoring avec et sans période
-5. Corriger les textes « campagne » restants en polish
+## Checklist
 
----
-
-## Référence OpenAPI — couverture endpoints
-
-| Endpoint | Front |
-|---|---|
-| `GET/POST /clients` | OK |
-| `GET/DELETE /clients/{id}` | OK |
-| `GET/POST /clients/{id}/projects` | OK |
-| `GET/DELETE /projects/{id}` | OK |
-| `PUT /projects/{id}/keywords` | OK |
-| `GET /projects/{id}/performances?from&to` | OK |
-| `GET /projects/{id}/strategy?from&to` | OK |
-| `GET /projects/{id}/monitoring?from&to` | OK |
-| `GET /sites` | OK |
-| `/campaigns/*` | Supprimé (intentionnel) |
+1. Ajouter `from` et `until` à chaque appel de `/performances`, `/summary`,
+   `/traffic` et `/clicks`, et choisir la période par défaut côté front.
+2. Renommer `to` en `until`.
+3. Multiplier par 100 à l'affichage tout `ctr`, `conversion_rate`,
+   `no_click_rate` et `conversion_share`.
+4. Renommer `sea` en `paid` et `seo` en `organic` dans les quatre réponses,
+   et en `paid_performances` / `organic_performances` dans les performances.
+5. Traiter le `null` de chacun des six blocs d'observation, et celui de
+   `no_click_rate`, `organic_ranking.position` et des trois notes de Google.
+6. Reprendre l'indicateur de collecte sur `acquisitions` et ses quatre états.
+7. Renommer `spend` en `cost`, `no_click_count` en `no_clicks`,
+   `conversions_share` en `conversion_share`, et les scores de concurrents en
+   `average` / `max` / `min` sous `competitors`.
+8. Renommer `url` en `search_console_url` et `customer_id` en
+   `gads_customer_id` sur le projet, à la lecture comme à la création.
+9. Lire les mots-clés par `GET /projects/{id}/keywords` : `GET /projects/{id}`
+   ne les porte plus.
+10. Rendre le thème obligatoire dans le formulaire des mots-clés, et afficher
+    la valeur normalisée que renvoie la réponse.
+11. Retirer le `404` attendu des deux `DELETE`, et le `409` de la création de
+    projet.
+12. Retirer les écrans de stratégie, de décisions, de monitoring et le bouton
+    de rafraîchissement.
+13. Brancher le choix de la propriété Search Console sur
+    `/search-console/properties`, et celui du compte Google Ads sur
+    `/google-ads/accounts`.

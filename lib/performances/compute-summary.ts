@@ -3,7 +3,7 @@ import type { UnilizePerformance } from "@/types/performance";
 export interface PerformanceSummaryMetrics {
   keywordCount: number;
   totalImpressions: number;
-  totalSpend: number;
+  totalCost: number;
   budgetLostCount: number;
 }
 
@@ -11,16 +11,17 @@ export function computePerformanceSummary(
   rows: readonly UnilizePerformance[],
 ): PerformanceSummaryMetrics {
   let totalImpressions = 0;
-  let totalSpend = 0;
+  let totalCost = 0;
   let budgetLostCount = 0;
 
   for (const row of rows) {
-    if (!row.sea) {
+    const paid = row.paid_performances;
+    if (!paid) {
       continue;
     }
-    totalImpressions += row.sea.impressions;
-    totalSpend += row.sea.spend;
-    if (row.sea.search_budget_lost_impression_share > 0.2) {
+    totalImpressions += paid.impressions;
+    totalCost += paid.cost;
+    if (paid.search_budget_lost_impression_share > 0.2) {
       budgetLostCount += 1;
     }
   }
@@ -28,7 +29,7 @@ export function computePerformanceSummary(
   return {
     keywordCount: rows.length,
     totalImpressions,
-    totalSpend,
+    totalCost,
     budgetLostCount,
   };
 }

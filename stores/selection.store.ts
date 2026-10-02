@@ -16,6 +16,9 @@ interface SelectionState {
   periodFrom: string | null;
   periodTo: string | null;
   setPeriod: (from: string | null, to: string | null) => void;
+  /** Date de lecture des analyses reco (YYYY-MM-DD). */
+  recommendationAsOfDate: string | null;
+  setRecommendationAsOfDate: (date: string | null) => void;
   hasHydrated: boolean;
   setHasHydrated: (value: boolean) => void;
 }
@@ -51,6 +54,9 @@ export const useSelectionStore = create<SelectionState>()(
       periodFrom: null,
       periodTo: null,
       setPeriod: (from, to) => set({ periodFrom: from, periodTo: to }),
+      recommendationAsOfDate: null,
+      setRecommendationAsOfDate: (date) =>
+        set({ recommendationAsOfDate: date }),
       hasHydrated: false,
       setHasHydrated: (value) => set({ hasHydrated: value }),
     }),
@@ -62,6 +68,7 @@ export const useSelectionStore = create<SelectionState>()(
         performanceVisibleColumns: state.performanceVisibleColumns,
         periodFrom: state.periodFrom,
         periodTo: state.periodTo,
+        recommendationAsOfDate: state.recommendationAsOfDate,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {

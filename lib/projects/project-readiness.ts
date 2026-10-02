@@ -28,7 +28,7 @@ export interface ProjectReadinessInput {
 }
 
 export function hasCustomerId(project: UnilizeProject): boolean {
-  return Boolean(project.customer_id?.trim());
+  return Boolean(project.gads_customer_id?.trim());
 }
 
 export function hasGa4PropertyId(project: UnilizeProject): boolean {

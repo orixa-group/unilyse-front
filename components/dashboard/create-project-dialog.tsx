@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BffErrorAlert } from "@/components/common/bff-error-alert";
 import { LoadingSkeleton } from "@/components/common/loading-skeleton";
+import { useGoogleAdsAccounts } from "@/hooks/use-google-ads-accounts-api";
 import { useSearchConsoleSites } from "@/hooks/use-sites-api";
 import { formatGscSiteOptionLabel } from "@/lib/sites/format-gsc-site";
 import { toUserFacingApiError } from "@/lib/api/error-messages";
@@ -39,6 +40,9 @@ export function CreateProjectDialog({
   onCreated: (result: CreateProjectActionState) => void;
 }) {
   const [selectedSiteUrl, setSelectedSiteUrl] = useState<string | null>(null);
+  const [selectedAdsAccountId, setSelectedAdsAccountId] = useState<
+    string | null
+  >(null);
   const [createState, createFormAction, isCreatePending] = useActionState(
     createProjectAction,
     initialCreateProjectState,
@@ -51,6 +55,13 @@ export function CreateProjectDialog({
     error: sitesError,
   } = useSearchConsoleSites({ enabled: open });
 
+  const {
+    data: adsResult,
+    isLoading: isAdsLoading,
+    isError: isAdsError,
+    error: adsError,
+  } = useGoogleAdsAccounts({ enabled: open });
+
   const siteOptions = useMemo(
     () =>
       (sitesResult?.sites ?? []).map((site) => ({
@@ -60,9 +71,21 @@ export function CreateProjectDialog({
     [sitesResult?.sites],
   );
 
+  const adsOptions = useMemo(
+    () =>
+      (adsResult?.accounts ?? [])
+        .filter((account) => account.status === "ENABLED")
+        .map((account) => ({
+          value: account.id,
+          label: account.name || account.id,
+        })),
+    [adsResult?.accounts],
+  );
+
   useEffect(() => {
     if (!open) {
       setSelectedSiteUrl(null);
+      setSelectedAdsAccountId(null);
     }
   }, [open]);
 
@@ -74,9 +97,15 @@ export function CreateProjectDialog({
 
   const sitesLoadError = isSitesError
     ? toUserFacingApiError(sitesError?.message, {
-        fallback: "Impossible de charger les sites Search Console.",
+        fallback: "Impossible de charger les propriétés Search Console.",
       })
     : sitesResult?.error;
+
+  const adsLoadError = isAdsError
+    ? toUserFacingApiError(adsError?.message, {
+        fallback: "Impossible de charger les comptes Google Ads.",
+      })
+    : adsResult?.error;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -86,13 +115,22 @@ export function CreateProjectDialog({
           <DialogDescription>
             Le projet sera rattaché au client{" "}
             <span className="text-foreground font-medium">{clientName}</span>.
-            Choisissez un site Google Search Console et renseignez le Customer
-            ID Google Ads ainsi que la propriété GA4 pour lancer la collecte.
+            Choisissez une propriété Search Console et un compte Google Ads pour
+            lancer la collecte.
           </DialogDescription>
         </DialogHeader>
         <form action={createFormAction} className="min-w-0 space-y-4">
           <input type="hidden" name="clientId" value={clientId} />
-          <input type="hidden" name="url" value={selectedSiteUrl ?? ""} />
+          <input
+            type="hidden"
+            name="search_console_url"
+            value={selectedSiteUrl ?? ""}
+          />
+          <input
+            type="hidden"
+            name="gads_customer_id"
+            value={selectedAdsAccountId ?? ""}
+          />
           <div className="space-y-2">
             <Label htmlFor="project-name">Nom du projet</Label>
             <Input
@@ -104,60 +142,8 @@ export function CreateProjectDialog({
               autoFocus
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="project-customer-id">Customer ID Google Ads</Label>
-            <Input
-              id="project-customer-id"
-              name="customer_id"
-              placeholder="1234567890"
-              required
-              disabled={isCreatePending}
-              inputMode="numeric"
-              autoComplete="off"
-            />
-            <p className="text-muted-foreground text-xs">
-              Identifiant du compte Google Ads — les métriques SEA seront
-              synchronisées pour l’ensemble du compte.
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="project-ga4-property-id">ID propriété GA4</Label>
-            <Input
-              id="project-ga4-property-id"
-              name="ga4_property_id"
-              placeholder="312345678"
-              required
-              disabled={isCreatePending}
-              inputMode="numeric"
-              autoComplete="off"
-            />
-            <p className="text-muted-foreground text-xs">
-              Identifiant de la propriété Google Analytics 4 — sessions et
-              conversions seront synchronisées depuis cette propriété.
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="project-ctr-benchmark">CTR benchmark (%)</Label>
-            <Input
-              id="project-ctr-benchmark"
-              name="ctr_benchmark"
-              placeholder="2,5"
-              required
-              disabled={isCreatePending}
-              type="number"
-              min={0.01}
-              max={100}
-              step="0.01"
-              inputMode="decimal"
-              autoComplete="off"
-            />
-            <p className="text-muted-foreground text-xs">
-              CTR de référence du projet (strictement entre 0 et 100 %). Sert
-              de seuil pour le score D5 (CTR incrémental).
-            </p>
-          </div>
           <div className="min-w-0 space-y-2">
-            <Label htmlFor="project-site-url">Site Search Console</Label>
+            <Label htmlFor="project-site-url">Propriété Search Console</Label>
             {isSitesLoading ? (
               <LoadingSkeleton className="h-9 w-full" />
             ) : (
@@ -167,29 +153,86 @@ export function CreateProjectDialog({
                 options={siteOptions}
                 value={selectedSiteUrl}
                 onValueChange={setSelectedSiteUrl}
-                placeholder="Sélectionner un site…"
+                placeholder="Sélectionner une propriété…"
                 searchPlaceholder="Rechercher par URL ou domaine…"
-                emptyMessage="Aucun site Search Console disponible."
-                noResultsMessage="Aucun site ne correspond à votre recherche."
+                emptyMessage="Aucune propriété Search Console disponible."
+                noResultsMessage="Aucune propriété ne correspond à votre recherche."
                 disabled={isCreatePending || siteOptions.length === 0}
-                aria-label="Site Google Search Console"
+                aria-label="Propriété Google Search Console"
               />
             )}
-            <p className="text-muted-foreground text-xs">
-              Seuls les sites de votre compte Google Search Console connecté
-              sont listés.
-            </p>
             {isSitesError ? (
               <BffErrorAlert
                 error={sitesError}
-                fallback="Impossible de charger les sites Search Console."
-                title="Sites Search Console indisponibles"
+                fallback="Impossible de charger les propriétés Search Console."
+                title="Search Console indisponible"
               />
             ) : sitesLoadError ? (
               <p className="text-destructive text-sm" role="alert">
                 {sitesLoadError}
               </p>
             ) : null}
+          </div>
+          <div className="min-w-0 space-y-2">
+            <Label htmlFor="project-gads-account">Compte Google Ads</Label>
+            {isAdsLoading ? (
+              <LoadingSkeleton className="h-9 w-full" />
+            ) : (
+              <Autocomplete
+                id="project-gads-account"
+                className="w-full min-w-0"
+                options={adsOptions}
+                value={selectedAdsAccountId}
+                onValueChange={setSelectedAdsAccountId}
+                placeholder="Sélectionner un compte…"
+                searchPlaceholder="Rechercher un compte…"
+                emptyMessage="Aucun compte Google Ads disponible."
+                noResultsMessage="Aucun compte ne correspond à votre recherche."
+                disabled={isCreatePending || adsOptions.length === 0}
+                aria-label="Compte Google Ads"
+              />
+            )}
+            {isAdsError ? (
+              <BffErrorAlert
+                error={adsError}
+                fallback="Impossible de charger les comptes Google Ads."
+                title="Google Ads indisponible"
+              />
+            ) : adsLoadError ? (
+              <p className="text-destructive text-sm" role="alert">
+                {adsLoadError}
+              </p>
+            ) : null}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="project-ga4-property-id">
+              ID propriété GA4 (facultatif)
+            </Label>
+            <Input
+              id="project-ga4-property-id"
+              name="ga4_property_id"
+              placeholder="312345678"
+              disabled={isCreatePending}
+              inputMode="numeric"
+              autoComplete="off"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="project-ctr-benchmark">
+              CTR benchmark (%) (facultatif)
+            </Label>
+            <Input
+              id="project-ctr-benchmark"
+              name="ctr_benchmark"
+              placeholder="2,5"
+              disabled={isCreatePending}
+              type="number"
+              min={0}
+              max={100}
+              step="0.01"
+              inputMode="decimal"
+              autoComplete="off"
+            />
           </div>
           {createState.error ? (
             <p className="text-destructive text-sm" role="alert">
@@ -210,8 +253,11 @@ export function CreateProjectDialog({
               disabled={
                 isCreatePending ||
                 isSitesLoading ||
+                isAdsLoading ||
                 !selectedSiteUrl ||
-                Boolean(sitesLoadError)
+                !selectedAdsAccountId ||
+                Boolean(sitesLoadError) ||
+                Boolean(adsLoadError)
               }
             >
               {isCreatePending ? "Création…" : "Créer"}

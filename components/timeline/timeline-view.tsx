@@ -18,6 +18,7 @@ import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { BffErrorAlert } from "@/components/common/bff-error-alert";
 import { LoadingSkeleton } from "@/components/common/loading-skeleton";
+import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PerformancePeriodPicker } from "@/components/performances/performance-period-picker";
 import { Autocomplete } from "@/components/ui/autocomplete";
 import { Button } from "@/components/ui/button";
@@ -34,11 +35,8 @@ import { useProjectThemes } from "@/hooks/use-themes-api";
 import { useProjectContext } from "@/hooks/use-project-context";
 import { formatKeywordLabel } from "@/lib/projects/keywords";
 import { normalizeTimelineFilterQuery } from "@/lib/unilize/period-query";
-import {
-  formatCurrencyEur,
-  formatNumber,
-  formatPercentValue,
-} from "@/lib/utils/formatting";
+import { formatFractionPercent } from "@/lib/performances/format-metrics";
+import { formatCurrencyEur, formatNumber } from "@/lib/utils/formatting";
 import {
   CHART_CONV,
   CHART_COST,
@@ -50,10 +48,7 @@ import {
   CHART_TICK,
 } from "@/lib/ui/chart-theme";
 import { cn } from "@/lib/utils/cn";
-import type {
-  UnilizeTimelineCtrBudgetPoint,
-  UnilizeTimelineTrafficPoint,
-} from "@/types/timeline";
+import type { UnilizeClicksPoint, UnilizeTrafficPoint } from "@/types/timeline";
 
 type CanalFilter = "all" | "seo" | "sea";
 type TrafficMetric = "clicks" | "sessions";
@@ -74,26 +69,24 @@ function formatTooltipDate(value: string): string {
   }
 }
 
-function mapTrafficRows(points: UnilizeTimelineTrafficPoint[]) {
+function mapTrafficRows(points: UnilizeTrafficPoint[]) {
   return points.map((point) => ({
     date: point.date,
-    seaClicks: point.sea?.clicks ?? 0,
-    seoClicks: point.seo?.clicks ?? 0,
-    seaSessions: point.sea?.sessions ?? 0,
-    seoSessions: point.seo?.sessions ?? 0,
-    seaConversions: point.sea?.conversions ?? 0,
-    seoConversions: point.seo?.conversions ?? 0,
+    seaClicks: point.paid?.clicks ?? 0,
+    seoClicks: point.organic?.clicks ?? 0,
+    seaSessions: point.paid?.sessions ?? 0,
+    seoSessions: point.organic?.sessions ?? 0,
+    seaConversions: point.paid?.conversions ?? 0,
+    seoConversions: point.organic?.conversions ?? 0,
     totalConversions: point.global?.conversions ?? 0,
+    totalSessions: point.global?.sessions ?? 0,
   }));
 }
 
-function mapCtrBudgetRows(
-  points: UnilizeTimelineCtrBudgetPoint[],
-  canal: CanalFilter,
-) {
+function mapClicksRows(points: UnilizeClicksPoint[], canal: CanalFilter) {
   return points.map((point) => {
-    const seaClicks = point.sea?.clicks ?? 0;
-    const seoClicks = point.seo?.clicks ?? 0;
+    const seaClicks = point.paid?.clicks ?? 0;
+    const seoClicks = point.organic?.clicks ?? 0;
     const clicks =
       canal === "sea"
         ? seaClicks
@@ -106,7 +99,7 @@ function mapCtrBudgetRows(
       seaClicks,
       seoClicks,
       ctr: point.global?.ctr ?? 0,
-      cost: point.sea?.cost ?? 0,
+      cost: point.paid?.cost ?? 0,
     };
   });
 }
@@ -151,7 +144,7 @@ export function TimelineView() {
     () =>
       normalizeTimelineFilterQuery({
         from: period?.from,
-        to: period?.to,
+        until: period?.until,
         theme: theme ? [theme] : undefined,
       }),
     [period, theme],
@@ -184,7 +177,7 @@ export function TimelineView() {
     ctrFilter,
   );
 
-  const timeline = timelineResult?.timeline ?? null;
+  const summary = timelineResult?.summary ?? null;
   const trafficPoints = trafficResult?.points ?? [];
   const ctrPoints = ctrResult?.points ?? [];
 
@@ -193,7 +186,7 @@ export function TimelineView() {
     [trafficPoints],
   );
   const ctrRows = useMemo(
-    () => mapCtrBudgetRows(ctrPoints, canal),
+    () => mapClicksRows(ctrPoints, canal),
     [ctrPoints, canal],
   );
 
@@ -225,12 +218,19 @@ export function TimelineView() {
         <div className="flex justify-end">
           <LoadingSkeleton className="h-8 w-48" />
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <LoadingSkeleton key={i} className="h-20 w-full" />
           ))}
         </div>
-        <LoadingSkeleton className="h-64 w-full" />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <LoadingSkeleton className="h-64 w-full rounded-xl" />
+          <LoadingSkeleton className="h-64 w-full rounded-xl" />
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <LoadingSkeleton className="h-64 w-full rounded-xl" />
+          <LoadingSkeleton className="h-64 w-full rounded-xl" />
+        </div>
       </div>
     );
   }
@@ -245,9 +245,9 @@ export function TimelineView() {
     );
   }
 
-  const global = timeline?.global;
-  const sea = timeline?.sea;
-  const seo = timeline?.seo;
+  const global = summary?.global;
+  const paid = summary?.paid;
+  const organic = summary?.organic;
 
   return (
     <div className="space-y-6">
@@ -267,42 +267,38 @@ export function TimelineView() {
         />
         <StatCard
           label="Clics SEA"
-          value={formatNumber(sea?.clicks ?? 0)}
+          value={formatNumber(paid?.clicks ?? 0)}
           hint={
-            sea
-              ? `${formatPercentValue(sea.conversions_share)} des conversions`
+            paid
+              ? `${formatFractionPercent(paid.conversion_share)} des conversions`
               : undefined
           }
         />
         <StatCard
           label="Clics SEO"
-          value={formatNumber(seo?.clicks ?? 0)}
+          value={formatNumber(organic?.clicks ?? 0)}
           hint={
-            seo
-              ? `${formatPercentValue(seo.conversions_share)} des conversions`
+            organic
+              ? `${formatFractionPercent(organic.conversion_share)} des conversions`
               : undefined
           }
         />
         <StatCard
           label="CTR global"
-          value={
-            global?.ctr === undefined || global?.ctr === null
-              ? "—"
-              : formatPercentValue(global.ctr)
-          }
+          value={formatFractionPercent(global?.ctr)}
         />
         <StatCard
           label="Conversions"
           value={formatNumber(global?.conversions ?? 0)}
           hint={
-            sea && seo
-              ? `SEA ${formatNumber(sea.conversions)} · SEO ${formatNumber(seo.conversions)}`
+            paid && organic
+              ? `SEA ${formatNumber(paid.conversions)} · SEO ${formatNumber(organic.conversions)}`
               : undefined
           }
         />
         <StatCard
           label="Recherches sans clic"
-          value={formatNumber(global?.no_click_count ?? 0)}
+          value={formatNumber(global?.no_clicks ?? 0)}
         />
       </div>
 

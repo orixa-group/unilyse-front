@@ -4,12 +4,12 @@ import { buildUnilizeUpstreamUrl } from "@/lib/api/resolve-server-api-url";
 import { withBffAuth } from "@/lib/api/bff-auth";
 import { withRetry } from "@/lib/api/async-utils";
 import { bffRouteErrorResponse } from "@/lib/api/bff-route-utils";
-import { listSearchConsoleSites } from "@/lib/api/unilize";
+import { listSearchConsoleProperties } from "@/lib/api/unilize";
 import { logUnilizeEvent, summarizeUnilizePayload } from "@/lib/unilize/request-log";
 import type { ListSitesResult } from "@/types/sites";
 
 function getSitesRequestUrl(): string {
-  return buildUnilizeUpstreamUrl(API.SITES);
+  return buildUnilizeUpstreamUrl(API.SEARCH_CONSOLE_PROPERTIES);
 }
 
 export async function GET(request: Request) {
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     logUnilizeEvent("bff", "start", "GET /api/bff/sites", { upstream: requestUrl });
 
     try {
-      const sites = await withRetry(() => listSearchConsoleSites(), {
+      const sites = await withRetry(() => listSearchConsoleProperties(), {
         attempts: 3,
       });
       const body: ListSitesResult = { requestUrl, sites, error: null };

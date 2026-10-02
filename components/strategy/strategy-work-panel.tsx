@@ -8,9 +8,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatStrategyRecommendation } from "@/lib/strategy/format-strategy";
-import { formatDecimal, formatNumber } from "@/lib/utils/formatting";
-import type { UnilizeWorkGap } from "@/types/strategy";
+import { formatNumber } from "@/lib/utils/formatting";
+import type { StrategyWorkGapRow } from "@/types/strategy-work";
 
 export type StrategyWorkPanelColumn = {
   id: string;
@@ -19,30 +18,24 @@ export type StrategyWorkPanelColumn = {
 
 type StrategyWorkPanelProps = {
   title: string;
-  /** Lien « Tout voir » — omis sur les pages détail. */
   seeAllHref?: string;
   columns: readonly StrategyWorkPanelColumn[];
-  rows?: readonly UnilizeWorkGap[];
-  /** Nombre max de lignes affichées (preview). */
+  rows?: readonly StrategyWorkGapRow[];
   limit?: number;
 };
 
-function cellValue(row: UnilizeWorkGap, columnId: string): string {
+function cellValue(row: StrategyWorkGapRow, columnId: string): string {
   switch (columnId) {
     case "keyword":
       return row.keyword;
-    case "priority":
-      return formatDecimal(row.priority);
     case "volume":
-      return formatNumber(row.volume);
-    case "target":
-      return formatNumber(row.target_score);
-    case "score":
-      return `${formatNumber(row.current_score)} / ${formatNumber(row.target_score)}`;
+      return row.volume === null ? "—" : formatNumber(row.volume);
+    case "current_score":
+      return row.current_score === null ? "—" : formatNumber(row.current_score);
+    case "target_score":
+      return row.target_score === null ? "—" : formatNumber(row.target_score);
     case "gap":
-      return formatNumber(row.gap);
-    case "objective":
-      return formatStrategyRecommendation(row.objective);
+      return row.gap === null ? "—" : formatNumber(row.gap);
     default:
       return "—";
   }
@@ -116,18 +109,13 @@ export function StrategyWorkPanel({
   );
 }
 
-export const STRATEGY_NETLINKING_COLUMNS = [
+export const STRATEGY_WORK_COLUMNS = [
   { id: "keyword", label: "Mot-clé" },
-  { id: "priority", label: "Priorité" },
-  { id: "target", label: "Cible netlinking" },
-  { id: "score", label: "Score / Cible" },
-  { id: "objective", label: "Objectif" },
+  { id: "volume", label: "Volume" },
+  { id: "current_score", label: "Score page" },
+  { id: "target_score", label: "Moy. concurrents" },
+  { id: "gap", label: "Écart" },
 ] as const;
 
-export const STRATEGY_CONTENT_COLUMNS = [
-  { id: "keyword", label: "Mot-clé" },
-  { id: "priority", label: "Priorité" },
-  { id: "target", label: "Cible sémantique" },
-  { id: "score", label: "Score / Cible" },
-  { id: "objective", label: "Objectif" },
-] as const;
+export const STRATEGY_NETLINKING_COLUMNS = STRATEGY_WORK_COLUMNS;
+export const STRATEGY_CONTENT_COLUMNS = STRATEGY_WORK_COLUMNS;

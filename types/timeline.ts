@@ -1,67 +1,65 @@
-import type { UnilizeDecision } from "@/types/strategy";
-
-/** Synthèse Timeline (OpenAPI Timeline). */
-export interface UnilizeTimelineGlobal {
+/** Synthèse projet (OpenAPI Summary). */
+export interface UnilizeSummaryGlobal {
   keyword_count: number;
   search_volume: number;
+  /** Fraction 0–1. */
   ctr: number;
-  no_click_count: number;
+  no_clicks: number;
   conversions: number;
 }
 
-export interface UnilizeTimelineChannel {
+export interface UnilizeSummaryChannel {
   clicks: number;
   conversions: number;
-  conversions_share: number;
+  /** Fraction 0–1. */
+  conversion_share: number;
 }
 
-export interface UnilizeTimeline {
-  global: UnilizeTimelineGlobal;
-  sea: UnilizeTimelineChannel;
-  seo: UnilizeTimelineChannel;
-  /** Journal des décisions expert sur la période (OpenAPI Timeline.decisions). */
-  decisions?: UnilizeDecision[];
+export interface UnilizeSummary {
+  global: UnilizeSummaryGlobal;
+  paid: UnilizeSummaryChannel;
+  organic: UnilizeSummaryChannel;
 }
 
-export interface UnilizeTimelineTrafficPoint {
+export interface UnilizeTrafficPoint {
   date: string;
-  global: { conversions: number };
-  sea: { clicks: number; sessions: number; conversions: number };
-  seo: { clicks: number; sessions: number; conversions: number };
+  global: { sessions: number; conversions: number };
+  paid: { clicks: number; sessions: number; conversions: number };
+  organic: { clicks: number; sessions: number; conversions: number };
 }
 
-export interface UnilizeTimelineCtrBudgetPoint {
+export interface UnilizeClicksPoint {
   date: string;
   global: { ctr: number };
-  sea: { clicks: number; cost: number };
-  seo: { clicks: number };
+  paid: { clicks: number; cost: number };
+  organic: { clicks: number };
 }
 
 export type UnilizeTimelineFilterQuery = {
   from?: string;
-  to?: string;
+  until?: string;
   keyword?: string[];
   theme?: string[];
 };
 
-export type GetTimelineResult = {
+export type GetSummaryResult = {
   requestUrl: string;
   projectId: string;
-  timeline: UnilizeTimeline | null;
+  summary: UnilizeSummary | null;
   error: string | null;
 };
 
-export type ListTimelineTrafficResult = {
+export type ListTrafficResult = {
   requestUrl: string;
   projectId: string;
-  points: UnilizeTimelineTrafficPoint[];
+  points: UnilizeTrafficPoint[];
   error: string | null;
 };
 
-export type ListTimelineCtrBudgetResult = {
+export type ListClicksResult = {
   requestUrl: string;
   projectId: string;
-  points: UnilizeTimelineCtrBudgetPoint[];
+  points: UnilizeClicksPoint[];
   error: string | null;
 };
 
@@ -71,3 +69,16 @@ export type ListThemesResult = {
   themes: string[];
   error: string | null;
 };
+
+/** @deprecated OpenAPI v2 — utiliser UnilizeSummary. */
+export type UnilizeTimeline = UnilizeSummary;
+/** @deprecated OpenAPI v2 — utiliser GetSummaryResult. */
+export type GetTimelineResult = GetSummaryResult;
+/** @deprecated OpenAPI v2 — utiliser UnilizeTrafficPoint. */
+export type UnilizeTimelineTrafficPoint = UnilizeTrafficPoint;
+/** @deprecated OpenAPI v2 — utiliser UnilizeClicksPoint. */
+export type UnilizeTimelineCtrBudgetPoint = UnilizeClicksPoint;
+/** @deprecated OpenAPI v2 — utiliser ListTrafficResult. */
+export type ListTimelineTrafficResult = ListTrafficResult;
+/** @deprecated OpenAPI v2 — utiliser ListClicksResult. */
+export type ListTimelineCtrBudgetResult = ListClicksResult;

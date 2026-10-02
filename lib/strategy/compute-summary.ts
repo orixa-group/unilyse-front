@@ -1,10 +1,10 @@
-import type { UnilizeKeywordComparison } from "@/types/strategy";
+import type { UnilizeKeywordRecommendation } from "@/types/recommendations";
 
 export function computeExpectedTotalTraffic(
-  rows: readonly UnilizeKeywordComparison[],
+  rows: readonly UnilizeKeywordRecommendation[],
 ): number {
   return rows.reduce((sum, row) => {
-    const volume = row.search_volume;
+    const volume = row.recommendation?.search_volume;
     if (volume == null || !Number.isFinite(volume) || volume <= 0) {
       return sum;
     }

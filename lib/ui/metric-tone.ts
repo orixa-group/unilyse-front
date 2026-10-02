@@ -1,8 +1,14 @@
-import type {
-  UnilizeSeaDimensionScore,
-  UnilizeSeaScoringStatus,
-  UnilizeStrategySeaTier,
-} from "@/types/strategy";
+type UnilizeSeaDimensionScore = 1 | 2 | 3 | 4 | 5;
+type UnilizeSeaScoringStatus =
+  | "high"
+  | "medium_high"
+  | "medium_low"
+  | "low";
+type UnilizeStrategySeaTier =
+  | "below_average"
+  | "average"
+  | "above_average"
+  | "unspecified";
 
 export function competitorCountTone(count: number): string {
   if (count >= 8) {
@@ -55,7 +61,7 @@ export function volumeTone(value: number | null | undefined): string {
 export function recommendationTone(
   recommendation: string,
 ): string {
-  const key = recommendation.toUpperCase();
+  const key = recommendation.toUpperCase().replace(/-/g, "_");
   if (key === "LAUNCH_SEO") {
     return "bg-info/30 text-info dark:text-info";
   }

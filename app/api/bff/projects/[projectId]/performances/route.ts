@@ -6,7 +6,10 @@ import { withRetry } from "@/lib/api/async-utils";
 import { bffRouteErrorResponse } from "@/lib/api/bff-route-utils";
 import { logUnilizeEvent, summarizeUnilizePayload } from "@/lib/unilize/request-log";
 import { listPerformances } from "@/lib/api/unilize";
-import { normalizePeriodQuery, parsePeriodFromSearchParams } from "@/lib/unilize/period-query";
+import {
+  parsePeriodFromSearchParams,
+  resolveEffectivePeriod,
+} from "@/lib/unilize/period-query";
 import type { ListPerformancesResult } from "@/types/performance";
 import type { UnilizePeriodQuery } from "@/types/unilize";
 
@@ -14,11 +17,8 @@ function getPerformancesRequestUrl(
   projectId: string,
   period?: UnilizePeriodQuery,
 ): string {
-  const normalized = normalizePeriodQuery(period);
-  return buildUnilizeUpstreamUrl(API.projectPerformances(projectId), {
-    from: normalized?.from,
-    to: normalized?.to,
-  });
+  const normalized = resolveEffectivePeriod(period);
+  return buildUnilizeUpstreamUrl(API.projectPerformances(projectId), normalized);
 }
 
 export async function GET(

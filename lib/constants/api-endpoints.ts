@@ -20,27 +20,23 @@ export const API = {
   /** GET — Performances (niveau projet) */
   projectPerformances: (projectId: string) =>
     `/projects/${projectId}/performances` as const,
-  /** GET — Strategy (niveau projet) */
-  projectStrategy: (projectId: string) =>
-    `/projects/${projectId}/strategy` as const,
-  /** GET — Monitoring (niveau projet) */
-  projectMonitoring: (projectId: string) =>
-    `/projects/${projectId}/monitoring` as const,
-  /** GET — Timeline summary */
-  projectTimeline: (projectId: string) =>
-    `/projects/${projectId}/timeline` as const,
-  projectTimelineTraffic: (projectId: string) =>
-    `/projects/${projectId}/timeline/traffic` as const,
-  projectTimelineCtrBudget: (projectId: string) =>
-    `/projects/${projectId}/timeline/ctr-budget` as const,
+  /** GET — Recommandations par mot-clé (query `date` optionnelle) */
+  projectRecommendations: (projectId: string) =>
+    `/projects/${projectId}/recommendations` as const,
+  /** GET — Summary (ex-timeline) */
+  projectSummary: (projectId: string) =>
+    `/projects/${projectId}/summary` as const,
+  projectTraffic: (projectId: string) =>
+    `/projects/${projectId}/traffic` as const,
+  projectClicks: (projectId: string) =>
+    `/projects/${projectId}/clicks` as const,
   /** GET — Thématiques projet */
   projectThemes: (projectId: string) =>
     `/projects/${projectId}/themes` as const,
-  /** POST — Refresh SEO metrics */
-  projectRefresh: (projectId: string) =>
-    `/projects/${projectId}/refresh` as const,
-  /** GET — Sites Google Search Console */
-  SITES: "/sites",
+  /** GET — Propriétés Search Console */
+  SEARCH_CONSOLE_PROPERTIES: "/search-console/properties",
+  /** GET — Comptes Google Ads */
+  GOOGLE_ADS_ACCOUNTS: "/google-ads/accounts",
 } as const;
 
 /**

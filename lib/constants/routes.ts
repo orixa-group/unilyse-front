@@ -6,7 +6,6 @@ export const ROUTES = {
   STRATEGY_NETLINKING: "/strategie/netlinking",
   STRATEGY_CONTENT: "/strategie/contenu",
   TIMELINE: "/timeline",
-  MONITORING: "/monitoring",
   SIGN_IN: "/sign-in",
   SIGN_UP: "/sign-up",
 } as const;

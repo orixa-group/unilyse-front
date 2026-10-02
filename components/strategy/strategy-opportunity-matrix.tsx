@@ -3,14 +3,13 @@
 import {
   OPPORTUNITY_BUCKET_DESCRIPTIONS,
   OPPORTUNITY_BUCKET_LABELS,
-} from "@/lib/strategy/format-strategy";
+  type OpportunityBucketKey,
+} from "@/lib/strategy/format-recommendations";
 import { formatNumber } from "@/lib/utils/formatting";
 import { cn } from "@/lib/utils/cn";
-import type { UnilizeOpportunityMatrix } from "@/types/strategy";
+import type { UnilizeOpportunityMatrix } from "@/types/recommendations";
 
-type BucketKey = keyof UnilizeOpportunityMatrix;
-
-const BUCKET_ORDER: BucketKey[] = [
+const BUCKET_ORDER: OpportunityBucketKey[] = [
   "launch_seo",
   "double_presence",
   "maintain_ads",

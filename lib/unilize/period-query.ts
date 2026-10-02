@@ -1,27 +1,56 @@
+import {
+  formatDateIso,
+  resolvePresetRange,
+} from "@/lib/performances/period-presets";
 import type { UnilizeTimelineFilterQuery } from "@/types/timeline";
 import type { UnilizePeriodQuery } from "@/types/unilize";
 
+/** Période effective pour les appels API (from + until requis). */
+export type ResolvedPeriodQuery = {
+  from: string;
+  until: string;
+};
+
 /**
- * OpenAPI : `from` et `to` doivent être envoyés ensemble (YYYY-MM-DD).
+ * OpenAPI v2 : `from` et `until` doivent être envoyés ensemble (YYYY-MM-DD).
  * Retourne `undefined` si une seule borne est présente.
  */
 export function normalizePeriodQuery(
   period?: UnilizePeriodQuery | null,
-): { from: string; to: string } | undefined {
+): ResolvedPeriodQuery | undefined {
   const from = period?.from?.trim();
-  const to = period?.to?.trim();
-  if (!from || !to) {
+  const until = period?.until?.trim();
+  if (!from || !until) {
     return undefined;
   }
-  return { from, to };
+  return { from, until };
+}
+
+/** Période par défaut : 30 derniers jours finissant hier (ex-comportement API). */
+export function getDefaultPeriodQuery(now = new Date()): ResolvedPeriodQuery {
+  const range = resolvePresetRange("last_30_days", now);
+  return {
+    from: formatDateIso(range.from),
+    until: formatDateIso(range.to),
+  };
+}
+
+/** Résout la période à envoyer à l'API (défaut si non définie). */
+export function resolveEffectivePeriod(
+  period?: UnilizePeriodQuery | null,
+  now = new Date(),
+): ResolvedPeriodQuery {
+  return normalizePeriodQuery(period) ?? getDefaultPeriodQuery(now);
 }
 
 export function parsePeriodFromSearchParams(
   searchParams: URLSearchParams,
 ): UnilizePeriodQuery | undefined {
+  const until =
+    searchParams.get("until") ?? searchParams.get("to") ?? undefined;
   return normalizePeriodQuery({
     from: searchParams.get("from") ?? undefined,
-    to: searchParams.get("to") ?? undefined,
+    until,
   });
 }
 
@@ -29,12 +58,9 @@ export function appendPeriodSearchParams(
   url: URL,
   period?: UnilizePeriodQuery | null,
 ): void {
-  const normalized = normalizePeriodQuery(period);
-  if (!normalized) {
-    return;
-  }
+  const normalized = resolveEffectivePeriod(period);
   url.searchParams.set("from", normalized.from);
-  url.searchParams.set("to", normalized.to);
+  url.searchParams.set("until", normalized.until);
 }
 
 export function normalizeTimelineFilterQuery(

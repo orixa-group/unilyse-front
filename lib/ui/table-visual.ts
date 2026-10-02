@@ -72,12 +72,17 @@ export const CHANNEL_HEAD_CLASS: Record<TableChannel, string> = {
   seo: "bg-chart-3/10 border-l-2 border-l-chart-3",
 };
 
-/** Couleurs canal pour le tableau Stratégie — SEO en bleu (info), SEA en violet (chart-1). */
-export const STRATEGY_CHANNEL_HEAD_CLASS: Record<TableChannel, string> = {
-  common: "",
-  sea: "bg-chart-1/10 border-l-2 border-l-chart-1",
-  seo: "bg-info/10 border-l-2 border-l-info",
-};
+/** Détecte un fond canal opaque dans les classes extra (sticky header). */
+function hasChannelBackground(extra?: string): boolean {
+  if (!extra) return false;
+  return /\bbg-\[#/.test(extra) || /\bbg-\[color/.test(extra);
+}
+
+/** En-tête de colonne figé au scroll vertical (hors première colonne). */
+export function stickyHeaderCellClass(extra?: string): string {
+  const background = hasChannelBackground(extra) ? extra : "bg-muted";
+  return cn("sticky top-0 z-10", background);
+}
 
 export type StickyColumnTone = "header" | "default" | "striped" | "highlight";
 
@@ -96,11 +101,6 @@ const STICKY_COLUMN_BG: Record<StickyColumnTone, string> = {
 
 export function stickyFirstColumnClass(tone: StickyColumnTone): string {
   return cn(STICKY_COLUMN_POSITION, STICKY_COLUMN_BG[tone]);
-}
-
-/** En-tête de colonne figé au scroll vertical (hors première colonne). */
-export function stickyHeaderCellClass(extra?: string): string {
-  return cn("sticky top-0 z-10 bg-muted", extra);
 }
 
 /** Coin supérieur gauche : sticky horizontal + vertical. */

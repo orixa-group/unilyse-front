@@ -4,14 +4,16 @@ import {
   StrategyWorkPanel,
 } from "@/components/strategy/strategy-work-panel";
 import { ROUTES } from "@/lib/constants/routes";
-import type { UnilizeWorkGap } from "@/types/strategy";
+import type { StrategyWorkGapRow } from "@/types/strategy-work";
+
+const PREVIEW_LIMIT = 5;
 
 export function StrategyWorkPanels({
-  netlinkingGaps,
-  semanticGaps,
+  netlinkingRows,
+  semanticRows,
 }: {
-  netlinkingGaps: readonly UnilizeWorkGap[];
-  semanticGaps: readonly UnilizeWorkGap[];
+  netlinkingRows: readonly StrategyWorkGapRow[];
+  semanticRows: readonly StrategyWorkGapRow[];
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -19,15 +21,15 @@ export function StrategyWorkPanels({
         title="Mots-clés à travailler via le netlinking"
         seeAllHref={ROUTES.STRATEGY_NETLINKING}
         columns={STRATEGY_NETLINKING_COLUMNS}
-        rows={netlinkingGaps}
-        limit={5}
+        rows={netlinkingRows}
+        limit={PREVIEW_LIMIT}
       />
       <StrategyWorkPanel
         title="Mots-clés à travailler via le contenu"
         seeAllHref={ROUTES.STRATEGY_CONTENT}
         columns={STRATEGY_CONTENT_COLUMNS}
-        rows={semanticGaps}
-        limit={5}
+        rows={semanticRows}
+        limit={PREVIEW_LIMIT}
       />
     </div>
   );

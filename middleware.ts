@@ -40,7 +40,6 @@ export const config = {
     "/performances/:path*",
     "/strategie/:path*",
     "/timeline/:path*",
-    "/monitoring/:path*",
     "/api/bff/:path*",
     "/api/unilize/:path*",
   ],

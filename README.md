@@ -46,7 +46,7 @@ Les comptes utilisateurs sont créés dans Firebase → **Authentication** → *
 ## Architecture API
 
 - Portfolio : clients, projets, mots-clés (`PUT /projects/{id}/keywords` déclenche la sync).
-- Analytics au **niveau projet** : `/projects/{id}/performances|strategy|monitoring` (query optionnelle `from` / `to`).
+- Métriques projet : `/projects/{id}/performances`, `/summary`, `/traffic`, `/clicks` (query **`from`** + **`until`** requises).
 - Le navigateur appelle `/api/unilize/*` (proxy) ou `/api/bff/*` (lectures enrichies), avec cookie de session Firebase.
 
 ## Déploiement Google Cloud (Cloud Run)

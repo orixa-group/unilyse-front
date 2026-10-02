@@ -24,6 +24,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  getNetlinkingCompetitorAuthoritySpread,
+  getSemanticCompetitorScoreSpread,
+} from "@/lib/performances/competitor-scores";
+import {
   computeGlobalCtr,
   isPerformanceColumnVisible,
   orderPerformanceVisibleColumns,
@@ -45,10 +49,12 @@ import {
 import { cn } from "@/lib/utils/cn";
 import { filterRowsByKeywordQuery, formatKeywordLabel } from "@/lib/projects/keywords";
 import { useSelectionStore } from "@/stores/selection.store";
-import type {
-  UnilizeCollectionStatus,
-  UnilizePerformance,
-} from "@/types/performance";
+import {
+  countActiveAcquisitions,
+  countFailedAcquisitions,
+  formatFractionPercent,
+} from "@/lib/performances/format-metrics";
+import type { UnilizeAcquisitions, UnilizePerformance } from "@/types/performance";
 import { Badge } from "@/components/ui/badge";
 
 /** Intitulés longs : wrap autorisé pour ne pas étirer la colonne. */
@@ -59,19 +65,12 @@ const PERFORMANCE_WRAP_HEADER_COLUMNS = new Set([
   "potential_impressions_rank",
   "average_position",
   "real_time_position",
-  "netlinking_score",
-  "semantic_score",
   "netlinking_avg",
   "semantic_avg",
   "semantic_max",
   "semantic_min",
   "collection_status",
-  "match_type",
 ]);
-
-function formatApiPercent(value: number): string {
-  return `${formatNumber(value, "fr-FR")} %`;
-}
 
 function formatNullableNumber(value: number | null | undefined): string {
   if (value === null || value === undefined) {
@@ -87,22 +86,22 @@ function formatNullableCurrency(value: number | null | undefined): string {
   return formatCurrencyEur(value);
 }
 
-function countInProgress(status: UnilizeCollectionStatus | undefined): number {
-  if (!status) {
-    return 0;
-  }
-  return Object.values(status).filter((state) => state === "in_progress")
-    .length;
-}
-
 function CollectionStatusCell({
-  status,
+  acquisitions,
 }: {
-  status: UnilizeCollectionStatus | undefined;
+  acquisitions: UnilizeAcquisitions | null | undefined;
 }) {
-  const pending = countInProgress(status);
-  if (!status) {
+  const pending = countActiveAcquisitions(acquisitions);
+  const failed = countFailedAcquisitions(acquisitions);
+  if (!acquisitions) {
     return "—";
+  }
+  if (failed > 0) {
+    return (
+      <Badge variant="destructive" className="text-xs font-normal">
+        {failed} échec{failed > 1 ? "s" : ""}
+      </Badge>
+    );
   }
   if (pending === 0) {
     return (
@@ -128,7 +127,7 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
       cell: ({ row, getValue }) => (
         <span className="inline-flex items-center gap-2 font-medium">
           {formatKeywordLabel(getValue())}
-          {countInProgress(row.original.status) > 0 ? (
+          {countActiveAcquisitions(row.original.acquisitions) > 0 ? (
             <Badge variant="secondary" className="text-[10px] font-normal">
               Collecte…
             </Badge>
@@ -164,7 +163,7 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
         const value = getValue() as number | null | undefined;
         return value === null || value === undefined
           ? "—"
-          : formatApiPercent(value);
+          : formatFractionPercent(value);
       },
     },
     {
@@ -178,58 +177,60 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
       ),
       cell: ({ getValue }) => {
         const value = getValue() as number | null;
-        return value === null ? "—" : formatApiPercent(value);
+        return value === null ? "—" : formatFractionPercent(value);
       },
     },
     {
       id: "collection_status",
-      accessorFn: (row) => countInProgress(row.status),
+      accessorFn: (row) => countActiveAcquisitions(row.acquisitions),
       header: () => (
         <MetricHeader
           label={PERFORMANCE_COLUMN_LABELS.collection_status}
           metricId="collection_status"
         />
       ),
-      cell: ({ row }) => <CollectionStatusCell status={row.original.status} />,
+      cell: ({ row }) => (
+        <CollectionStatusCell acquisitions={row.original.acquisitions} />
+      ),
     },
     {
       id: "impressions",
-      accessorFn: (row) => row.sea?.impressions ?? null,
+      accessorFn: (row) => row.paid_performances?.impressions ?? null,
       header: () => <MetricHeader label="Impr. SEA" metricId="impressions" />,
       cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
     },
     {
       id: "clicks",
-      accessorFn: (row) => row.sea?.clicks ?? null,
+      accessorFn: (row) => row.paid_performances?.clicks ?? null,
       header: () => <MetricHeader label="Clics SEA" metricId="clicks" />,
       cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
     },
     {
-      id: "spend",
-      accessorFn: (row) => row.sea?.spend ?? null,
-      header: () => <MetricHeader label="Dépense SEA" metricId="spend" />,
+      id: "cost",
+      accessorFn: (row) => row.paid_performances?.cost ?? null,
+      header: () => <MetricHeader label="Dépense SEA" metricId="cost" />,
       cell: ({ getValue }) =>
         formatNullableCurrency(getValue() as number | null),
     },
     {
       id: "ctr",
-      accessorFn: (row) => row.sea?.ctr ?? null,
+      accessorFn: (row) => row.paid_performances?.ctr ?? null,
       header: () => <MetricHeader label="CTR SEA" metricId="ctr" />,
       cell: ({ getValue }) => {
         const value = getValue() as number | null;
-        return value === null ? "—" : formatApiPercent(value);
+        return value === null ? "—" : formatFractionPercent(value);
       },
     },
     {
       id: "cpc",
-      accessorFn: (row) => row.sea?.cpc ?? null,
+      accessorFn: (row) => row.paid_performances?.cpc ?? null,
       header: () => <MetricHeader label="CPC" metricId="cpc" />,
       cell: ({ getValue }) =>
         formatNullableCurrency(getValue() as number | null),
     },
     {
       id: "conversions",
-      accessorFn: (row) => row.sea?.conversions ?? null,
+      accessorFn: (row) => row.paid_performances?.conversions ?? null,
       header: () => (
         <MetricHeader label="Conversions" metricId="conversions" />
       ),
@@ -237,7 +238,7 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
     },
     {
       id: "roas",
-      accessorFn: (row) => row.sea?.roas ?? null,
+      accessorFn: (row) => row.paid_performances?.roas ?? null,
       header: () => <MetricHeader label="ROAS" metricId="roas" />,
       cell: ({ getValue }) => {
         const value = getValue() as number | null;
@@ -259,7 +260,7 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
     },
     {
       id: "quality_score",
-      accessorFn: (row) => row.sea?.quality_score ?? null,
+      accessorFn: (row) => row.paid_performances?.quality_score ?? null,
       header: () => (
         <MetricHeader label="Quality score" metricId="quality_score" />
       ),
@@ -282,15 +283,8 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
       },
     },
     {
-      id: "match_type",
-      accessorFn: () => null,
-      header: () => <MetricHeader label="Match" metricId="match_type" />,
-      cell: () => <UnavailableMetric metricId="match_type" />,
-      enableSorting: false,
-    },
-    {
       id: "budget_lost_impression_share",
-      accessorFn: (row) => row.sea?.search_budget_lost_impression_share ?? null,
+      accessorFn: (row) => row.paid_performances?.search_budget_lost_impression_share ?? null,
       header: () => (
         <MetricHeader
           label="Impr. perdues (budget)"
@@ -303,7 +297,7 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
     },
     {
       id: "rank_lost_impression_share",
-      accessorFn: (row) => row.sea?.search_rank_lost_impression_share ?? null,
+      accessorFn: (row) => row.paid_performances?.search_rank_lost_impression_share ?? null,
       header: () => (
         <MetricHeader
           label="Impr. perdues (rank)"
@@ -316,7 +310,7 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
     },
     {
       id: "potential_impressions_budget",
-      accessorFn: (row) => row.sea?.potential_impressions_with_full_budget ?? null,
+      accessorFn: (row) => row.paid_performances?.potential_impressions_with_full_budget ?? null,
       header: () => (
         <MetricHeader
           label="Impr. potent. (budget)"
@@ -327,7 +321,7 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
     },
     {
       id: "potential_impressions_rank",
-      accessorFn: (row) => row.sea?.potential_impressions_with_full_rank ?? null,
+      accessorFn: (row) => row.paid_performances?.potential_impressions_with_full_rank ?? null,
       header: () => (
         <MetricHeader
           label="Impr. potent. (rank)"
@@ -338,7 +332,7 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
     },
     {
       id: "seo_impressions",
-      accessorFn: (row) => row.seo?.impressions ?? null,
+      accessorFn: (row) => row.organic_performances?.impressions ?? null,
       header: () => (
         <MetricHeader
           label={PERFORMANCE_COLUMN_LABELS.seo_impressions}
@@ -349,7 +343,7 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
     },
     {
       id: "seo_clicks",
-      accessorFn: (row) => row.seo?.clicks ?? null,
+      accessorFn: (row) => row.organic_performances?.clicks ?? null,
       header: () => (
         <MetricHeader
           label={PERFORMANCE_COLUMN_LABELS.seo_clicks}
@@ -360,7 +354,7 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
     },
     {
       id: "seo_ctr",
-      accessorFn: (row) => row.seo?.ctr ?? null,
+      accessorFn: (row) => row.organic_performances?.ctr ?? null,
       header: () => (
         <MetricHeader
           label={PERFORMANCE_COLUMN_LABELS.seo_ctr}
@@ -369,12 +363,12 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
       ),
       cell: ({ getValue }) => {
         const value = getValue() as number | null;
-        return value === null ? "—" : formatApiPercent(value);
+        return value === null ? "—" : formatFractionPercent(value);
       },
     },
     {
       id: "average_position",
-      accessorFn: (row) => row.seo?.average_position ?? null,
+      accessorFn: (row) => row.organic_performances?.average_position ?? null,
       header: () => (
         <MetricHeader
           label={PERFORMANCE_COLUMN_LABELS.average_position}
@@ -385,7 +379,7 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
     },
     {
       id: "real_time_position",
-      accessorFn: (row) => row.seo?.real_time_position ?? null,
+      accessorFn: (row) => row.organic_ranking?.position ?? null,
       header: () => (
         <MetricHeader
           label={PERFORMANCE_COLUMN_LABELS.real_time_position}
@@ -395,32 +389,9 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
       cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
     },
     {
-      id: "netlinking_score",
-      accessorFn: () => null,
-      header: () => (
-        <MetricHeader
-          label={PERFORMANCE_COLUMN_LABELS.netlinking_score}
-          metricId="netlinking_score"
-        />
-      ),
-      cell: () => <UnavailableMetric metricId="netlinking_score" />,
-      enableSorting: false,
-    },
-    {
-      id: "semantic_score",
-      accessorFn: () => null,
-      header: () => (
-        <MetricHeader
-          label={PERFORMANCE_COLUMN_LABELS.semantic_score}
-          metricId="semantic_score"
-        />
-      ),
-      cell: () => <UnavailableMetric metricId="semantic_score" />,
-      enableSorting: false,
-    },
-    {
       id: "netlinking_avg",
-      accessorFn: (row) => row.seo?.netlinking_competitors?.average_score ?? null,
+      accessorFn: (row) =>
+        getNetlinkingCompetitorAuthoritySpread(row)?.average ?? null,
       header: () => (
         <MetricHeader
           label={PERFORMANCE_COLUMN_LABELS.netlinking_avg}
@@ -431,7 +402,8 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
     },
     {
       id: "semantic_avg",
-      accessorFn: (row) => row.seo?.semantic_competitors?.average_score ?? null,
+      accessorFn: (row) =>
+        getSemanticCompetitorScoreSpread(row)?.average ?? null,
       header: () => (
         <MetricHeader
           label={PERFORMANCE_COLUMN_LABELS.semantic_avg}
@@ -442,7 +414,7 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
     },
     {
       id: "semantic_max",
-      accessorFn: (row) => row.seo?.semantic_competitors?.max_score ?? null,
+      accessorFn: (row) => getSemanticCompetitorScoreSpread(row)?.max ?? null,
       header: () => (
         <MetricHeader
           label={PERFORMANCE_COLUMN_LABELS.semantic_max}
@@ -453,7 +425,7 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
     },
     {
       id: "semantic_min",
-      accessorFn: (row) => row.seo?.semantic_competitors?.min_score ?? null,
+      accessorFn: (row) => getSemanticCompetitorScoreSpread(row)?.min ?? null,
       header: () => (
         <MetricHeader
           label={PERFORMANCE_COLUMN_LABELS.semantic_min}

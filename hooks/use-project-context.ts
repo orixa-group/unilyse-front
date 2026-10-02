@@ -5,7 +5,8 @@ import { useSyncProjectSelection } from "@/hooks/use-sync-project-selection";
 import { useProjects } from "@/hooks/use-unilize-api";
 import { useSelectionHydrated } from "@/hooks/use-selection-hydrated";
 import { normalizeProjectsFromQuery } from "@/lib/unilize/normalize";
-import { normalizePeriodQuery } from "@/lib/unilize/period-query";
+import { resolveEffectivePeriod } from "@/lib/unilize/period-query";
+import { resolveEffectiveRecommendationDate } from "@/lib/unilize/recommendations-query";
 import { useSelectionStore } from "@/stores/selection.store";
 import type { UnilizePeriodQuery } from "@/types/unilize";
 
@@ -16,6 +17,12 @@ export function useProjectContext() {
   const setSelectedProjectId = useSelectionStore((s) => s.setSelectedProjectId);
   const periodFrom = useSelectionStore((s) => s.periodFrom);
   const periodTo = useSelectionStore((s) => s.periodTo);
+  const recommendationAsOfDate = useSelectionStore(
+    (s) => s.recommendationAsOfDate,
+  );
+  const setRecommendationAsOfDate = useSelectionStore(
+    (s) => s.setRecommendationAsOfDate,
+  );
 
   const {
     data: projectsResult,
@@ -48,13 +55,25 @@ export function useProjectContext() {
     [projects, selectedProjectId],
   );
 
-  const period: UnilizePeriodQuery | undefined = useMemo(
+  const period = useMemo(
     () =>
-      normalizePeriodQuery({
+      resolveEffectivePeriod({
         from: periodFrom ?? undefined,
-        to: periodTo ?? undefined,
+        until: periodTo ?? undefined,
       }),
     [periodFrom, periodTo],
+  );
+
+  const recommendationDate = useMemo(
+    () =>
+      resolveEffectiveRecommendationDate({
+        recommendationAsOfDate,
+        period: {
+          from: periodFrom ?? undefined,
+          until: periodTo ?? undefined,
+        },
+      }),
+    [recommendationAsOfDate, periodFrom, periodTo],
   );
 
   const canFetchMetrics = Boolean(selectedProjectId);
@@ -71,6 +90,9 @@ export function useProjectContext() {
     canFetchMetrics,
     isProjectsError,
     period,
+    recommendationAsOfDate,
+    setRecommendationAsOfDate,
+    recommendationDate,
   };
 }
 

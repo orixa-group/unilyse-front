@@ -14,8 +14,6 @@ import {
   GridViewIcon,
   Logout02Icon,
   Login01Icon,
-  Radar01Icon,
-  Target01Icon,
 } from "@hugeicons/core-free-icons";
 import { AppLogo } from "@/components/layout/app-logo";
 import { siteConfig } from "@/config/site.config";
@@ -27,9 +25,8 @@ import { Button } from "@/components/ui/button";
 function navIcon(href: string) {
   if (href === ROUTES.DASHBOARD) return GridViewIcon;
   if (href === ROUTES.PERFORMANCES) return ChartBarLineIcon;
-  if (href === ROUTES.STRATEGY) return Target01Icon;
+  if (href === ROUTES.STRATEGY) return DashboardCircleIcon;
   if (href === ROUTES.TIMELINE) return ChartLineData01Icon;
-  if (href === ROUTES.MONITORING) return Radar01Icon;
   return DashboardCircleIcon;
 }
 

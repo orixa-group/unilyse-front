@@ -9,18 +9,14 @@ import {
   normalizeTimelineFilterQuery,
 } from "@/lib/unilize/period-query";
 import type {
-  GetTimelineResult,
-  ListTimelineCtrBudgetResult,
-  ListTimelineTrafficResult,
+  GetSummaryResult,
+  ListClicksResult,
+  ListTrafficResult,
   UnilizeTimelineFilterQuery,
 } from "@/types/timeline";
 import type { UnilizePeriodQuery } from "@/types/unilize";
 
-function buildPeriodUrl(
-  path: string,
-  projectId: string,
-  period?: UnilizePeriodQuery,
-): string {
+function buildPeriodUrl(path: string, period?: UnilizePeriodQuery): string {
   const url = new URL(
     path,
     typeof window !== "undefined" ? window.location.origin : "http://localhost",
@@ -31,7 +27,6 @@ function buildPeriodUrl(
 
 function buildFilterUrl(
   path: string,
-  projectId: string,
   filter?: UnilizeTimelineFilterQuery,
 ): string {
   const url = new URL(
@@ -49,34 +44,33 @@ function buildFilterUrl(
   return `${url.pathname}${url.search}`;
 }
 
-async function fetchTimeline(
+async function fetchSummary(
   projectId: string,
   period?: UnilizePeriodQuery,
-): Promise<GetTimelineResult> {
+): Promise<GetSummaryResult> {
   const url = buildPeriodUrl(
-    `/api/bff/projects/${encodeURIComponent(projectId)}/timeline`,
-    projectId,
+    `/api/bff/projects/${encodeURIComponent(projectId)}/summary`,
     period,
   );
   const startedAt = Date.now();
-  logUnilizeEvent("browser-bff", "start", "GET timeline", { projectId, url });
+  logUnilizeEvent("browser-bff", "start", "GET summary", { projectId, url });
 
-  const { body, treatedAsEmpty } = await fetchBffJson<GetTimelineResult>(url, {
-    fallback: "Impossible de charger la timeline.",
+  const { body, treatedAsEmpty } = await fetchBffJson<GetSummaryResult>(url, {
+    fallback: "Impossible de charger la synthèse.",
     mode: "empty-on-not-found",
   });
 
-  const result: GetTimelineResult = {
+  const result: GetSummaryResult = {
     requestUrl: body.requestUrl ?? "",
     projectId: body.projectId ?? projectId,
-    timeline: body.timeline ?? null,
+    summary: body.summary ?? null,
     error: null,
   };
 
   logUnilizeEvent(
     "browser-bff",
     "success",
-    treatedAsEmpty ? "GET timeline (vide)" : "GET timeline",
+    treatedAsEmpty ? "GET summary (vide)" : "GET summary",
     {
       projectId,
       durationMs: Date.now() - startedAt,
@@ -86,28 +80,23 @@ async function fetchTimeline(
   return result;
 }
 
-async function fetchTimelineTraffic(
+async function fetchTraffic(
   projectId: string,
   period?: UnilizePeriodQuery,
-): Promise<ListTimelineTrafficResult> {
+): Promise<ListTrafficResult> {
   const url = buildPeriodUrl(
-    `/api/bff/projects/${encodeURIComponent(projectId)}/timeline/traffic`,
-    projectId,
+    `/api/bff/projects/${encodeURIComponent(projectId)}/traffic`,
     period,
   );
   const startedAt = Date.now();
-  logUnilizeEvent("browser-bff", "start", "GET timeline/traffic", {
-    projectId,
-    url,
+  logUnilizeEvent("browser-bff", "start", "GET traffic", { projectId, url });
+
+  const { body, treatedAsEmpty } = await fetchBffJson<ListTrafficResult>(url, {
+    fallback: "Impossible de charger le trafic.",
+    mode: "empty-on-not-found",
   });
 
-  const { body, treatedAsEmpty } =
-    await fetchBffJson<ListTimelineTrafficResult>(url, {
-      fallback: "Impossible de charger le trafic timeline.",
-      mode: "empty-on-not-found",
-    });
-
-  const result: ListTimelineTrafficResult = {
+  const result: ListTrafficResult = {
     requestUrl: body.requestUrl ?? "",
     projectId: body.projectId ?? projectId,
     points: Array.isArray(body.points) ? body.points : [],
@@ -117,7 +106,7 @@ async function fetchTimelineTraffic(
   logUnilizeEvent(
     "browser-bff",
     "success",
-    treatedAsEmpty ? "GET timeline/traffic (vide)" : "GET timeline/traffic",
+    treatedAsEmpty ? "GET traffic (vide)" : "GET traffic",
     {
       projectId,
       durationMs: Date.now() - startedAt,
@@ -128,28 +117,23 @@ async function fetchTimelineTraffic(
   return result;
 }
 
-async function fetchTimelineCtrBudget(
+async function fetchClicks(
   projectId: string,
   filter?: UnilizeTimelineFilterQuery,
-): Promise<ListTimelineCtrBudgetResult> {
+): Promise<ListClicksResult> {
   const url = buildFilterUrl(
-    `/api/bff/projects/${encodeURIComponent(projectId)}/timeline/ctr-budget`,
-    projectId,
+    `/api/bff/projects/${encodeURIComponent(projectId)}/clicks`,
     filter,
   );
   const startedAt = Date.now();
-  logUnilizeEvent("browser-bff", "start", "GET timeline/ctr-budget", {
-    projectId,
-    url,
+  logUnilizeEvent("browser-bff", "start", "GET clicks", { projectId, url });
+
+  const { body, treatedAsEmpty } = await fetchBffJson<ListClicksResult>(url, {
+    fallback: "Impossible de charger les clics.",
+    mode: "empty-on-not-found",
   });
 
-  const { body, treatedAsEmpty } =
-    await fetchBffJson<ListTimelineCtrBudgetResult>(url, {
-      fallback: "Impossible de charger CTR / budget timeline.",
-      mode: "empty-on-not-found",
-    });
-
-  const result: ListTimelineCtrBudgetResult = {
+  const result: ListClicksResult = {
     requestUrl: body.requestUrl ?? "",
     projectId: body.projectId ?? projectId,
     points: Array.isArray(body.points) ? body.points : [],
@@ -159,9 +143,7 @@ async function fetchTimelineCtrBudget(
   logUnilizeEvent(
     "browser-bff",
     "success",
-    treatedAsEmpty
-      ? "GET timeline/ctr-budget (vide)"
-      : "GET timeline/ctr-budget",
+    treatedAsEmpty ? "GET clicks (vide)" : "GET clicks",
     {
       projectId,
       durationMs: Date.now() - startedAt,
@@ -172,53 +154,62 @@ async function fetchTimelineCtrBudget(
   return result;
 }
 
-export function useTimeline(
+export function useSummary(
   projectId: string | null,
   period?: UnilizePeriodQuery,
   options?: Omit<
-    UseQueryOptions<GetTimelineResult, Error>,
+    UseQueryOptions<GetSummaryResult, Error>,
     "queryKey" | "queryFn"
   >,
 ) {
   return useQuery({
-    queryKey: unilizeKeys.timeline(projectId ?? "", period),
-    queryFn: () => fetchTimeline(projectId!, period),
+    queryKey: unilizeKeys.summary(projectId ?? "", period),
+    queryFn: () => fetchSummary(projectId!, period),
     enabled: Boolean(projectId),
     placeholderData: keepPreviousData,
     ...options,
   });
 }
 
-export function useTimelineTraffic(
+/** @deprecated Utiliser useSummary. */
+export const useTimeline = useSummary;
+
+export function useTraffic(
   projectId: string | null,
   period?: UnilizePeriodQuery,
   options?: Omit<
-    UseQueryOptions<ListTimelineTrafficResult, Error>,
+    UseQueryOptions<ListTrafficResult, Error>,
     "queryKey" | "queryFn"
   >,
 ) {
   return useQuery({
-    queryKey: unilizeKeys.timelineTraffic(projectId ?? "", period),
-    queryFn: () => fetchTimelineTraffic(projectId!, period),
+    queryKey: unilizeKeys.traffic(projectId ?? "", period),
+    queryFn: () => fetchTraffic(projectId!, period),
     enabled: Boolean(projectId),
     placeholderData: keepPreviousData,
     ...options,
   });
 }
 
-export function useTimelineCtrBudget(
+/** @deprecated Utiliser useTraffic. */
+export const useTimelineTraffic = useTraffic;
+
+export function useClicks(
   projectId: string | null,
   filter?: UnilizeTimelineFilterQuery,
   options?: Omit<
-    UseQueryOptions<ListTimelineCtrBudgetResult, Error>,
+    UseQueryOptions<ListClicksResult, Error>,
     "queryKey" | "queryFn"
   >,
 ) {
   return useQuery({
-    queryKey: unilizeKeys.timelineCtrBudget(projectId ?? "", filter),
-    queryFn: () => fetchTimelineCtrBudget(projectId!, filter),
+    queryKey: unilizeKeys.clicks(projectId ?? "", filter),
+    queryFn: () => fetchClicks(projectId!, filter),
     enabled: Boolean(projectId),
     placeholderData: keepPreviousData,
     ...options,
   });
 }
+
+/** @deprecated Utiliser useClicks. */
+export const useTimelineCtrBudget = useClicks;

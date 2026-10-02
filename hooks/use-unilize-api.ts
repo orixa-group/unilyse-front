@@ -147,53 +147,63 @@ async function fetchProjectsForClient(
 async function fetchProjectDetails(
   projectId: string,
 ): Promise<GetProjectResult> {
-  const url = `/api/bff/projects/${encodeURIComponent(projectId)}`;
+  const projectUrl = `/api/bff/projects/${encodeURIComponent(projectId)}`;
+  const keywordsUrl = `/api/bff/projects/${encodeURIComponent(projectId)}/keywords`;
   const startedAt = Date.now();
-  logUnilizeEvent("browser-bff", "start", "GET project details", { projectId, url });
-
-  const { body, treatedAsEmpty } = await fetchBffJson<GetProjectResult>(url, {
-    fallback: "Impossible de charger le projet.",
-    mode: "empty-on-not-found",
+  logUnilizeEvent("browser-bff", "start", "GET project details", {
+    projectId,
+    url: projectUrl,
   });
+
+  const [projectResponse, keywordsResponse] = await Promise.all([
+    fetchBffJson<GetProjectResult>(projectUrl, {
+      fallback: "Impossible de charger le projet.",
+      mode: "empty-on-not-found",
+    }),
+    fetchBffJson<{ keywords?: UnilizeKeyword[] }>(keywordsUrl, {
+      fallback: "Impossible de charger les mots-clés.",
+      mode: "empty-on-not-found",
+    }),
+  ]);
+
+  const { body, treatedAsEmpty } = projectResponse;
+  const keywords = Array.isArray(keywordsResponse.body.keywords)
+    ? keywordsResponse.body.keywords
+    : [];
+
+  const baseProject = body.project ?? null;
+  const project = baseProject
+    ? { ...baseProject, keywords }
+    : treatedAsEmpty
+      ? {
+          id: projectId,
+          name: "",
+          search_console_url: "",
+          gads_customer_id: "",
+          created_at: "",
+          updated_at: "",
+          keywords,
+        }
+      : null;
 
   const result: GetProjectResult = {
     requestUrl: body.requestUrl ?? "",
     projectId: body.projectId ?? projectId,
-    project: body.project ?? null,
+    project,
     error: null,
   };
 
-  if (treatedAsEmpty) {
-    const empty = {
-      ...result,
-      project: result.project ?? {
-        id: projectId,
-        name: "",
-        url: "",
-        customer_id: "",
-        ga4_property_id: "",
-        ctr_benchmark: 0,
-        created_at: "",
-        updated_at: "",
-        keywords: [],
-      },
-      error: null,
-    };
-    logUnilizeEvent("browser-bff", "success", "GET project details (vide)", {
+  logUnilizeEvent(
+    "browser-bff",
+    "success",
+    treatedAsEmpty ? "GET project details (vide)" : "GET project details",
+    {
       projectId,
-      url,
+      url: projectUrl,
       durationMs: Date.now() - startedAt,
-      response: summarizeUnilizePayload(empty),
-    });
-    return empty;
-  }
-
-  logUnilizeEvent("browser-bff", "success", "GET project details", {
-    projectId,
-    url,
-    durationMs: Date.now() - startedAt,
-    response: summarizeUnilizePayload(result),
-  });
+      response: summarizeUnilizePayload(result),
+    },
+  );
   return result;
 }
 
