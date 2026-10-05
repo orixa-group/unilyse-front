@@ -64,9 +64,18 @@ export function TimelineRecommendationEvents({
                 <p className="text-foreground mt-0.5 text-xs font-medium">
                   {event.actionLabel}
                 </p>
-                {event.reason ? (
+                {event.paidReason ? (
                   <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">
-                    {event.reason}
+                    <span className="font-medium text-chart-1">SEA</span>
+                    <span> — </span>
+                    {event.paidReason}
+                  </p>
+                ) : null}
+                {event.organicReason ? (
+                  <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">
+                    <span className="font-medium text-chart-2">SEO</span>
+                    <span> — </span>
+                    {event.organicReason}
                   </p>
                 ) : null}
               </li>

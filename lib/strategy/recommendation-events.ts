@@ -7,7 +7,8 @@ export type RecommendationTimelineEvent = {
   analyzedOn: string;
   action: string;
   actionLabel: string;
-  reason: string;
+  paidReason: string;
+  organicReason: string;
 };
 
 export function buildRecommendationTimelineEvents(
@@ -24,7 +25,8 @@ export function buildRecommendationTimelineEvents(
       analyzedOn: reco.analyzed_on,
       action: reco.action,
       actionLabel: formatRecommendationAction(reco.action),
-      reason: reco.reason?.trim() ?? "",
+      paidReason: reco.paid?.reason?.trim() ?? "",
+      organicReason: reco.organic?.reason?.trim() ?? "",
     });
   }
   events.sort((a, b) => {

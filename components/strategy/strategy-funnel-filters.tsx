@@ -1,7 +1,6 @@
 "use client";
 
 import { Autocomplete } from "@/components/ui/autocomplete";
-import { KeywordTableFilter } from "@/components/ui/keyword-table-filter";
 import { keywordOptionsForFunnel } from "@/lib/projects/funnel-filter";
 import { formatKeywordLabel } from "@/lib/projects/keywords";
 import { useSelectionStore } from "@/stores/selection.store";
@@ -10,14 +9,10 @@ import type { UnilizeKeyword } from "@/types/unilize";
 export function StrategyFunnelFilters({
   keywords,
   themeOptions,
-  keywordQuery,
-  onKeywordQueryChange,
   disabled,
 }: {
   keywords: readonly UnilizeKeyword[];
   themeOptions: { value: string; label: string }[];
-  keywordQuery: string;
-  onKeywordQueryChange: (value: string) => void;
   disabled?: boolean;
 }) {
   const selectedTheme = useSelectionStore((s) => s.selectedTheme);
@@ -28,8 +23,8 @@ export function StrategyFunnelFilters({
   const keywordOptions = keywordOptionsForFunnel(keywords, selectedTheme);
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
-      <div className="min-w-[180px] flex-1">
+    <div className="w-1/2 flex items-end gap-4">
+      <div className="min-w-[180px] w-1/2">
         <p className="text-muted-foreground mb-1 text-xs font-medium">
           Thématique
         </p>
@@ -44,7 +39,7 @@ export function StrategyFunnelFilters({
           aria-label="Filtrer par thématique"
         />
       </div>
-      <div className="min-w-[180px] flex-1">
+      <div className="min-w-[180px] w-1/2">
         <p className="text-muted-foreground mb-1 text-xs font-medium">
           Mot-clé
         </p>
@@ -57,16 +52,6 @@ export function StrategyFunnelFilters({
           clearLabel="Tous"
           disabled={disabled}
           aria-label="Filtrer par mot-clé"
-        />
-      </div>
-      <div>
-        <p className="text-muted-foreground mb-1 text-xs font-medium">
-          Recherche
-        </p>
-        <KeywordTableFilter
-          value={keywordQuery}
-          onChange={onKeywordQueryChange}
-          disabled={disabled}
         />
       </div>
     </div>

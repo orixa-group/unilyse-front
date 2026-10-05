@@ -22,7 +22,6 @@ export function StrategyWorkPage({ mode }: { mode: StrategyWorkMode }) {
   const {
     canFetchMetrics,
     selectedProjectId,
-    period,
     recommendationAsOfDate,
   } = useProjectContext();
   const [keywordQuery, setKeywordQuery] = useState("");
@@ -30,9 +29,8 @@ export function StrategyWorkPage({ mode }: { mode: StrategyWorkMode }) {
   const dateContext = useMemo(
     () => ({
       recommendationAsOfDate,
-      period,
     }),
-    [recommendationAsOfDate, period],
+    [recommendationAsOfDate],
   );
 
   const {

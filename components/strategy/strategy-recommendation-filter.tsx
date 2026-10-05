@@ -48,7 +48,14 @@ export function StrategyRecommendationFilter({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button type="button" variant="outline" size="sm">
-          {triggerLabel}
+          <span className="inline-flex items-center gap-1">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+              xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="text-muted-foreground">
+              <path d="M2.5 4.5H13.5M4.5 8H11.5M6.5 11.5H9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            {triggerLabel}
+          </span>
+     
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">

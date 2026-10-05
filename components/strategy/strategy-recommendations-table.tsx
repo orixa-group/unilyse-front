@@ -3,7 +3,6 @@
 import { MetricHeader } from "@/components/performances/metric-header";
 import { RecommendationActionCell } from "@/components/strategy/recommendation-action-cell";
 import { RecommendationDatesCell } from "@/components/strategy/recommendation-dates-cell";
-import { ShareBar } from "@/components/ui/share-bar";
 import {
   Table,
   TableBody,
@@ -16,6 +15,7 @@ import {
   formatAssessmentLevel,
   formatAuthorityGap,
   formatDelayStatus,
+  formatIncrementalCtr,
   formatInjectableBudget,
   formatPaidConversions,
   formatSemanticGap,
@@ -38,12 +38,9 @@ import {
   stickyHeaderCellClass,
   stickyHeaderFirstColumnClass,
 } from "@/lib/ui/table-visual";
-import {
-  formatCurrencyEur,
-  formatDecimal,
-  formatNumber,
-} from "@/lib/utils/formatting";
+import { formatDecimal, formatNumber } from "@/lib/utils/formatting";
 import { cn } from "@/lib/utils/cn";
+import type { StrategyTableViewMode } from "@/components/strategy/strategy-table-view-toggle";
 import type { UnilizeKeywordRecommendation } from "@/types/recommendations";
 
 function TonedLabel({
@@ -89,11 +86,15 @@ const bodyCellClass = "px-4 py-3.5 align-middle";
 
 export function StrategyRecommendationsTable({
   rows,
+  viewMode = "full",
 }: {
   rows: readonly UnilizeKeywordRecommendation[];
+  viewMode?: StrategyTableViewMode;
   /** @deprecated Lecture affichée dans l'en-tête du tableau. */
   readAsOf?: string;
 }) {
+  const showFull = viewMode === "full";
+
   return (
     <Table>
       <TableHeader>
@@ -107,75 +108,95 @@ export function StrategyRecommendationsTable({
           >
             <MetricHeader label="Mot-clé" metricId="keyword" />
           </TableHead>
+          {showFull ? (
+            <TableHead
+              className={cn(
+                "min-w-[11rem]",
+                headCellClass,
+                stickyHeaderCellClass(),
+              )}
+            >
+              Dates
+            </TableHead>
+          ) : null}
           <TableHead
             className={cn("min-w-[10rem]", headCellClass, stickyHeaderCellClass())}
           >
             <MetricHeader label="Recommandation" metricId="recommendation" />
-          </TableHead>
-          <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
-            Délai
-          </TableHead>
-          <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
-            Gain pot.
-          </TableHead>
-          <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
-            Conv. SEA
-          </TableHead>
-          <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
-            <MetricHeader label="Pertinence" metricId="ad_relevance" />
-          </TableHead>
-          <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
-            <MetricHeader label="CTR attendu" metricId="expected_ctr" />
-          </TableHead>
-          <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
-            <MetricHeader label="UX landing" metricId="landing_page_ux" />
-          </TableHead>
-          <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
-            Effort
-          </TableHead>
-          <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
-            Écart contenu
-          </TableHead>
-          <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
-            Écart autorité
-          </TableHead>
-          <TableHead
-            className={cn("text-right", headCellClass, stickyHeaderCellClass())}
-          >
-            <MetricHeader label="Volume rech." metricId="search_volume" />
-          </TableHead>
-          <TableHead
-            className={cn("min-w-[11rem]", headCellClass, stickyHeaderCellClass())}
-          >
-            Dates
           </TableHead>
           <TableHead
             className={cn("text-right", headCellClass, stickyHeaderCellClass())}
           >
             Score SEA
           </TableHead>
-          <TableHead
-            className={cn("text-right min-w-[6rem]", headCellClass, stickyHeaderCellClass())}
-          >
-            Part impr.
-          </TableHead>
+          {showFull ? (
+            <>
+              <TableHead
+                className={cn(
+                  "text-right",
+                  headCellClass,
+                  stickyHeaderCellClass(),
+                )}
+              >
+                <MetricHeader label="Volume rech." metricId="search_volume" />
+              </TableHead>
+              <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
+                Budget injecté
+              </TableHead>
+              <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
+                Conv. SEA
+              </TableHead>
+              <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
+                <MetricHeader label="Pertinence" metricId="ad_relevance" />
+              </TableHead>
+              <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
+                <MetricHeader label="UX landing" metricId="landing_page_ux" />
+              </TableHead>
+              <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
+                <MetricHeader
+                  label="CTR incrément"
+                  metricId="incremental_ctr"
+                />
+              </TableHead>
+              <TableHead
+                className={cn(
+                  "text-right",
+                  headCellClass,
+                  stickyHeaderCellClass(),
+                )}
+              >
+                <MetricHeader
+                  label="Pos. moy. SEO"
+                  metricId="average_position"
+                />
+              </TableHead>
+              <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
+                <MetricHeader
+                  label="Position SEO"
+                  metricId="organic_accessibility"
+                />
+              </TableHead>
+              <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
+                Effort
+              </TableHead>
+              <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
+                Délai
+              </TableHead>
+              <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
+                Gain pot.
+              </TableHead>
+              <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
+                Écart contenu
+              </TableHead>
+              <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
+                Écart autorité
+              </TableHead>
+            </>
+          ) : null}
           <TableHead
             className={cn("text-right", headCellClass, stickyHeaderCellClass())}
           >
-            CPC
-          </TableHead>
-          <TableHead
-            className={cn("text-right", headCellClass, stickyHeaderCellClass())}
-          >
-            Score SEO
-          </TableHead>
-          <TableHead
-            className={cn("text-right", headCellClass, stickyHeaderCellClass())}
-          >
-            Pos. moy.
-          </TableHead>
-          <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
-            Budget inj.
+            Score investissement SEO
           </TableHead>
         </TableRow>
       </TableHeader>
@@ -194,135 +215,148 @@ export function StrategyRecommendationsTable({
               <TableCell className={cn(bodyCellClass, "font-medium", sticky)}>
                 {formatKeywordLabel(row.keyword)}
               </TableCell>
+              {showFull ? (
+                <TableCell className={bodyCellClass}>
+                  <RecommendationDatesCell
+                    analyzedOn={reco?.analyzed_on}
+                    measureFrom={reco?.from}
+                    measureUntil={reco?.until}
+                  />
+                </TableCell>
+              ) : null}
               <TableCell className={bodyCellClass}>
                 {reco ? (
                   <RecommendationActionCell
                     action={reco.action}
-                    reason={reco.reason}
+                    paidReason={paid?.reason}
+                    organicReason={organic?.reason}
                     guidance={reco.guidance}
                   />
                 ) : (
                   "—"
                 )}
               </TableCell>
-              <TableCell className={bodyCellClass}>
-                <TonedLabel
-                  label={formatDelayStatus(organic?.delay)}
-                  tone={delayStatusTone(organic?.delay)}
-                />
-              </TableCell>
-              <TableCell className={bodyCellClass}>
-                <TonedLabel
-                  label={formatAssessmentLevel(organic?.potential_gain)}
-                  tone={scoringLevelTone(organic?.potential_gain, "positive")}
-                />
-              </TableCell>
-              <TableCell className={bodyCellClass}>
-                <TonedLabel
-                  label={formatPaidConversions(paid?.conversions)}
-                  tone={paidConversionsTone(paid?.conversions)}
-                />
-              </TableCell>
-              <TableCell className={bodyCellClass}>
-                <TonedLabel
-                  label={formatUnilizeRating(paid?.ad_relevance)}
-                  tone={seaTierTone(unilizeRatingToneKey(paid?.ad_relevance))}
-                />
-              </TableCell>
-              <TableCell className={bodyCellClass}>
-                <TonedLabel
-                  label={formatUnilizeRating(paid?.expected_ctr)}
-                  tone={seaTierTone(unilizeRatingToneKey(paid?.expected_ctr))}
-                />
-              </TableCell>
-              <TableCell className={bodyCellClass}>
-                <TonedLabel
-                  label={formatUnilizeRating(paid?.landing_page_ux)}
-                  tone={seaTierTone(
-                    unilizeRatingToneKey(paid?.landing_page_ux),
-                  )}
-                />
-              </TableCell>
-              <TableCell className={bodyCellClass}>
-                <TonedLabel
-                  label={formatAssessmentLevel(organic?.effort)}
-                  tone={scoringLevelTone(organic?.effort, "cost")}
-                />
-              </TableCell>
-              <TableCell className={bodyCellClass}>
-                <TonedLabel
-                  label={formatSemanticGap(organic?.semantic_gap)}
-                  tone={semanticGapTone(organic?.semantic_gap)}
-                />
-              </TableCell>
-              <TableCell className={bodyCellClass}>
-                <TonedLabel
-                  label={formatAuthorityGap(organic?.authority_gap)}
-                  tone={authorityGapTone(organic?.authority_gap)}
-                />
-              </TableCell>
-              <TableCell className={cn(bodyCellClass, "text-right tabular-nums")}>
-                {reco?.search_volume != null ? (
-                  <span
-                    className={cn(
-                      "rounded px-1.5 py-0.5",
-                      volumeTone(reco.search_volume),
-                    )}
-                  >
-                    {formatNumber(reco.search_volume)}
-                  </span>
-                ) : (
-                  "—"
-                )}
-              </TableCell>
-              <TableCell className={bodyCellClass}>
-                <RecommendationDatesCell
-                  analyzedOn={reco?.analyzed_on}
-                  measureFrom={reco?.from}
-                  measureUntil={reco?.until}
-                />
-              </TableCell>
               <TableCell className={cn(bodyCellClass, "text-right")}>
                 <ScoreCell value={paid?.score} />
               </TableCell>
-              <TableCell className={cn(bodyCellClass, "text-right")}>
-                <ShareBar
-                  value={paid?.impression_share}
-                  variant="won"
-                />
-              </TableCell>
-              <TableCell
-                className={cn(bodyCellClass, "text-right tabular-nums text-sm")}
-              >
-                {paid?.cpc != null && Number.isFinite(paid.cpc)
-                  ? formatCurrencyEur(paid.cpc)
-                  : "—"}
-              </TableCell>
+              {showFull ? (
+                <>
+                  <TableCell
+                    className={cn(bodyCellClass, "text-right tabular-nums")}
+                  >
+                    {reco?.search_volume != null ? (
+                      <span
+                        className={cn(
+                          "rounded px-1.5 py-0.5",
+                          volumeTone(reco.search_volume),
+                        )}
+                      >
+                        {formatNumber(reco.search_volume)}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
+                  <TableCell className={bodyCellClass}>
+                    <TonedLabel
+                      label={formatInjectableBudget(paid?.injectable_budget)}
+                      tone={scoringLevelTone(
+                        paid?.injectable_budget === "high"
+                          ? "high"
+                          : paid?.injectable_budget === "moderate"
+                            ? "medium"
+                            : paid?.injectable_budget === "low"
+                              ? "low"
+                              : null,
+                        "positive",
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className={bodyCellClass}>
+                    <TonedLabel
+                      label={formatPaidConversions(paid?.conversions)}
+                      tone={paidConversionsTone(paid?.conversions)}
+                    />
+                  </TableCell>
+                  <TableCell className={bodyCellClass}>
+                    <TonedLabel
+                      label={formatUnilizeRating(paid?.ad_relevance)}
+                      tone={seaTierTone(
+                        unilizeRatingToneKey(paid?.ad_relevance),
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className={bodyCellClass}>
+                    <TonedLabel
+                      label={formatUnilizeRating(paid?.landing_page_ux)}
+                      tone={seaTierTone(
+                        unilizeRatingToneKey(paid?.landing_page_ux),
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className={bodyCellClass}>
+                    <TonedLabel
+                      label={formatIncrementalCtr(paid?.incremental_ctr)}
+                      tone=""
+                    />
+                  </TableCell>
+                  <TableCell
+                    className={cn(
+                      bodyCellClass,
+                      "text-right tabular-nums text-sm",
+                    )}
+                  >
+                    {organic?.average_position != null &&
+                    Number.isFinite(organic.average_position)
+                      ? formatDecimal(organic.average_position)
+                      : "—"}
+                  </TableCell>
+                  <TableCell className={bodyCellClass}>
+                    <TonedLabel
+                      label={formatAssessmentLevel(organic?.accessibility)}
+                      tone={scoringLevelTone(
+                        organic?.accessibility,
+                        "positive",
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className={bodyCellClass}>
+                    <TonedLabel
+                      label={formatAssessmentLevel(organic?.effort)}
+                      tone={scoringLevelTone(organic?.effort, "cost")}
+                    />
+                  </TableCell>
+                  <TableCell className={bodyCellClass}>
+                    <TonedLabel
+                      label={formatDelayStatus(organic?.delay)}
+                      tone={delayStatusTone(organic?.delay)}
+                    />
+                  </TableCell>
+                  <TableCell className={bodyCellClass}>
+                    <TonedLabel
+                      label={formatAssessmentLevel(organic?.potential_gain)}
+                      tone={scoringLevelTone(
+                        organic?.potential_gain,
+                        "positive",
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className={bodyCellClass}>
+                    <TonedLabel
+                      label={formatSemanticGap(organic?.semantic_gap)}
+                      tone={semanticGapTone(organic?.semantic_gap)}
+                    />
+                  </TableCell>
+                  <TableCell className={bodyCellClass}>
+                    <TonedLabel
+                      label={formatAuthorityGap(organic?.authority_gap)}
+                      tone={authorityGapTone(organic?.authority_gap)}
+                    />
+                  </TableCell>
+                </>
+              ) : null}
               <TableCell className={cn(bodyCellClass, "text-right")}>
                 <ScoreCell value={organic?.score} />
-              </TableCell>
-              <TableCell
-                className={cn(bodyCellClass, "text-right tabular-nums text-sm")}
-              >
-                {organic?.average_position != null &&
-                Number.isFinite(organic.average_position)
-                  ? formatDecimal(organic.average_position)
-                  : "—"}
-              </TableCell>
-              <TableCell className={bodyCellClass}>
-                <TonedLabel
-                  label={formatInjectableBudget(paid?.injectable_budget)}
-                  tone={scoringLevelTone(
-                    paid?.injectable_budget === "high"
-                      ? "high"
-                      : paid?.injectable_budget === "moderate"
-                        ? "medium"
-                        : paid?.injectable_budget === "low"
-                          ? "low"
-                          : null,
-                    "positive",
-                  )}
-                />
               </TableCell>
             </TableRow>
           );

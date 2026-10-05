@@ -37,10 +37,12 @@ export function normalizeProjectRecommendations(
   };
 
   const opportunity_matrix = {
+    optimize_ads: readOpportunity("optimize_ads"),
+    maintain_ads: readOpportunity("maintain_ads"),
     launch_seo: readOpportunity("launch_seo"),
     double_presence: readOpportunity("double_presence"),
-    maintain_ads: readOpportunity("maintain_ads"),
     review_strategy: readOpportunity("review_strategy"),
+    human_arbitration: readOpportunity("human_arbitration"),
   };
 
   const netlinking_gaps = Array.isArray(raw.netlinking_gaps)

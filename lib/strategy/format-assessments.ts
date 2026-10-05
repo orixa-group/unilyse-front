@@ -6,15 +6,18 @@ const LEVEL_LABELS: Record<string, string> = {
 };
 
 const SEMANTIC_GAP_LABELS: Record<string, string> = {
-  even: "Au niveau",
-  catchable: "Rattrapable",
-  rebuild: "À reconstruire",
+  leader: "Leader",
+  optimized: "Optimisé",
+  improvable: "À optimiser",
+  degraded: "Dégradé",
 };
 
 const AUTHORITY_GAP_LABELS: Record<string, string> = {
-  even: "Au niveau",
-  targeted_links: "Liens ciblés",
-  long_term: "Long terme",
+  leader: "Leader",
+  optimized: "Optimisé",
+  improvable: "À optimiser",
+  weakened: "Assez dégradé",
+  degraded: "Dégradé",
 };
 
 const DELAY_LABELS: Record<string, string> = {

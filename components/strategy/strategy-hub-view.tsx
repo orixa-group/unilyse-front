@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BffErrorAlert } from "@/components/common/bff-error-alert";
 import { LoadingSkeleton } from "@/components/common/loading-skeleton";
 import { DataRefreshingOverlay } from "@/components/ui/data-refreshing-overlay";
@@ -14,6 +14,11 @@ import { StrategyOpportunityMatrix } from "@/components/strategy/strategy-opport
 import { StrategyRecommendationFilter } from "@/components/strategy/strategy-recommendation-filter";
 import type { StrategyRecommendationFilterValue } from "@/lib/strategy/format-recommendations";
 import { StrategyRecommendationsTable } from "@/components/strategy/strategy-recommendations-table";
+import { StrategySection } from "@/components/strategy/strategy-section";
+import {
+  StrategyTableViewToggle,
+  type StrategyTableViewMode,
+} from "@/components/strategy/strategy-table-view-toggle";
 import { StrategyWorkPanels } from "@/components/strategy/strategy-work-panels";
 import { useRecommendations } from "@/hooks/use-recommendations-api";
 import { useProjectContext } from "@/hooks/use-project-context";
@@ -34,7 +39,6 @@ export function StrategyHubView() {
   const {
     canFetchMetrics,
     selectedProjectId,
-    period,
     recommendationAsOfDate,
     recommendationDate,
   } = useProjectContext();
@@ -42,7 +46,8 @@ export function StrategyHubView() {
   const [recommendationFilter, setRecommendationFilter] = useState<
     Set<StrategyRecommendationFilterValue>
   >(() => new Set());
-  const [keywordQuery, setKeywordQuery] = useState("");
+  const [tableViewMode, setTableViewMode] =
+    useState<StrategyTableViewMode>("full");
   const selectedTheme = useSelectionStore((s) => s.selectedTheme);
   const selectedKeyword = useSelectionStore((s) => s.selectedKeyword);
 
@@ -74,9 +79,8 @@ export function StrategyHubView() {
   const dateContext = useMemo(
     () => ({
       recommendationAsOfDate,
-      period,
     }),
-    [recommendationAsOfDate, period],
+    [recommendationAsOfDate],
   );
 
   const {
@@ -94,6 +98,22 @@ export function StrategyHubView() {
   const keywords = payload?.keywords ?? [];
   const summary = payload?.summary;
   const opportunityMatrix = payload?.opportunity_matrix;
+
+  useEffect(() => {
+    if (!recommendationsResult?.projectRecommendations) {
+      return;
+    }
+    console.log("[Stratégie] GET /recommendations — réponse brute", {
+      requestUrl: recommendationsResult.requestUrl,
+      dateParam: recommendationDate,
+      recommendationAsOfDate,
+      projectRecommendations: recommendationsResult.projectRecommendations,
+    });
+  }, [
+    recommendationsResult,
+    recommendationDate,
+    recommendationAsOfDate,
+  ]);
 
   const semanticRows = useMemo(
     () => mapRecommendationGapsToWorkRows(payload?.semantic_gaps ?? []),
@@ -136,12 +156,11 @@ export function StrategyHubView() {
       themeMap,
       selectedTheme,
       selectedKeyword,
-      keywordQuery,
+      "",
     );
   }, [
     keywords,
     recommendationFilter,
-    keywordQuery,
     themeMap,
     selectedTheme,
     selectedKeyword,
@@ -180,98 +199,93 @@ export function StrategyHubView() {
 
   const summaryCards = [
     {
+      label: "Volume de recherche en jeu",
+      value: formatNumber(expectedTotalTraffic),
+      hint: "Volume agrégé (reco)",
+    },
+    {
       label: "Mots-clés SEO",
-      value: summary.seo_keywords_count,
+      value: formatNumber(summary.seo_keywords_count),
     },
     {
       label: "Mots-clés SEA",
-      value: summary.sea_keywords_count,
+      value: formatNumber(summary.sea_keywords_count),
     },
     {
-      label: "SEO + SEA",
-      value: summary.hybrid_keywords_count,
+      label: "Mots-clés hybrides",
+      value: formatNumber(summary.hybrid_keywords_count),
+      hint: "Présents à la fois en SEA et en SEO",
     },
-    {
-      label: "Trafic total espéré",
-      value: formatNumber(expectedTotalTraffic),
-      alwaysShow: true,
-      hint: "Volume agrégé (reco)",
-    },
-  ].filter(
-    (card) =>
-      ("alwaysShow" in card && card.alwaysShow) ||
-      (typeof card.value === "number" && card.value > 0),
-  );
+  ];
 
   const keywordCount = filteredRecommendations.length;
   const totalKeywordCount = keywords.length;
   const filterActive =
     recommendationFilter.size > 0 ||
-    keywordQuery.trim().length > 0 ||
     Boolean(selectedTheme) ||
     Boolean(selectedKeyword);
 
-  return (
-    <DataRefreshingOverlay active={isRefreshing} className="space-y-6">
-      {summaryCards.length > 0 ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {summaryCards.map((card) => (
-            <StatCard
-              key={card.label}
-              label={card.label}
-              value={card.value}
-              hint={"hint" in card ? card.hint : undefined}
-            />
-          ))}
-        </div>
-      ) : null}
+  const tableMeta = `${keywordCount} mot${keywordCount > 1 ? "s" : ""}-clé${
+    filterActive ? ` sur ${totalKeywordCount}` : ""
+  } · lecture au ${recommendationDate}${
+    isRefreshing ? " — actualisation…" : ""
+  }`;
 
-      <div className="space-y-3">
-        <div>
-          <h3 className="text-sm font-semibold tracking-tight">
-            Matrice d&apos;opportunités
-          </h3>
-          <p className="text-muted-foreground text-xs">
-            Répartition des mots-clés par recommandation actionnable (volume
-            agrégé).
-          </p>
-        </div>
-        <StrategyOpportunityMatrix matrix={opportunityMatrix} />
+  return (
+    <DataRefreshingOverlay active={isRefreshing} className="space-y-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {summaryCards.map((card) => (
+          <StatCard
+            key={card.label}
+            label={card.label}
+            value={card.value}
+            hint={"hint" in card ? card.hint : undefined}
+          />
+        ))}
       </div>
 
-      <StrategyFunnelFilters
-        keywords={projectKeywords}
-        themeOptions={themeOptions}
-        keywordQuery={keywordQuery}
-        onKeywordQueryChange={setKeywordQuery}
-        disabled={isRefreshing}
-      />
-
-      <DataTableShell
-        title="Recommandations par mot-clé"
-        description={`${keywordCount} mot${keywordCount > 1 ? "s" : ""}-clé${
-          filterActive ? ` sur ${totalKeywordCount}` : ""
-        } · lecture au ${recommendationDate}${
-          isRefreshing ? " — actualisation…" : ""
-        }`}
-        actions={
-          <StrategyRecommendationFilter
-            selected={recommendationFilter}
-            onChange={setRecommendationFilter}
-          />
-        }
+      <StrategySection
+        title="Matrice d'opportunités"
+        description="Répartition des mots-clés par recommandation actionnable (volume agrégé)."
       >
-        {filteredRecommendations.length === 0 ? (
-          <p className="text-muted-foreground px-4 py-6 text-sm">
-            Aucun mot-clé ne correspond aux filtres.
-          </p>
-        ) : (
-          <StrategyRecommendationsTable
-            rows={filteredRecommendations}
-            readAsOf={recommendationDate}
-          />
-        )}
-      </DataTableShell>
+        <StrategyOpportunityMatrix matrix={opportunityMatrix} />
+      </StrategySection>
+
+      <StrategySection title="Recommandations par mot-clé">
+        <StrategyFunnelFilters
+          keywords={projectKeywords}
+          themeOptions={themeOptions}
+          disabled={isRefreshing}
+        />
+
+        <DataTableShell
+          description={tableMeta}
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              <StrategyTableViewToggle
+                value={tableViewMode}
+                onChange={setTableViewMode}
+                disabled={isRefreshing}
+              />
+              <StrategyRecommendationFilter
+                selected={recommendationFilter}
+                onChange={setRecommendationFilter}
+              />
+            </div>
+          }
+        >
+          {filteredRecommendations.length === 0 ? (
+            <p className="text-muted-foreground px-4 py-6 text-sm">
+              Aucun mot-clé ne correspond aux filtres.
+            </p>
+          ) : (
+            <StrategyRecommendationsTable
+              rows={filteredRecommendations}
+              viewMode={tableViewMode}
+            />
+          )}
+        </DataTableShell>
+      </StrategySection>
 
       <StrategyWorkPanels
         netlinkingRows={netlinkingRows}

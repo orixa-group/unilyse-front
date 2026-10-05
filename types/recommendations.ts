@@ -21,8 +21,22 @@ export type UnilizePaidConversionsStatus =
   | "underfed"
   | "none";
 
+export type UnilizeSemanticGapStatus =
+  | "leader"
+  | "optimized"
+  | "improvable"
+  | "degraded";
+
+export type UnilizeAuthorityGapStatus =
+  | "leader"
+  | "optimized"
+  | "improvable"
+  | "weakened"
+  | "degraded";
+
 export interface UnilizePaidAssessment {
   score: number;
+  reason: string;
   search_volume_potential: "low" | "medium" | "high";
   injectable_budget: "low" | "moderate" | "high";
   conversions: UnilizePaidConversionsStatus;
@@ -40,9 +54,10 @@ export interface UnilizePaidAssessment {
 
 export interface UnilizeOrganicAssessment {
   score: number;
+  reason: string;
   average_position: number | null;
-  semantic_gap: "even" | "catchable" | "rebuild";
-  authority_gap: "even" | "targeted_links" | "long_term";
+  semantic_gap: UnilizeSemanticGapStatus;
+  authority_gap: UnilizeAuthorityGapStatus;
   effort: "low" | "medium" | "high";
   accessibility: "low" | "medium" | "high";
   delay: "short" | "medium" | "long" | "very_long";
@@ -55,7 +70,6 @@ export interface UnilizeOrganicAssessment {
 
 export interface UnilizeRecommendation {
   action: UnilizeRecommendationAction;
-  reason: string;
   guidance: string;
   analyzed_on: string;
   from: string;
@@ -82,10 +96,12 @@ export interface UnilizeOpportunity {
 }
 
 export interface UnilizeOpportunityMatrix {
+  optimize_ads: UnilizeOpportunity;
+  maintain_ads: UnilizeOpportunity;
   launch_seo: UnilizeOpportunity;
   double_presence: UnilizeOpportunity;
-  maintain_ads: UnilizeOpportunity;
   review_strategy: UnilizeOpportunity;
+  human_arbitration: UnilizeOpportunity;
 }
 
 export interface UnilizeRecommendationGap {
@@ -120,10 +136,12 @@ export function emptyProjectRecommendations(): UnilizeProjectRecommendations {
       hybrid_keywords_count: 0,
     },
     opportunity_matrix: {
+      optimize_ads: emptyOpportunity(),
+      maintain_ads: emptyOpportunity(),
       launch_seo: emptyOpportunity(),
       double_presence: emptyOpportunity(),
-      maintain_ads: emptyOpportunity(),
       review_strategy: emptyOpportunity(),
+      human_arbitration: emptyOpportunity(),
     },
     netlinking_gaps: [],
     semantic_gaps: [],

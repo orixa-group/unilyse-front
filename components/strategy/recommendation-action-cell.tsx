@@ -16,11 +16,13 @@ import type { UnilizeRecommendationAction } from "@/types/recommendations";
 
 export function RecommendationActionCell({
   action,
-  reason,
+  paidReason,
+  organicReason,
   guidance,
 }: {
   action: UnilizeRecommendationAction | string;
-  reason?: string | null;
+  paidReason?: string | null;
+  organicReason?: string | null;
   guidance?: string | null;
 }) {
   const label = formatRecommendationAction(action);
@@ -35,7 +37,11 @@ export function RecommendationActionCell({
     </span>
   );
 
-  const hasDetail = Boolean(reason?.trim() || guidance?.trim());
+  const hasDetail = Boolean(
+    paidReason?.trim() ||
+      organicReason?.trim() ||
+      guidance?.trim(),
+  );
   if (!hasDetail) {
     return badge;
   }
@@ -54,20 +60,31 @@ export function RecommendationActionCell({
             {badge}
           </button>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-sm space-y-2 p-3 text-left">
-          {reason?.trim() ? (
-            <p>
-              <span className="text-foreground font-medium">Pourquoi — </span>
-              {reason}
-            </p>
+        <TooltipContent side="top" className="max-w-sm space-y-2.5 p-3 text-left">
+          {paidReason?.trim() || organicReason?.trim() ? (
+            <div className="space-y-1">
+              <p className="text-foreground font-medium">Pourquoi</p>
+              {paidReason?.trim() ? (
+                <p>
+                  <span className="font-medium text-chart-1">SEA</span>
+                  <span className="text-muted-foreground"> — </span>
+                  {paidReason}
+                </p>
+              ) : null}
+              {organicReason?.trim() ? (
+                <p>
+                  <span className="font-medium text-chart-2">SEO</span>
+                  <span className="text-muted-foreground"> — </span>
+                  {organicReason}
+                </p>
+              ) : null}
+            </div>
           ) : null}
           {guidance?.trim() ? (
-            <p>
-              <span className="text-foreground font-medium">
-                Comment appliquer —{" "}
-              </span>
-              {guidance}
-            </p>
+            <div className="space-y-1">
+              <p className="text-foreground font-medium">Comment appliquer</p>
+              <p>{guidance}</p>
+            </div>
           ) : null}
         </TooltipContent>
       </Tooltip>

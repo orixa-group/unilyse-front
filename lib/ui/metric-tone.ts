@@ -72,10 +72,10 @@ export function recommendationTone(
     return "bg-primary/20 text-primary dark:text-primary";
   }
   if (key === "REVIEW_STRATEGY") {
-    return "bg-warning/30 text-warning dark:text-warning";
+    return "bg-chart-5/25 text-chart-5 dark:text-chart-5";
   }
   if (key === "HUMAN_ARBITRATION") {
-    return "bg-secondary/30 text-secondary-foreground dark:text-secondary-foreground";
+    return "bg-warning/20 text-warning dark:text-warning";
   }
   if (key === "UNKNOWN") {
     return "bg-muted/50 text-muted-foreground";
@@ -202,13 +202,13 @@ export function numericScoreTone(score: number | null | undefined): string {
 
 export function semanticGapTone(gap: string | null | undefined): string {
   const key = gap?.toLowerCase();
-  if (key === "even") {
+  if (key === "leader" || key === "optimized") {
     return "bg-success/30 text-success dark:text-success";
   }
-  if (key === "catchable") {
+  if (key === "improvable") {
     return "bg-warning/30 text-warning dark:text-warning";
   }
-  if (key === "rebuild") {
+  if (key === "degraded") {
     return "bg-destructive/30 text-destructive dark:text-destructive";
   }
   return "";
@@ -216,13 +216,16 @@ export function semanticGapTone(gap: string | null | undefined): string {
 
 export function authorityGapTone(gap: string | null | undefined): string {
   const key = gap?.toLowerCase();
-  if (key === "even") {
+  if (key === "leader" || key === "optimized") {
     return "bg-success/30 text-success dark:text-success";
   }
-  if (key === "targeted_links") {
+  if (key === "improvable") {
     return "bg-warning/30 text-warning dark:text-warning";
   }
-  if (key === "long_term") {
+  if (key === "weakened") {
+    return "bg-chart-5/25 text-chart-5 dark:text-chart-5";
+  }
+  if (key === "degraded") {
     return "bg-destructive/30 text-destructive dark:text-destructive";
   }
   return "";
