@@ -25,6 +25,7 @@ import type { useProjectsDetails } from "@/hooks/use-unilize-api";
 import { isQueryInitialLoading } from "@/lib/unilize/query-display";
 import type { UnilizeKeyword, UnilizeProject } from "@/types/unilize";
 import { toKeywordValues } from "@/lib/projects/keywords";
+import { formatPercentValue } from "@/lib/utils/formatting";
 
 const MAX_VISIBLE_KEYWORDS = 4;
 
@@ -63,11 +64,13 @@ function InlineIconAction({
 function ProjectActionsMenu({
   project,
   isBusy,
+  onEdit,
   onEditKeywords,
   onDelete,
 }: {
   project: UnilizeProject;
   isBusy: boolean;
+  onEdit: (project: UnilizeProject) => void;
   onEditKeywords: (project: UnilizeProject) => void;
   onDelete: (project: UnilizeProject) => void;
 }) {
@@ -92,6 +95,15 @@ function ProjectActionsMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuItem disabled={isBusy} onClick={() => onEdit(project)}>
+          <HugeiconsIcon
+            icon={Edit02Icon}
+            size={16}
+            color="currentColor"
+            strokeWidth={1.5}
+          />
+          Modifier le projet
+        </DropdownMenuItem>
         <DropdownMenuItem
           disabled={isBusy}
           onClick={() => onEditKeywords(project)}
@@ -225,6 +237,7 @@ export function ProjectCard({
   queryIndex,
   projectDetailsQueries,
   isBusy,
+  onEdit,
   onEditKeywords,
   onDelete,
 }: {
@@ -232,6 +245,7 @@ export function ProjectCard({
   queryIndex: number;
   projectDetailsQueries: ReturnType<typeof useProjectsDetails>;
   isBusy: boolean;
+  onEdit: (project: UnilizeProject) => void;
   onEditKeywords: (project: UnilizeProject) => void;
   onDelete: (project: UnilizeProject) => void;
 }) {
@@ -260,6 +274,7 @@ export function ProjectCard({
           <ProjectActionsMenu
             project={project}
             isBusy={isBusy}
+            onEdit={onEdit}
             onEditKeywords={onEditKeywords}
             onDelete={onDelete}
           />
@@ -273,6 +288,17 @@ export function ProjectCard({
           isBusy={isBusy}
           onEditKeywords={onEditKeywords}
         />
+
+        <p className="text-muted-foreground mt-auto text-xs">
+          <span className="font-medium uppercase tracking-wide text-[10px]">
+            CTR benchmark SEA
+          </span>{" "}
+          <span className="text-foreground tabular-nums">
+            {typeof project.ctr_benchmark === "number"
+              ? formatPercentValue(project.ctr_benchmark)
+              : "—"}
+          </span>
+        </p>
       </div>
     </article>
   );

@@ -66,18 +66,22 @@ const createProjectSchema = z.object({
     .min(1, "Sélectionnez une propriété Search Console."),
   gads_customer_id: nonEmptyString,
   ga4_property_id: optionalTrimmedString,
-  ctr_benchmark: z
-    .union([
-      z.literal(""),
-      z.coerce
-        .number({ invalid_type_error: "Le CTR benchmark doit être un nombre." })
-        .min(0, "Le CTR benchmark ne peut pas être négatif.")
-        .max(100, "Le CTR benchmark ne peut pas dépasser 100 %."),
-    ])
-    .optional()
-    .transform((value) =>
-      value === "" || value === undefined ? undefined : value,
-    ),
+  ctr_benchmark: z.preprocess(
+    (value) => {
+      if (value === null || value === undefined) {
+        return undefined;
+      }
+      const text = String(value).trim().replace(",", ".");
+      return text === "" ? undefined : text;
+    },
+    z.coerce
+      .number({
+        required_error: "Le CTR benchmark SEA est requis.",
+        invalid_type_error: "Le CTR benchmark SEA doit être un nombre.",
+      })
+      .min(0, "Le CTR benchmark SEA ne peut pas être négatif.")
+      .max(100, "Le CTR benchmark SEA ne peut pas dépasser 100 %."),
+  ),
 });
 
 const deleteProjectSchema = z.object({
@@ -251,7 +255,7 @@ export async function createProjectAction(
           ? "Le compte Google Ads est requis."
           : ctrIssue
             ? (ctrIssue.message as string)
-            : "Le client, le nom, la propriété Search Console et le compte Google Ads sont requis.",
+            : "Le client, le nom, la propriété Search Console, le compte Google Ads et le CTR benchmark SEA sont requis.",
     };
   }
 

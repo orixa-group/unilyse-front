@@ -22,8 +22,8 @@ export interface UnilizeProject {
   gads_customer_id: string;
   /** Google Analytics (GA4) property ID — facultatif. */
   ga4_property_id?: string;
-  /** CTR de référence du projet (0–100 %), facultatif. */
-  ctr_benchmark?: number;
+  /** CTR benchmark SEA du projet (0–100 %). Toujours renvoyé par l'API (0 si non renseigné). */
+  ctr_benchmark: number;
   created_at: string;
   updated_at: string;
   /** Présent côté client après enrichissement keywords. */
@@ -52,7 +52,8 @@ export interface CreateProjectPayload {
   search_console_url: string;
   gads_customer_id: string;
   ga4_property_id?: string;
-  ctr_benchmark?: number;
+  /** CTR benchmark SEA (0–100 %), obligatoire côté produit. */
+  ctr_benchmark: number;
 }
 
 /** Query params pour les endpoints analytics (période). */

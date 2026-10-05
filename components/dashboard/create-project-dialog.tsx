@@ -219,12 +219,13 @@ export function CreateProjectDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="project-ctr-benchmark">
-              CTR benchmark (%) (facultatif)
+              CTR benchmark SEA (%)
             </Label>
             <Input
               id="project-ctr-benchmark"
               name="ctr_benchmark"
               placeholder="2,5"
+              required
               disabled={isCreatePending}
               type="number"
               min={0}
@@ -233,6 +234,10 @@ export function CreateProjectDialog({
               inputMode="decimal"
               autoComplete="off"
             />
+            <p className="text-muted-foreground text-xs">
+              Taux de clic de référence auquel les résultats payants du projet
+              sont comparés.
+            </p>
           </div>
           {createState.error ? (
             <p className="text-destructive text-sm" role="alert">

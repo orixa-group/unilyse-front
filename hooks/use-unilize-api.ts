@@ -180,6 +180,7 @@ async function fetchProjectDetails(
           name: "",
           search_console_url: "",
           gads_customer_id: "",
+          ctr_benchmark: 0,
           created_at: "",
           updated_at: "",
           keywords,

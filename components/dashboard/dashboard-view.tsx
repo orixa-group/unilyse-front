@@ -23,6 +23,7 @@ import {
   type GetProjectResult,
 } from "@/app/(auth)/actions/unilize-action-state";
 import { CreateProjectDialog } from "@/components/dashboard/create-project-dialog";
+import { EditProjectDialog } from "@/components/dashboard/edit-project-dialog";
 import { ProjectKeywordsDialog } from "@/components/dashboard/project-keywords-dialog";
 import { DashboardHealthSummary } from "@/components/dashboard/dashboard-health-summary";
 import { ProjectCard } from "@/components/dashboard/project-card";
@@ -78,12 +79,16 @@ export function DashboardView() {
   const [projectSearchQuery, setProjectSearchQuery] = useState("");
   const [deleteProjectOpen, setDeleteProjectOpen] = useState(false);
   const [keywordsOpen, setKeywordsOpen] = useState(false);
+  const [editProjectOpen, setEditProjectOpen] = useState(false);
 
   const [projectToDelete, setProjectToDelete] = useState<UnilizeProject | null>(
     null,
   );
   const [projectForKeywords, setProjectForKeywords] =
     useState<UnilizeProject | null>(null);
+  const [projectToEdit, setProjectToEdit] = useState<UnilizeProject | null>(
+    null,
+  );
 
   const processedCreateIdRef = useRef<string | null>(null);
   const processedDeleteIdRef = useRef<string | null>(null);
@@ -594,6 +599,10 @@ export function DashboardView() {
                   queryIndex={queryIndex}
                   projectDetailsQueries={projectDetailsQueries}
                   isBusy={isBusy}
+                  onEdit={(p) => {
+                    setProjectToEdit(p);
+                    setEditProjectOpen(true);
+                  }}
                   onEditKeywords={(p) => {
                     setProjectForKeywords(p);
                     setKeywordsOpen(true);
@@ -608,6 +617,17 @@ export function DashboardView() {
           </div>
         </div>
       )}
+
+      <EditProjectDialog
+        open={editProjectOpen}
+        onOpenChange={(open) => {
+          setEditProjectOpen(open);
+          if (!open) {
+            setProjectToEdit(null);
+          }
+        }}
+        project={projectToEdit}
+      />
 
       <CreateProjectDialog
         open={createProjectOpen}
