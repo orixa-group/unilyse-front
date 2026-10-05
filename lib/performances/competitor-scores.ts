@@ -51,6 +51,39 @@ export function getSemanticCompetitorScoreSpread(
   return asSpread((competitors as UnilizeCompetitorSemantics).score);
 }
 
+export function getOursSemanticScore(
+  row: UnilizePerformance,
+): number | null {
+  const score = row.page_semantics?.ours?.score;
+  return score == null || !Number.isFinite(score) ? null : score;
+}
+
+export function getOursAuthorityScore(
+  row: UnilizePerformance,
+): number | null {
+  const score = row.url_authorities?.ours?.authority_score;
+  return score == null || !Number.isFinite(score) ? null : score;
+}
+
+export function getOursPageTrust(row: UnilizePerformance): number | null {
+  const value = row.url_authorities?.ours?.page_trust;
+  return value == null || !Number.isFinite(value) ? null : value;
+}
+
+export function getOursBacklinksExternal(
+  row: UnilizePerformance,
+): number | null {
+  const value = row.url_authorities?.ours?.backlinks_external;
+  return value == null || !Number.isFinite(value) ? null : value;
+}
+
+export function getOursBacklinksDomains(
+  row: UnilizePerformance,
+): number | null {
+  const value = row.url_authorities?.ours?.backlinks_domains;
+  return value == null || !Number.isFinite(value) ? null : value;
+}
+
 export function getNetlinkingCompetitorAuthoritySpread(
   row: UnilizePerformance,
 ): UnilizeSpread | null {

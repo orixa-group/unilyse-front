@@ -8,7 +8,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { MetricHeader } from "@/components/performances/metric-header";
 import { PerformanceColumnMenu } from "@/components/performances/performance-column-menu";
 import { ShareBar } from "@/components/ui/share-bar";
@@ -25,6 +25,11 @@ import {
 } from "@/components/ui/table";
 import {
   getNetlinkingCompetitorAuthoritySpread,
+  getOursAuthorityScore,
+  getOursBacklinksDomains,
+  getOursBacklinksExternal,
+  getOursPageTrust,
+  getOursSemanticScore,
   getSemanticCompetitorScoreSpread,
 } from "@/lib/performances/competitor-scores";
 import {
@@ -51,11 +56,23 @@ import { filterRowsByKeywordQuery, formatKeywordLabel } from "@/lib/projects/key
 import { useSelectionStore } from "@/stores/selection.store";
 import {
   countActiveAcquisitions,
-  countFailedAcquisitions,
+  describeObservedValue,
   formatFractionPercent,
+  summarizeCollectionStatus,
 } from "@/lib/performances/format-metrics";
-import type { UnilizeAcquisitions, UnilizePerformance } from "@/types/performance";
+import type {
+  UnilizeAcquisitions,
+  UnilizeAcquisitionState,
+  UnilizePerformance,
+} from "@/types/performance";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import type { AcquisitionSourceRow } from "@/lib/performances/format-metrics";
 
 /** Intitulés longs : wrap autorisé pour ne pas étirer la colonne. */
 const PERFORMANCE_WRAP_HEADER_COLUMNS = new Set([
@@ -65,10 +82,17 @@ const PERFORMANCE_WRAP_HEADER_COLUMNS = new Set([
   "potential_impressions_rank",
   "average_position",
   "real_time_position",
-  "netlinking_avg",
+  "semantic_score",
   "semantic_avg",
   "semantic_max",
   "semantic_min",
+  "netlinking_score",
+  "netlinking_trust",
+  "netlinking_backlinks",
+  "netlinking_domains",
+  "netlinking_avg",
+  "netlinking_max",
+  "netlinking_min",
   "collection_status",
 ]);
 
@@ -86,34 +110,148 @@ function formatNullableCurrency(value: number | null | undefined): string {
   return formatCurrencyEur(value);
 }
 
+/**
+ * Cellule « observation » : distingue une vraie absence de donnée (—) d'une
+ * collecte en cours ou en échec sur la source concernée.
+ */
+function ObservedValueCell({
+  value,
+  state,
+  format,
+}: {
+  value: number | null | undefined;
+  state: UnilizeAcquisitionState | undefined;
+  format?: (value: number) => string;
+}) {
+  const display = describeObservedValue(value, state, format);
+  if (display.kind === "collecting") {
+    return (
+      <span className="text-muted-foreground text-xs italic">
+        {display.text}
+      </span>
+    );
+  }
+  if (display.kind === "failed") {
+    return (
+      <span className="text-destructive text-xs" title="Collecte en échec">
+        {display.text}
+      </span>
+    );
+  }
+  return <>{display.text}</>;
+}
+
+const ACQUISITION_STATE_MARK: Record<
+  string,
+  { emoji: string; className: string }
+> = {
+  pending: { emoji: "⏳", className: "text-warning" },
+  running: { emoji: "🔄", className: "text-chart-1" },
+  succeeded: { emoji: "✅", className: "text-success" },
+  failed: { emoji: "❌", className: "text-destructive" },
+  null: { emoji: "➖", className: "text-muted-foreground" },
+  unknown: { emoji: "❓", className: "text-muted-foreground" },
+};
+
+function CollectionSourcesTooltip({
+  sources,
+  children,
+}: {
+  sources: readonly AcquisitionSourceRow[];
+  children: ReactNode;
+}) {
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            tabIndex={0}
+            className="inline-flex cursor-help rounded outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {children}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="w-max min-w-48 p-2.5">
+          <ul className="flex flex-col gap-1">
+            {sources.map((source) => {
+              const key = source.state === null ? "null" : source.state;
+              const mark = ACQUISITION_STATE_MARK[key] ?? ACQUISITION_STATE_MARK.unknown;
+              return (
+                <li
+                  key={source.label}
+                  className="flex items-center justify-between gap-3"
+                >
+                  <span>{source.label}</span>
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 font-medium",
+                      mark.className,
+                    )}
+                  >
+                    <span aria-hidden>{mark.emoji}</span>
+                    {source.stateLabel}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 function CollectionStatusCell({
   acquisitions,
 }: {
   acquisitions: UnilizeAcquisitions | null | undefined;
 }) {
-  const pending = countActiveAcquisitions(acquisitions);
-  const failed = countFailedAcquisitions(acquisitions);
-  if (!acquisitions) {
+  const summary = summarizeCollectionStatus(acquisitions);
+  if (summary.kind === "missing") {
     return "—";
   }
-  if (failed > 0) {
-    return (
-      <Badge variant="destructive" className="text-xs font-normal">
-        {failed} échec{failed > 1 ? "s" : ""}
-      </Badge>
-    );
-  }
-  if (pending === 0) {
-    return (
-      <Badge variant="outline" className="text-xs font-normal">
-        À jour
-      </Badge>
-    );
-  }
-  return (
-    <Badge variant="secondary" className="text-xs font-normal">
-      {pending} en cours
+
+  let badge = (
+    <Badge variant="outline" className="text-xs font-normal">
+      À jour
     </Badge>
+  );
+  if (summary.kind === "collecting") {
+    badge = (
+      <Badge variant="secondary" className="text-xs font-normal">
+        Collecte en cours
+      </Badge>
+    );
+  } else if (summary.kind === "failed") {
+    badge = (
+      <Badge variant="destructive" className="text-xs font-normal">
+        {summary.failed} échec{summary.failed > 1 ? "s" : ""}
+      </Badge>
+    );
+  } else if (summary.kind === "incomplete") {
+    badge = (
+      <Badge
+        variant="outline"
+        className="border-warning/40 bg-warning/15 text-xs font-normal text-warning"
+      >
+        Incomplète
+      </Badge>
+    );
+  } else if (summary.kind === "idle") {
+    badge = (
+      <Badge
+        variant="outline"
+        className="text-muted-foreground text-xs font-normal"
+      >
+        Non collecté
+      </Badge>
+    );
+  }
+
+  return (
+    <CollectionSourcesTooltip sources={summary.sources}>
+      {badge}
+    </CollectionSourcesTooltip>
   );
 }
 
@@ -129,7 +267,7 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
           {formatKeywordLabel(getValue())}
           {countActiveAcquisitions(row.original.acquisitions) > 0 ? (
             <Badge variant="secondary" className="text-[10px] font-normal">
-              Collecte…
+              Collecte en cours
             </Badge>
           ) : null}
         </span>
@@ -182,7 +320,14 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
     },
     {
       id: "collection_status",
-      accessorFn: (row) => countActiveAcquisitions(row.acquisitions),
+      accessorFn: (row) => {
+        const summary = summarizeCollectionStatus(row.acquisitions);
+        if (summary.kind === "collecting") return 4;
+        if (summary.kind === "failed") return 3;
+        if (summary.kind === "incomplete") return 2;
+        if (summary.kind === "idle") return 1;
+        return 0;
+      },
       header: () => (
         <MetricHeader
           label={PERFORMANCE_COLUMN_LABELS.collection_status}
@@ -377,64 +522,65 @@ function buildColumns(): ColumnDef<UnilizePerformance>[] {
       ),
       cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
     },
-    {
-      id: "real_time_position",
-      accessorFn: (row) => row.organic_ranking?.position ?? null,
-      header: () => (
-        <MetricHeader
-          label={PERFORMANCE_COLUMN_LABELS.real_time_position}
-          metricId="real_time_position"
-        />
-      ),
-      cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
-    },
-    {
-      id: "netlinking_avg",
-      accessorFn: (row) =>
-        getNetlinkingCompetitorAuthoritySpread(row)?.average ?? null,
-      header: () => (
-        <MetricHeader
-          label={PERFORMANCE_COLUMN_LABELS.netlinking_avg}
-          metricId="netlinking_avg"
-        />
-      ),
-      cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
-    },
-    {
-      id: "semantic_avg",
-      accessorFn: (row) =>
-        getSemanticCompetitorScoreSpread(row)?.average ?? null,
-      header: () => (
-        <MetricHeader
-          label={PERFORMANCE_COLUMN_LABELS.semantic_avg}
-          metricId="semantic_avg"
-        />
-      ),
-      cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
-    },
-    {
-      id: "semantic_max",
-      accessorFn: (row) => getSemanticCompetitorScoreSpread(row)?.max ?? null,
-      header: () => (
-        <MetricHeader
-          label={PERFORMANCE_COLUMN_LABELS.semantic_max}
-          metricId="semantic_max"
-        />
-      ),
-      cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
-    },
-    {
-      id: "semantic_min",
-      accessorFn: (row) => getSemanticCompetitorScoreSpread(row)?.min ?? null,
-      header: () => (
-        <MetricHeader
-          label={PERFORMANCE_COLUMN_LABELS.semantic_min}
-          metricId="semantic_min"
-        />
-      ),
-      cell: ({ getValue }) => formatNullableNumber(getValue() as number | null),
-    },
+    observedColumn("real_time_position", "organic_rankings", (row) =>
+      row.organic_ranking?.position ?? null,
+    ),
+    observedColumn("semantic_score", "page_semantics", getOursSemanticScore),
+    observedColumn("semantic_avg", "page_semantics", (row) =>
+      getSemanticCompetitorScoreSpread(row)?.average ?? null,
+    ),
+    observedColumn("semantic_max", "page_semantics", (row) =>
+      getSemanticCompetitorScoreSpread(row)?.max ?? null,
+    ),
+    observedColumn("semantic_min", "page_semantics", (row) =>
+      getSemanticCompetitorScoreSpread(row)?.min ?? null,
+    ),
+    observedColumn("netlinking_score", "url_authorities", getOursAuthorityScore),
+    observedColumn("netlinking_trust", "url_authorities", getOursPageTrust),
+    observedColumn(
+      "netlinking_backlinks",
+      "url_authorities",
+      getOursBacklinksExternal,
+    ),
+    observedColumn(
+      "netlinking_domains",
+      "url_authorities",
+      getOursBacklinksDomains,
+    ),
+    observedColumn("netlinking_avg", "url_authorities", (row) =>
+      getNetlinkingCompetitorAuthoritySpread(row)?.average ?? null,
+    ),
+    observedColumn("netlinking_max", "url_authorities", (row) =>
+      getNetlinkingCompetitorAuthoritySpread(row)?.max ?? null,
+    ),
+    observedColumn("netlinking_min", "url_authorities", (row) =>
+      getNetlinkingCompetitorAuthoritySpread(row)?.min ?? null,
+    ),
   ];
+}
+
+/**
+ * Colonne « observation » (ranking, autorité, sémantique) : la cellule lit
+ * l'état de collecte de la source pour distinguer « — », « Collecte… », « Échec ».
+ */
+function observedColumn(
+  id: string,
+  source: keyof UnilizeAcquisitions,
+  read: (row: UnilizePerformance) => number | null,
+): ColumnDef<UnilizePerformance> {
+  return {
+    id,
+    accessorFn: read,
+    header: () => (
+      <MetricHeader label={PERFORMANCE_COLUMN_LABELS[id]} metricId={id} />
+    ),
+    cell: ({ row, getValue }) => (
+      <ObservedValueCell
+        value={getValue() as number | null}
+        state={row.original.acquisitions?.[source]}
+      />
+    ),
+  };
 }
 
 export function PerformanceResultsTable({
@@ -533,7 +679,7 @@ export function PerformanceResultsTable({
   return (
     <DataTableShell
       actions={
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 pt-6">
           <KeywordTableFilter value={keywordQuery} onChange={setKeywordQuery} />
           <PerformanceColumnMenu
             visibleColumns={visibleColumnSet}

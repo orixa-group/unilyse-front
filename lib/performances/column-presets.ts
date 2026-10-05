@@ -50,10 +50,17 @@ export const PERFORMANCE_SEA_EXTRA_COLUMNS = [
 
 export const PERFORMANCE_SEO_EXTRA_COLUMNS = [
   "real_time_position",
-  "netlinking_avg",
+  "semantic_score",
   "semantic_avg",
   "semantic_max",
   "semantic_min",
+  "netlinking_score",
+  "netlinking_trust",
+  "netlinking_backlinks",
+  "netlinking_domains",
+  "netlinking_avg",
+  "netlinking_max",
+  "netlinking_min",
 ] as const;
 
 export const PERFORMANCE_SEA_PRESET_COLUMNS = [
@@ -130,10 +137,17 @@ export const PERFORMANCE_COLUMN_LABELS: Record<string, string> = {
   seo_ctr: "CTR SEO",
   average_position: "Position moy. SEO",
   real_time_position: "Position temps réel",
-  netlinking_avg: "Netlinking concurrents (moy. top 5)",
-  semantic_avg: "Sémantique concurrents (moy. top 5)",
+  semantic_score: "Score sémantique",
+  semantic_avg: "Sémantique concurrents (moy.)",
   semantic_max: "Sémantique max (top 5)",
   semantic_min: "Sémantique mini (top 5)",
+  netlinking_score: "Score autorité",
+  netlinking_trust: "Page trust",
+  netlinking_backlinks: "Backlinks externes",
+  netlinking_domains: "Domaines référents",
+  netlinking_avg: "Autorité concurrents (moy.)",
+  netlinking_max: "Autorité max (top 5)",
+  netlinking_min: "Autorité mini (top 5)",
 };
 
 export function resolvePerformanceVisibleColumns(
@@ -211,8 +225,15 @@ export const PERFORMANCE_COLUMN_CHANNEL: Record<string, TableChannel> = {
   seo_ctr: "seo",
   average_position: "seo",
   real_time_position: "seo",
-  netlinking_avg: "seo",
+  semantic_score: "seo",
   semantic_avg: "seo",
   semantic_max: "seo",
   semantic_min: "seo",
+  netlinking_score: "seo",
+  netlinking_trust: "seo",
+  netlinking_backlinks: "seo",
+  netlinking_domains: "seo",
+  netlinking_avg: "seo",
+  netlinking_max: "seo",
+  netlinking_min: "seo",
 };
