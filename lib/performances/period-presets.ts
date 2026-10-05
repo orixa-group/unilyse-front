@@ -9,18 +9,21 @@ import { fr } from "date-fns/locale";
 
 export type PeriodPresetId = "last_30_days" | "last_3_months" | "last_6_months";
 
+/** Plage appliquée quand aucune période n'est choisie. */
+export const DEFAULT_PERIOD_PRESET_ID: PeriodPresetId = "last_3_months";
+
 export const PERIOD_PRESETS: ReadonlyArray<{
   id: PeriodPresetId;
   label: string;
 }> = [
   { id: "last_30_days", label: "30 derniers jours" },
-  { id: "last_3_months", label: "3 mois" },
-  { id: "last_6_months", label: "6 mois" },
+  { id: "last_3_months", label: "3 derniers mois" },
+  { id: "last_6_months", label: "6 derniers mois" },
 ] as const;
 
-/** Fin de plage = hier (aligné avec le défaut API Unilize). */
+/** Fin de plage = aujourd'hui (borne incluse ; l'API v2 n'impose plus « hier »). */
 export function getPeriodEndDate(now = new Date()): Date {
-  return subDays(now, 1);
+  return now;
 }
 
 export function resolvePresetRange(
@@ -56,8 +59,13 @@ export function formatPeriodLabel(
   from: string | null,
   to: string | null,
 ): string {
-  if (!from && !to) {
-    return "Période par défaut";
+  const presetId =
+    !from && !to ? DEFAULT_PERIOD_PRESET_ID : matchPreset(from, to);
+  if (presetId) {
+    return (
+      PERIOD_PRESETS.find((preset) => preset.id === presetId)?.label ??
+      "3 derniers mois"
+    );
   }
   const fromDate = parseDateIso(from);
   const toDate = parseDateIso(to);
@@ -70,7 +78,7 @@ export function formatPeriodLabel(
   if (toDate) {
     return `Jusqu’au ${format(toDate, "dd/MM/yyyy", { locale: fr })}`;
   }
-  return "Période par défaut";
+  return "3 derniers mois";
 }
 
 export function matchPreset(

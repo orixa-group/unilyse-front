@@ -14,6 +14,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  DEFAULT_PERIOD_PRESET_ID,
   PERIOD_PRESETS,
   formatDateIso,
   formatPeriodLabel,
@@ -50,12 +51,15 @@ export function PerformancePeriodPicker({
     return { from, to };
   }, [periodFrom, periodTo]);
 
-  const activePreset = matchPreset(periodFrom, periodTo);
+  const activePreset =
+    matchPreset(periodFrom, periodTo) ??
+    (!periodFrom && !periodTo ? DEFAULT_PERIOD_PRESET_ID : null);
   const label = formatPeriodLabel(periodFrom, periodTo);
 
   const applyPreset = (id: PeriodPresetId) => {
     const { from, to } = resolvePresetRange(id);
     setPeriod(formatDateIso(from), formatDateIso(to));
+    setOpen(false);
   };
 
   const handleSelect = (
@@ -133,18 +137,21 @@ export function PerformancePeriodPicker({
                 className="justify-start"
                 onClick={() => applyPreset(preset.id)}
               >
-                {preset.label}
+                <span>{preset.label}</span>
+                {preset.id === DEFAULT_PERIOD_PRESET_ID ? (
+                  <span
+                    className={cn(
+                      "ml-auto text-[10px] font-normal",
+                      activePreset === preset.id
+                        ? "text-primary-foreground/80"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    défaut
+                  </span>
+                ) : null}
               </Button>
             ))}
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground justify-start"
-              onClick={() => setPeriod(null, null)}
-            >
-              Réinitialiser
-            </Button>
           </div>
           <Calendar
             mode="range"

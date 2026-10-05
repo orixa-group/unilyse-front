@@ -1,4 +1,5 @@
 import {
+  DEFAULT_PERIOD_PRESET_ID,
   formatDateIso,
   resolvePresetRange,
 } from "@/lib/performances/period-presets";
@@ -26,9 +27,9 @@ export function normalizePeriodQuery(
   return { from, until };
 }
 
-/** Période par défaut : 30 derniers jours finissant hier (ex-comportement API). */
+/** Période par défaut : 3 derniers mois finissant aujourd'hui. */
 export function getDefaultPeriodQuery(now = new Date()): ResolvedPeriodQuery {
-  const range = resolvePresetRange("last_30_days", now);
+  const range = resolvePresetRange(DEFAULT_PERIOD_PRESET_ID, now);
   return {
     from: formatDateIso(range.from),
     until: formatDateIso(range.to),
