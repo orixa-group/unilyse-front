@@ -18,6 +18,8 @@ interface SyncProjectSelectionParams {
   projectOptions: { value: string; label: string }[];
   selectedProjectId: string | null;
   setSelectedProjectId: (id: string | null) => void;
+  /** Faux tant que le store n'est pas réhydraté ou que la requête projets n'est pas lancée. */
+  enabled: boolean;
   isProjectsLoading: boolean;
   isProjectsFetching: boolean;
   isProjectsError: boolean;
@@ -31,12 +33,18 @@ export function useSyncProjectSelection({
   projectOptions,
   selectedProjectId,
   setSelectedProjectId,
+  enabled,
   isProjectsLoading,
   isProjectsFetching,
   isProjectsError,
 }: SyncProjectSelectionParams) {
   useEffect(() => {
-    if (isProjectsLoading || isProjectsFetching || isProjectsError) {
+    if (
+      !enabled ||
+      isProjectsLoading ||
+      isProjectsFetching ||
+      isProjectsError
+    ) {
       return;
     }
     const nextProjectId = resolveSelectedId(projectOptions, selectedProjectId);
@@ -44,6 +52,7 @@ export function useSyncProjectSelection({
       setSelectedProjectId(nextProjectId);
     }
   }, [
+    enabled,
     projectOptions,
     selectedProjectId,
     setSelectedProjectId,

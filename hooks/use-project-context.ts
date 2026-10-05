@@ -45,6 +45,7 @@ export function useProjectContext() {
     projectOptions,
     selectedProjectId,
     setSelectedProjectId,
+    enabled: hasHydrated && Boolean(selectedClientId),
     isProjectsLoading,
     isProjectsFetching,
     isProjectsError,
@@ -68,12 +69,8 @@ export function useProjectContext() {
     () =>
       resolveEffectiveRecommendationDate({
         recommendationAsOfDate,
-        period: {
-          from: periodFrom ?? undefined,
-          until: periodTo ?? undefined,
-        },
       }),
-    [recommendationAsOfDate, periodFrom, periodTo],
+    [recommendationAsOfDate],
   );
 
   const canFetchMetrics = Boolean(selectedProjectId);

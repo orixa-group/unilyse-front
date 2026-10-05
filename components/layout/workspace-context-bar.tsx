@@ -54,6 +54,8 @@ export function WorkspaceContextBar() {
     data: clients = [],
     error: clientsError,
     isPending: isClientsPending,
+    isFetching: isClientsFetching,
+    isError: isClientsError,
   } = useClients();
   const loadError = clientsError
     ? toUserFacingApiError(clientsError.message, {
@@ -94,14 +96,31 @@ export function WorkspaceContextBar() {
   );
 
   useEffect(() => {
-    if (loadError) {
+    // Ne pas effacer un client persisté tant que le store ou la liste API
+    // ne sont pas prêts : une liste vide au premier rendu n'est pas « aucun client ».
+    if (
+      !hasHydrated ||
+      loadError ||
+      isClientsPending ||
+      isClientsFetching ||
+      isClientsError
+    ) {
       return;
     }
     const nextId = resolveSelectedClientId(clients, selectedClientId);
     if (nextId !== selectedClientId) {
       setSelectedClientId(nextId);
     }
-  }, [clients, selectedClientId, setSelectedClientId, loadError]);
+  }, [
+    hasHydrated,
+    clients,
+    selectedClientId,
+    setSelectedClientId,
+    loadError,
+    isClientsPending,
+    isClientsFetching,
+    isClientsError,
+  ]);
 
   useEffect(() => {
     if (!createState.success || !createState.client) {
