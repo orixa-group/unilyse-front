@@ -12,6 +12,7 @@ type ChartTooltipProps = Partial<TooltipContentProps<ValueType, NameType>> & {
     value: ValueType | undefined,
     name: NameType | undefined,
   ) => ReactNode;
+  footer?: ReactNode;
 };
 
 export function ChartTooltip({
@@ -20,6 +21,7 @@ export function ChartTooltip({
   label,
   labelFormatter,
   valueFormatter,
+  footer,
 }: ChartTooltipProps) {
   if (!active || !payload?.length) {
     return null;
@@ -59,6 +61,11 @@ export function ChartTooltip({
           );
         })}
       </ul>
+      {footer ? (
+        <div className="border-border text-muted-foreground mt-2 border-t pt-2 text-xs">
+          {footer}
+        </div>
+      ) : null}
     </div>
   );
 }

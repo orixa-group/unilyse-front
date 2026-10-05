@@ -241,7 +241,10 @@ export function Autocomplete({
             <li
               role="option"
               aria-selected={false}
-              className="text-muted-foreground relative flex cursor-default select-none items-center rounded-sm border-b py-1.5 pl-2 pr-2 text-sm outline-none"
+              className={cn(
+                "text-muted-foreground relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none",
+                "hover:bg-accent hover:text-accent-foreground",
+              )}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
                 onValueChange(null);

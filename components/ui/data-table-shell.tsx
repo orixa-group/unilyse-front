@@ -16,7 +16,7 @@ export function DataTableShell({
   return (
     <div className={cn("space-y-3", className)}>
       {title || description || actions ? (
-        <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
             {title ? (
               <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
