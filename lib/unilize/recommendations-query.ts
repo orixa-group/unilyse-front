@@ -1,15 +1,8 @@
-import {
-  formatDateIso,
-  getPeriodEndDate,
-  parseDateIso,
-} from "@/lib/performances/period-presets";
-import { resolveEffectivePeriod } from "@/lib/unilize/period-query";
+import { formatDateIso, parseDateIso } from "@/lib/performances/period-presets";
 import type { UnilizeRecommendationsQuery } from "@/types/recommendations";
-import type { UnilizePeriodQuery } from "@/types/unilize";
 
 export type RecommendationDateContext = {
   recommendationAsOfDate?: string | null;
-  period?: UnilizePeriodQuery | null;
 };
 
 /** Date effective pour `GET /recommendations` (param `date`). */
@@ -20,11 +13,7 @@ export function resolveEffectiveRecommendationDate(
   if (explicit) {
     return explicit;
   }
-  const periodUntil = resolveEffectivePeriod(context?.period).until;
-  if (periodUntil) {
-    return periodUntil;
-  }
-  return formatDateIso(getPeriodEndDate());
+  return formatDateIso(new Date());
 }
 
 export function resolveRecommendationsQuery(
