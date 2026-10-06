@@ -31,7 +31,7 @@ export const METRIC_GLOSSARY: Record<string, string> = {
   average_position:
     "Position organique moyenne sur la période, pondérée par les impressions (Search Console).",
   real_time_position:
-    "Dernière position organique connue (`organic_ranking.position`), distincte de la moyenne Search Console. Null si non classé.",
+    "Position organique constatée à la date lue (`organic_ranking.position`), distincte de la moyenne Search Console. Vide si le mot-clé n’est pas classé.",
   semantic_score:
     "Score sémantique de la page du projet (`page_semantics.ours.score`).",
   semantic_avg:

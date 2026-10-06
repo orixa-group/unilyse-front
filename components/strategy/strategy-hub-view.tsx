@@ -20,6 +20,7 @@ import {
   type StrategyTableViewMode,
 } from "@/components/strategy/strategy-table-view-toggle";
 import { StrategyWorkPanels } from "@/components/strategy/strategy-work-panels";
+import { usePerformances } from "@/hooks/use-performances-api";
 import { useRecommendations } from "@/hooks/use-recommendations-api";
 import { useProjectContext } from "@/hooks/use-project-context";
 import {
@@ -124,8 +125,31 @@ export function StrategyHubView() {
     [payload?.netlinking_gaps],
   );
 
+  const positionAsOf = useMemo(
+    () => ({ from: recommendationDate, until: recommendationDate }),
+    [recommendationDate],
+  );
+  const {
+    data: positionsResult,
+    isFetching: isPositionsFetching,
+  } = usePerformances(
+    canFetchMetrics ? selectedProjectId : null,
+    positionAsOf,
+  );
+  const seoPositionByKeyword = useMemo(() => {
+    const map = new Map<string, number | null>();
+    for (const row of positionsResult?.performances ?? []) {
+      const position = row.organic_ranking?.position;
+      map.set(
+        row.keyword,
+        position != null && Number.isFinite(position) ? position : null,
+      );
+    }
+    return map;
+  }, [positionsResult]);
   const isRefreshing =
-    isRecommendationsFetching && Boolean(recommendationsResult);
+    (isRecommendationsFetching && Boolean(recommendationsResult)) ||
+    isPositionsFetching;
 
   const showSkeleton = shouldShowProjectSkeleton(
     selectedProjectId,
@@ -282,6 +306,7 @@ export function StrategyHubView() {
             <StrategyRecommendationsTable
               rows={filteredRecommendations}
               viewMode={tableViewMode}
+              seoPosition={(row) => seoPositionByKeyword.get(row.keyword) ?? null}
             />
           )}
         </DataTableShell>

@@ -65,6 +65,13 @@ function TonedLabel({
   );
 }
 
+function formatSeoPosition(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) {
+    return "—";
+  }
+  return formatNumber(value);
+}
+
 function ScoreCell({ value }: { value: number | null | undefined }) {
   if (value == null || !Number.isFinite(value)) {
     return <span className="text-muted-foreground">—</span>;
@@ -87,9 +94,14 @@ const bodyCellClass = "px-4 py-3.5 align-middle";
 export function StrategyRecommendationsTable({
   rows,
   viewMode = "full",
+  seoPosition,
 }: {
   rows: readonly UnilizeKeywordRecommendation[];
   viewMode?: StrategyTableViewMode;
+  /** Classement organique observé à la date de lecture (`organic_ranking.position`). */
+  seoPosition?: (
+    row: UnilizeKeywordRecommendation,
+  ) => number | null | undefined;
   /** @deprecated Lecture affichée dans l'en-tête du tableau. */
   readAsOf?: string;
 }) {
@@ -170,10 +182,16 @@ export function StrategyRecommendationsTable({
                   metricId="average_position"
                 />
               </TableHead>
-              <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
+              <TableHead
+                className={cn(
+                  "text-right",
+                  headCellClass,
+                  stickyHeaderCellClass(),
+                )}
+              >
                 <MetricHeader
                   label="Position SEO"
-                  metricId="organic_accessibility"
+                  metricId="real_time_position"
                 />
               </TableHead>
               <TableHead className={cn(headCellClass, stickyHeaderCellClass())}>
@@ -311,14 +329,13 @@ export function StrategyRecommendationsTable({
                       ? formatDecimal(organic.average_position)
                       : "—"}
                   </TableCell>
-                  <TableCell className={bodyCellClass}>
-                    <TonedLabel
-                      label={formatAssessmentLevel(organic?.accessibility)}
-                      tone={scoringLevelTone(
-                        organic?.accessibility,
-                        "positive",
-                      )}
-                    />
+                  <TableCell
+                    className={cn(
+                      bodyCellClass,
+                      "text-right tabular-nums text-sm",
+                    )}
+                  >
+                    {formatSeoPosition(seoPosition?.(row))}
                   </TableCell>
                   <TableCell className={bodyCellClass}>
                     <TonedLabel
