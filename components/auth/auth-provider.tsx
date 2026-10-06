@@ -20,6 +20,7 @@ import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { clearAuthSession, syncAuthSession } from "@/lib/auth/session-client";
 import { ROUTES } from "@/lib/constants/routes";
+import { useSelectionStore } from "@/stores/selection.store";
 
 interface AuthContextValue {
   user: User | null;
@@ -77,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    useSelectionStore.getState().resetSessionSelection();
     await clearAuthSession();
     const auth = getFirebaseAuth();
     if (auth) {

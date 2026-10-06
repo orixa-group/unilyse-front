@@ -24,6 +24,8 @@ interface SelectionState {
   setSelectedTheme: (theme: string | null) => void;
   selectedKeyword: string | null;
   setSelectedKeyword: (keyword: string | null) => void;
+  /** Client, projet, filtres et dates : repartir des défauts au logout. */
+  resetSessionSelection: () => void;
   hasHydrated: boolean;
   setHasHydrated: (value: boolean) => void;
 }
@@ -74,6 +76,16 @@ export const useSelectionStore = create<SelectionState>()(
         set({ selectedTheme: theme, selectedKeyword: null }),
       selectedKeyword: null,
       setSelectedKeyword: (keyword) => set({ selectedKeyword: keyword }),
+      resetSessionSelection: () =>
+        set({
+          selectedClientId: null,
+          selectedProjectId: null,
+          periodFrom: null,
+          periodTo: null,
+          recommendationAsOfDate: null,
+          selectedTheme: null,
+          selectedKeyword: null,
+        }),
       hasHydrated: false,
       setHasHydrated: (value) => set({ hasHydrated: value }),
     }),
