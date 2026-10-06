@@ -108,7 +108,7 @@ export function StrategyRecommendationsTable({
   const showFull = viewMode === "full";
 
   return (
-    <Table>
+    <Table disableContainerScroll>
       <TableHeader>
         <TableRow className="bg-muted hover:bg-muted">
           <TableHead
