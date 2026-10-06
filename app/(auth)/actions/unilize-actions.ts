@@ -15,6 +15,7 @@ import {
   getClient,
   listProjects,
   listSearchConsoleProperties,
+  updateProject,
   updateProjectKeywords,
 } from "@/lib/api/unilize";
 import {
@@ -32,6 +33,7 @@ import type {
   DeleteProjectActionState,
   GetClientActionResult,
   ListProjectsActionResult,
+  UpdateProjectActionState,
   UpdateProjectKeywordsActionState,
 } from "./unilize-action-state";
 
@@ -80,6 +82,29 @@ const createProjectSchema = z.object({
         invalid_type_error: "Le CTR benchmark SEA doit être un nombre.",
       })
       .min(0, "Le CTR benchmark SEA ne peut pas être négatif.")
+      .max(100, "Le CTR benchmark SEA ne peut pas dépasser 100 %."),
+  ),
+});
+
+const updateProjectSchema = z.object({
+  clientId: nonEmptyString,
+  projectId: nonEmptyString,
+  name: nonEmptyString,
+  ga4_property_id: z.string().trim(),
+  ctr_benchmark: z.preprocess(
+    (value) => {
+      if (value === null || value === undefined) {
+        return undefined;
+      }
+      const text = String(value).trim().replace(",", ".");
+      return text === "" ? undefined : text;
+    },
+    z.coerce
+      .number({
+        required_error: "Le CTR benchmark SEA est requis.",
+        invalid_type_error: "Le CTR benchmark SEA doit être un nombre.",
+      })
+      .gt(0, "Le CTR benchmark SEA doit être supérieur à 0 %.")
       .max(100, "Le CTR benchmark SEA ne peut pas dépasser 100 %."),
   ),
 });
@@ -300,6 +325,67 @@ export async function createProjectAction(
       error: "Une erreur inattendue est survenue.",
     };
   }
+  }, () => ({
+    success: false,
+    error: "Non authentifié.",
+  }));
+}
+
+export async function updateProjectAction(
+  _prevState: UpdateProjectActionState,
+  formData: FormData,
+): Promise<UpdateProjectActionState> {
+  return runAuthenticatedServerAction(async () => {
+    const parsed = updateProjectSchema.safeParse({
+      clientId: formData.get("clientId"),
+      projectId: formData.get("projectId"),
+      name: formData.get("name"),
+      ga4_property_id: formData.get("ga4_property_id") ?? "",
+      ctr_benchmark: formData.get("ctr_benchmark"),
+    });
+
+    if (!parsed.success) {
+      const nameIssue = parsed.error.issues.find((i) => i.path[0] === "name");
+      const ctrIssue = parsed.error.issues.find(
+        (i) => i.path[0] === "ctr_benchmark",
+      );
+      return {
+        success: false,
+        error: nameIssue
+          ? "Le nom du projet est requis."
+          : ctrIssue
+            ? (ctrIssue.message as string)
+            : "Le nom et le CTR benchmark SEA sont requis.",
+      };
+    }
+
+    try {
+      const project = await updateProject(parsed.data.projectId, {
+        name: parsed.data.name,
+        ga4_property_id: parsed.data.ga4_property_id,
+        ctr_benchmark: parsed.data.ctr_benchmark,
+      });
+      revalidateDashboard();
+      return {
+        success: true,
+        project,
+        clientId: parsed.data.clientId,
+      };
+    } catch (error) {
+      if (error instanceof ApiClientError) {
+        return {
+          success: false,
+          error: mapUnilizeActionError(
+            error,
+            "Impossible de modifier le projet.",
+          ),
+        };
+      }
+      return {
+        success: false,
+        error: "Une erreur inattendue est survenue.",
+      };
+    }
   }, () => ({
     success: false,
     error: "Non authentifié.",

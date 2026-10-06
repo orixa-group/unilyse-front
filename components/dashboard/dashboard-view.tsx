@@ -21,6 +21,7 @@ import {
   initialDeleteProjectState,
   initialUpdateProjectKeywordsState,
   type GetProjectResult,
+  type UpdateProjectActionState,
 } from "@/app/(auth)/actions/unilize-action-state";
 import { CreateProjectDialog } from "@/components/dashboard/create-project-dialog";
 import { EditProjectDialog } from "@/components/dashboard/edit-project-dialog";
@@ -378,6 +379,29 @@ export function DashboardView() {
   };
 
 
+  const handleProjectUpdated = useCallback(
+    (result: UpdateProjectActionState) => {
+      if (!result.success || !result.project || !result.clientId) {
+        return;
+      }
+      void queryClient.invalidateQueries({
+        queryKey: unilizeKeys.projects(result.clientId),
+      });
+      void queryClient.refetchQueries({
+        queryKey: unilizeKeys.projects(result.clientId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: unilizeKeys.project(result.project.id),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: unilizeKeys.projectDetails(result.project.id),
+      });
+      setEditProjectOpen(false);
+      setProjectToEdit(null);
+    },
+    [queryClient],
+  );
+
   const handleProjectCreated = useCallback(
     (result: { success: boolean; project?: UnilizeProject; clientId?: string }) => {
       if (!result.success || !result.project || !result.clientId) {
@@ -627,6 +651,8 @@ export function DashboardView() {
           }
         }}
         project={projectToEdit}
+        clientId={selectedClientId ?? ""}
+        onUpdated={handleProjectUpdated}
       />
 
       <CreateProjectDialog

@@ -56,6 +56,15 @@ export interface CreateProjectPayload {
   ctr_benchmark: number;
 }
 
+/** Corps de PUT /projects/{id}. Search Console, Google Ads et mots-clés sont inchangés. */
+export interface UpdateProjectPayload {
+  name: string;
+  /** Chaîne vide : retire la propriété GA4. */
+  ga4_property_id: string;
+  /** Pourcentage strictement supérieur à 0, au plus 100. */
+  ctr_benchmark: number;
+}
+
 /** Query params pour les endpoints analytics (période). */
 export type UnilizePeriodQuery = {
   from?: string;

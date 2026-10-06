@@ -24,6 +24,7 @@ export type {
   UnilizeApiErrorBody,
   CreateClientPayload,
   CreateProjectPayload,
+  UpdateProjectPayload,
   UnilizePeriodQuery,
 } from "./unilize";
 export type { StrategyWorkGapRow } from "./strategy-work";

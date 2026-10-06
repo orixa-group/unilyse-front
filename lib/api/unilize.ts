@@ -3,6 +3,7 @@ import { ApiClientError, apiClient } from "@/lib/api/client";
 import type {
   CreateClientPayload,
   CreateProjectPayload,
+  UpdateProjectPayload,
   UnilizeApiEnvelope,
   UnilizeClient,
   UnilizeKeyword,
@@ -154,6 +155,20 @@ export async function createProject(
 
 export async function deleteProject(id: string): Promise<void> {
   await deleteResourceIgnoringNotFound(API.project(id));
+}
+
+export async function updateProject(
+  id: string,
+  payload: UpdateProjectPayload,
+): Promise<UnilizeProject> {
+  const res = await apiClient.put<UnilizeApiEnvelope<UnilizeProject>>(
+    API.project(id),
+    { body: payload },
+  );
+  if (!res?.data || typeof res.data !== "object") {
+    throw new Error("Réponse API invalide pour la mise à jour du projet.");
+  }
+  return res.data;
 }
 
 export async function listProjectKeywords(

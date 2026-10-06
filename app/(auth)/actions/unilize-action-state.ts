@@ -65,6 +65,17 @@ export const initialDeleteProjectState: DeleteProjectActionState = {
   success: false,
 };
 
+export type UpdateProjectActionState = {
+  success: boolean;
+  error?: string;
+  project?: UnilizeProject;
+  clientId?: string;
+};
+
+export const initialUpdateProjectState: UpdateProjectActionState = {
+  success: false,
+};
+
 export type UpdateProjectKeywordsActionState = {
   success: boolean;
   error?: string;
