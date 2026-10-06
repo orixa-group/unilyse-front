@@ -63,6 +63,7 @@ export function Autocomplete({
   const triggerId = idProp ?? generatedId;
   const listboxId = `${triggerId}-listbox`;
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const wasOpenRef = useRef(false);
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -91,19 +92,22 @@ export function Autocomplete({
 
   useEffect(() => {
     if (!open) {
+      wasOpenRef.current = false;
       return;
     }
+    if (wasOpenRef.current) {
+      return;
+    }
+    wasOpenRef.current = true;
     setQuery("");
-    setHighlightedIndex(0);
+    const selectedIndex = options.findIndex((option) => option.value === value);
+    const offset = clearable && value ? 1 : 0;
+    setHighlightedIndex(selectedIndex >= 0 ? selectedIndex + offset : 0);
     const frame = requestAnimationFrame(() => {
       searchInputRef.current?.focus();
     });
     return () => cancelAnimationFrame(frame);
-  }, [open]);
-
-  useEffect(() => {
-    setHighlightedIndex(0);
-  }, [query]);
+  }, [open, clearable, options, value]);
 
   const handleOpenChange = (next: boolean) => {
     if (isDisabled) {
@@ -117,14 +121,21 @@ export function Autocomplete({
     setOpen(false);
   };
 
-  const handleClear = (event: React.MouseEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
+  const showClearControl = clearable && Boolean(value) && !isDisabled;
+  const clearRowOffset = showClearControl ? 1 : 0;
+  const navigableCount = clearRowOffset + filteredOptions.length;
+  const isClearHighlighted = showClearControl && highlightedIndex === 0;
+
+  const clearSelection = () => {
     onValueChange(null);
     setOpen(false);
   };
 
-  const showClearControl = clearable && Boolean(value) && !isDisabled;
+  const handleClear = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    clearSelection();
+  };
 
   const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Escape") {
@@ -133,27 +144,29 @@ export function Autocomplete({
       return;
     }
 
-    if (filteredOptions.length === 0) {
+    if (navigableCount === 0) {
       return;
     }
 
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      setHighlightedIndex((i) => (i + 1) % filteredOptions.length);
+      setHighlightedIndex((i) => (i + 1) % navigableCount);
       return;
     }
 
     if (event.key === "ArrowUp") {
       event.preventDefault();
-      setHighlightedIndex(
-        (i) => (i - 1 + filteredOptions.length) % filteredOptions.length,
-      );
+      setHighlightedIndex((i) => (i - 1 + navigableCount) % navigableCount);
       return;
     }
 
     if (event.key === "Enter") {
       event.preventDefault();
-      const option = filteredOptions[highlightedIndex];
+      if (isClearHighlighted) {
+        clearSelection();
+        return;
+      }
+      const option = filteredOptions[highlightedIndex - clearRowOffset];
       if (option) {
         handleSelect(option);
       }
@@ -171,7 +184,7 @@ export function Autocomplete({
   };
 
   return (
-    <div className={cn("flex min-w-0 items-center gap-1", className)}>
+    <div className={cn("relative min-w-0", className)}>
       <Popover open={open} onOpenChange={handleOpenChange} modal={false}>
         <PopoverTrigger asChild>
           <button
@@ -183,7 +196,7 @@ export function Autocomplete({
             aria-haspopup="listbox"
             aria-label={ariaLabel}
             disabled={isDisabled}
-            className={cn(selectTriggerClassName, "min-w-0 flex-1")}
+            className={cn(selectTriggerClassName, "w-full")}
           >
             <span
               className={cn(
@@ -195,16 +208,21 @@ export function Autocomplete({
             >
               {triggerLabel}
             </span>
-            <HugeiconsIcon
-              icon={ArrowDown01Icon}
-              size={16}
-              color="currentColor"
-              strokeWidth={1.5}
-              className={cn(
-                "shrink-0 opacity-50 transition-transform",
-                open && "rotate-180",
-              )}
-            />
+            <span className="flex shrink-0 items-center">
+              {showClearControl ? (
+                <span className="inline-block w-7" aria-hidden />
+              ) : null}
+              <HugeiconsIcon
+                icon={ArrowDown01Icon}
+                size={16}
+                color="currentColor"
+                strokeWidth={1.5}
+                className={cn(
+                  "shrink-0 opacity-50 transition-transform",
+                  open && "rotate-180",
+                )}
+              />
+            </span>
           </button>
         </PopoverTrigger>
 
@@ -219,7 +237,10 @@ export function Autocomplete({
           <Input
             ref={searchInputRef}
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setHighlightedIndex(0);
+            }}
             onKeyDown={handleSearchKeyDown}
             placeholder={searchPlaceholder}
             disabled={isDisabled}
@@ -242,14 +263,14 @@ export function Autocomplete({
               role="option"
               aria-selected={false}
               className={cn(
-                "text-muted-foreground relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none",
-                "hover:bg-accent hover:text-accent-foreground",
+                "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none",
+                isClearHighlighted
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground",
               )}
               onMouseDown={(event) => event.preventDefault()}
-              onClick={() => {
-                onValueChange(null);
-                setOpen(false);
-              }}
+              onMouseEnter={() => setHighlightedIndex(0)}
+              onClick={clearSelection}
             >
               {clearLabel}
             </li>
@@ -261,7 +282,8 @@ export function Autocomplete({
           ) : (
             filteredOptions.map((option, index) => {
               const isSelected = option.value === value;
-              const isHighlighted = index === highlightedIndex;
+              const isHighlighted =
+                highlightedIndex === index + clearRowOffset;
 
               return (
                 <li
@@ -275,7 +297,9 @@ export function Autocomplete({
                     isSelected && !isHighlighted && "bg-accent/50",
                   )}
                   onMouseDown={(event) => event.preventDefault()}
-                  onMouseEnter={() => setHighlightedIndex(index)}
+                  onMouseEnter={() =>
+                    setHighlightedIndex(index + clearRowOffset)
+                  }
                   onClick={() => handleSelect(option)}
                   title={option.label}
                 >
@@ -302,7 +326,7 @@ export function Autocomplete({
         <button
           type="button"
           aria-label={`${clearLabel} — effacer la sélection`}
-          className="text-muted-foreground hover:text-foreground border-input flex h-9 shrink-0 items-center justify-center rounded-md border bg-transparent px-2 transition-colors hover:bg-accent/50 disabled:pointer-events-none disabled:opacity-50"
+          className="text-muted-foreground hover:text-foreground hover:bg-accent absolute top-1 right-8 z-10 flex h-7 w-7 items-center justify-center rounded-sm"
           onClick={handleClear}
         >
           <HugeiconsIcon
