@@ -20,7 +20,6 @@ import {
   type StrategyTableViewMode,
 } from "@/components/strategy/strategy-table-view-toggle";
 import { StrategyWorkPanels } from "@/components/strategy/strategy-work-panels";
-import { usePerformances } from "@/hooks/use-performances-api";
 import { useRecommendations } from "@/hooks/use-recommendations-api";
 import { useProjectContext } from "@/hooks/use-project-context";
 import {
@@ -32,9 +31,22 @@ import { useProjectsDetails } from "@/hooks/use-unilize-api";
 import { useSelectionStore } from "@/stores/selection.store";
 import { formatKeywordLabel } from "@/lib/projects/keywords";
 import { computeExpectedTotalTraffic } from "@/lib/strategy/compute-summary";
+import {
+  computeOpportunityChannelShares,
+  type ChannelOpportunityShare,
+} from "@/lib/strategy/incremental-clicks";
+import { formatFractionPercent } from "@/lib/performances/format-metrics";
 import { mapRecommendationGapsToWorkRows } from "@/lib/strategy/map-recommendation-gaps";
 import { shouldShowProjectSkeleton } from "@/lib/unilize/query-loading";
-import { formatNumber } from "@/lib/utils/formatting";
+import { formatDecimal, formatNumber } from "@/lib/utils/formatting";
+
+function channelCardHint(channel: ChannelOpportunityShare): string {
+  const volume = `Volume ${formatNumber(channel.volume)}`;
+  if (channel.share == null || channel.weightedCount == null) {
+    return volume;
+  }
+  return `${volume} · taux ${formatFractionPercent(channel.share)} · ${formatDecimal(channel.weightedCount)} clics incr.`;
+}
 
 export function StrategyHubView() {
   const {
@@ -125,31 +137,8 @@ export function StrategyHubView() {
     [payload?.netlinking_gaps],
   );
 
-  const positionAsOf = useMemo(
-    () => ({ from: recommendationDate, until: recommendationDate }),
-    [recommendationDate],
-  );
-  const {
-    data: positionsResult,
-    isFetching: isPositionsFetching,
-  } = usePerformances(
-    canFetchMetrics ? selectedProjectId : null,
-    positionAsOf,
-  );
-  const seoPositionByKeyword = useMemo(() => {
-    const map = new Map<string, number | null>();
-    for (const row of positionsResult?.performances ?? []) {
-      const position = row.organic_ranking?.position;
-      map.set(
-        row.keyword,
-        position != null && Number.isFinite(position) ? position : null,
-      );
-    }
-    return map;
-  }, [positionsResult]);
   const isRefreshing =
-    (isRecommendationsFetching && Boolean(recommendationsResult)) ||
-    isPositionsFetching;
+    isRecommendationsFetching && Boolean(recommendationsResult);
 
   const showSkeleton = shouldShowProjectSkeleton(
     selectedProjectId,
@@ -221,6 +210,11 @@ export function StrategyHubView() {
     );
   }
 
+  const channels = computeOpportunityChannelShares(
+    opportunityMatrix,
+    expectedTotalTraffic,
+  );
+
   const summaryCards = [
     {
       label: "Volume de recherche en jeu",
@@ -230,15 +224,17 @@ export function StrategyHubView() {
     {
       label: "Mots-clés SEO",
       value: formatNumber(summary.seo_keywords_count),
+      hint: channelCardHint(channels.seo),
     },
     {
       label: "Mots-clés SEA",
       value: formatNumber(summary.sea_keywords_count),
+      hint: channelCardHint(channels.sea),
     },
     {
       label: "Mots-clés hybrides",
       value: formatNumber(summary.hybrid_keywords_count),
-      hint: "Présents à la fois en SEA et en SEO",
+      hint: `Volume ${formatNumber(channels.hybrid.volume)} · SEA et SEO`,
     },
   ];
 
@@ -306,7 +302,6 @@ export function StrategyHubView() {
             <StrategyRecommendationsTable
               rows={filteredRecommendations}
               viewMode={tableViewMode}
-              seoPosition={(row) => seoPositionByKeyword.get(row.keyword) ?? null}
             />
           )}
         </DataTableShell>

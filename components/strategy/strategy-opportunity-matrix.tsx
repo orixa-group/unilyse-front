@@ -26,15 +26,9 @@ export function StrategyOpportunityMatrix({
   return (
     <TooltipProvider delayDuration={200}>
       <div className="border-border bg-card overflow-hidden rounded-xl border">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          {keys.map((bucket, index) => (
-            <MatrixCell
-              key={bucket}
-              bucket={bucket}
-              data={matrix[bucket]}
-              index={index}
-              total={keys.length}
-            />
+        <div className="divide-border grid divide-x divide-y sm:grid-cols-2 lg:grid-cols-4">
+          {keys.map((bucket) => (
+            <MatrixCell key={bucket} bucket={bucket} data={matrix[bucket]} />
           ))}
         </div>
       </div>
@@ -45,13 +39,9 @@ export function StrategyOpportunityMatrix({
 function MatrixCell({
   bucket,
   data,
-  index,
-  total,
 }: {
   bucket: OpportunityBucketKey;
   data: { keyword_count: number; volume: number };
-  index: number;
-  total: number;
 }) {
   const description = OPPORTUNITY_BUCKET_DESCRIPTIONS[bucket];
   const label = OPPORTUNITY_BUCKET_LABELS[bucket];
@@ -63,14 +53,8 @@ function MatrixCell({
         <div
           className={cn(
             "flex min-h-[6.5rem] cursor-help flex-col gap-3 px-5 py-5 outline-none",
-            "border-border focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-inset",
+            "focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-inset",
             isArbitration && "bg-warning/10 dark:bg-warning/15",
-            index < total - 1 && "border-b sm:border-b-0",
-            index < 4 && "sm:border-b lg:border-b-0",
-            index < 3 && "lg:border-b xl:border-b-0",
-            index % 2 === 1 && "sm:border-l lg:border-l-0",
-            index % 3 !== 0 && "lg:border-l xl:border-l-0",
-            index > 0 && "xl:border-l",
           )}
           tabIndex={0}
           aria-label={`${label}. ${description}`}
@@ -84,16 +68,20 @@ function MatrixCell({
             {label}
           </p>
           <div className="space-y-1">
-            <p className={cn(
-              "text-2xl font-semibold tabular-nums",
-              isArbitration ? "text-warning" : "text-foreground",
-            )}>
+            <p
+              className={cn(
+                "text-2xl font-semibold tabular-nums",
+                isArbitration ? "text-warning" : "text-foreground",
+              )}
+            >
               {data.keyword_count}
             </p>
-            <p className={cn(
-              "text-xs",
-              isArbitration ? "text-warning" : "text-muted-foreground",
-            )}>
+            <p
+              className={cn(
+                "text-xs",
+                isArbitration ? "text-warning" : "text-muted-foreground",
+              )}
+            >
               {formatNumber(data.volume)} vol.
             </p>
           </div>

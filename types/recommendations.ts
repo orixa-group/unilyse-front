@@ -2,9 +2,11 @@
 export type UnilizeRecommendationAction =
   | "optimize_ads"
   | "maintain_ads"
+  | "reduce_ads"
   | "launch_seo"
+  | "maintain_seo"
+  | "withdraw_seo"
   | "double_presence"
-  | "review_strategy"
   | "human_arbitration";
 
 export type UnilizeGapObjective = "launch_seo" | "double_presence";
@@ -56,6 +58,8 @@ export interface UnilizeOrganicAssessment {
   score: number;
   reason: string;
   average_position: number | null;
+  /** Dernière position observée (instantané), distincte de la moyenne Search Console. */
+  ranking_position: number | null;
   semantic_gap: UnilizeSemanticGapStatus;
   authority_gap: UnilizeAuthorityGapStatus;
   effort: "low" | "medium" | "high";
@@ -98,9 +102,11 @@ export interface UnilizeOpportunity {
 export interface UnilizeOpportunityMatrix {
   optimize_ads: UnilizeOpportunity;
   maintain_ads: UnilizeOpportunity;
+  reduce_ads: UnilizeOpportunity;
   launch_seo: UnilizeOpportunity;
+  maintain_seo: UnilizeOpportunity;
+  withdraw_seo: UnilizeOpportunity;
   double_presence: UnilizeOpportunity;
-  review_strategy: UnilizeOpportunity;
   human_arbitration: UnilizeOpportunity;
 }
 
@@ -138,9 +144,11 @@ export function emptyProjectRecommendations(): UnilizeProjectRecommendations {
     opportunity_matrix: {
       optimize_ads: emptyOpportunity(),
       maintain_ads: emptyOpportunity(),
+      reduce_ads: emptyOpportunity(),
       launch_seo: emptyOpportunity(),
+      maintain_seo: emptyOpportunity(),
+      withdraw_seo: emptyOpportunity(),
       double_presence: emptyOpportunity(),
-      review_strategy: emptyOpportunity(),
       human_arbitration: emptyOpportunity(),
     },
     netlinking_gaps: [],

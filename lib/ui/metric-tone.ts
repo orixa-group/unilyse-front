@@ -62,17 +62,20 @@ export function recommendationTone(
   recommendation: string,
 ): string {
   const key = recommendation.toUpperCase().replace(/-/g, "_");
-  if (key === "LAUNCH_SEO") {
+  if (key === "LAUNCH_SEO" || key === "MAINTAIN_SEO") {
     return "bg-info/30 text-info dark:text-info";
   }
   if (key === "OPTIMIZE_ADS" || key === "MAINTAIN_ADS") {
     return "bg-chart-1/30 text-chart-1 dark:text-chart-1";
   }
+  if (key === "REDUCE_ADS") {
+    return "bg-chart-5/25 text-chart-5 dark:text-chart-5";
+  }
+  if (key === "WITHDRAW_SEO") {
+    return "bg-muted/80 text-muted-foreground dark:text-muted-foreground";
+  }
   if (key === "DOUBLE_PRESENCE") {
     return "bg-primary/20 text-primary dark:text-primary";
-  }
-  if (key === "REVIEW_STRATEGY") {
-    return "bg-chart-5/25 text-chart-5 dark:text-chart-5";
   }
   if (key === "HUMAN_ARBITRATION") {
     return "bg-warning/20 text-warning dark:text-warning";

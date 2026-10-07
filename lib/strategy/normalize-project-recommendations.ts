@@ -39,9 +39,11 @@ export function normalizeProjectRecommendations(
   const opportunity_matrix = {
     optimize_ads: readOpportunity("optimize_ads"),
     maintain_ads: readOpportunity("maintain_ads"),
+    reduce_ads: readOpportunity("reduce_ads"),
     launch_seo: readOpportunity("launch_seo"),
+    maintain_seo: readOpportunity("maintain_seo"),
+    withdraw_seo: readOpportunity("withdraw_seo"),
     double_presence: readOpportunity("double_presence"),
-    review_strategy: readOpportunity("review_strategy"),
     human_arbitration: readOpportunity("human_arbitration"),
   };
 

@@ -94,14 +94,9 @@ const bodyCellClass = "px-4 py-3.5 align-middle";
 export function StrategyRecommendationsTable({
   rows,
   viewMode = "full",
-  seoPosition,
 }: {
   rows: readonly UnilizeKeywordRecommendation[];
   viewMode?: StrategyTableViewMode;
-  /** Classement organique observé à la date de lecture (`organic_ranking.position`). */
-  seoPosition?: (
-    row: UnilizeKeywordRecommendation,
-  ) => number | null | undefined;
   /** @deprecated Lecture affichée dans l'en-tête du tableau. */
   readAsOf?: string;
 }) {
@@ -335,7 +330,7 @@ export function StrategyRecommendationsTable({
                       "text-right tabular-nums text-sm",
                     )}
                   >
-                    {formatSeoPosition(seoPosition?.(row))}
+                    {formatSeoPosition(organic?.ranking_position)}
                   </TableCell>
                   <TableCell className={bodyCellClass}>
                     <TonedLabel
