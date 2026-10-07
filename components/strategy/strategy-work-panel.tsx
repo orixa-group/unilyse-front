@@ -1,4 +1,15 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import {
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type ColumnDef,
+  type SortingState,
+} from "@tanstack/react-table";
 import { Surface } from "@/components/ui/surface";
 import {
   Table,
@@ -9,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatNumber } from "@/lib/utils/formatting";
+import { cn } from "@/lib/utils/cn";
 import type { StrategyWorkGapRow } from "@/types/strategy-work";
 
 export type StrategyWorkPanelColumn = {
@@ -24,21 +36,49 @@ type StrategyWorkPanelProps = {
   limit?: number;
 };
 
-function cellValue(row: StrategyWorkGapRow, columnId: string): string {
+function sortValue(
+  row: StrategyWorkGapRow,
+  columnId: string,
+): string | number | null {
   switch (columnId) {
     case "keyword":
       return row.keyword;
     case "volume":
-      return row.volume === null ? "—" : formatNumber(row.volume);
+      return row.volume;
     case "current_score":
-      return row.current_score === null ? "—" : formatNumber(row.current_score);
+      return row.current_score;
     case "target_score":
-      return row.target_score === null ? "—" : formatNumber(row.target_score);
+      return row.target_score;
     case "gap":
-      return row.gap === null ? "—" : formatNumber(row.gap);
+      return row.gap;
     default:
-      return "—";
+      return null;
   }
+}
+
+function cellValue(row: StrategyWorkGapRow, columnId: string): string {
+  const value = sortValue(row, columnId);
+  if (columnId === "keyword") return row.keyword;
+  if (value == null || typeof value !== "number") return "—";
+  return formatNumber(value);
+}
+
+function compareSortable(
+  a: string | number | null | undefined,
+  b: string | number | null | undefined,
+): number {
+  const missing = (value: string | number | null | undefined) =>
+    value == null ||
+    value === "" ||
+    (typeof value === "number" && !Number.isFinite(value));
+  if (missing(a) && missing(b)) return 0;
+  if (missing(a)) return 1;
+  if (missing(b)) return -1;
+  if (typeof a === "number" && typeof b === "number") return a - b;
+  return String(a).localeCompare(String(b), "fr", {
+    numeric: true,
+    sensitivity: "base",
+  });
 }
 
 export function StrategyWorkPanel({
@@ -48,7 +88,40 @@ export function StrategyWorkPanel({
   rows = [],
   limit,
 }: StrategyWorkPanelProps) {
-  const visibleRows = limit ? rows.slice(0, limit) : rows;
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "volume", desc: true },
+  ]);
+  const data = useMemo(() => [...rows], [rows]);
+  const tableColumns = useMemo<ColumnDef<StrategyWorkGapRow>[]>(
+    () =>
+      columns.map((column) => ({
+        id: column.id,
+        accessorFn: (row) => sortValue(row, column.id),
+        header: column.label,
+        sortingFn: (rowA, rowB, columnId) =>
+          compareSortable(
+            rowA.getValue(columnId) as string | number | null,
+            rowB.getValue(columnId) as string | number | null,
+          ),
+        cell: ({ row }) => cellValue(row.original, column.id),
+      })),
+    [columns],
+  );
+
+  // eslint-disable-next-line react-hooks/incompatible-library -- useReactTable
+  const table = useReactTable({
+    data,
+    columns: tableColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getRowId: (row) => row.keyword,
+  });
+
+  const visibleRows = limit
+    ? table.getRowModel().rows.slice(0, limit)
+    : table.getRowModel().rows;
 
   return (
     <Surface padding="md" className="flex h-full flex-col gap-3">
@@ -66,13 +139,31 @@ export function StrategyWorkPanel({
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted hover:bg-muted">
-              {columns.map((column) => (
-                <TableHead key={column.id} className="whitespace-nowrap">
-                  {column.label}
-                </TableHead>
-              ))}
-            </TableRow>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="bg-muted hover:bg-muted">
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id} className="whitespace-nowrap">
+                    <button
+                      type="button"
+                      className={cn(
+                        "w-full cursor-pointer text-left font-semibold select-none",
+                        header.column.id !== "keyword" && "text-right",
+                      )}
+                      onClick={header.column.getToggleSortingHandler()}
+                    >
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
+                      {{
+                        asc: " ↑",
+                        desc: " ↓",
+                      }[header.column.getIsSorted() as string] ?? null}
+                    </button>
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
           </TableHeader>
           <TableBody>
             {visibleRows.length === 0 ? (
@@ -86,17 +177,17 @@ export function StrategyWorkPanel({
               </TableRow>
             ) : (
               visibleRows.map((row) => (
-                <TableRow key={row.keyword}>
-                  {columns.map((column) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
                     <TableCell
-                      key={column.id}
+                      key={cell.id}
                       className={
-                        column.id === "keyword"
+                        cell.column.id === "keyword"
                           ? "font-medium"
-                          : "tabular-nums whitespace-nowrap"
+                          : "text-right tabular-nums whitespace-nowrap"
                       }
                     >
-                      {cellValue(row, column.id)}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>

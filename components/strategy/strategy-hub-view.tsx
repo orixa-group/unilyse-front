@@ -31,22 +31,10 @@ import { useProjectsDetails } from "@/hooks/use-unilize-api";
 import { useSelectionStore } from "@/stores/selection.store";
 import { formatKeywordLabel } from "@/lib/projects/keywords";
 import { computeExpectedTotalTraffic } from "@/lib/strategy/compute-summary";
-import {
-  computeOpportunityChannelShares,
-  type ChannelOpportunityShare,
-} from "@/lib/strategy/incremental-clicks";
-import { formatFractionPercent } from "@/lib/performances/format-metrics";
+import { computeOpportunityChannelShares } from "@/lib/strategy/incremental-clicks";
 import { mapRecommendationGapsToWorkRows } from "@/lib/strategy/map-recommendation-gaps";
 import { shouldShowProjectSkeleton } from "@/lib/unilize/query-loading";
-import { formatDecimal, formatNumber } from "@/lib/utils/formatting";
-
-function channelCardHint(channel: ChannelOpportunityShare): string {
-  const volume = `Volume ${formatNumber(channel.volume)}`;
-  if (channel.share == null || channel.weightedCount == null) {
-    return volume;
-  }
-  return `${volume} · taux ${formatFractionPercent(channel.share)} · ${formatDecimal(channel.weightedCount)} clics incr.`;
-}
+import { formatNumber } from "@/lib/utils/formatting";
 
 export function StrategyHubView() {
   const {
@@ -224,12 +212,12 @@ export function StrategyHubView() {
     {
       label: "Mots-clés SEO",
       value: formatNumber(summary.seo_keywords_count),
-      hint: channelCardHint(channels.seo),
+      hint: `Volume ${formatNumber(channels.seo.volume)}`,
     },
     {
       label: "Mots-clés SEA",
       value: formatNumber(summary.sea_keywords_count),
-      hint: channelCardHint(channels.sea),
+      hint: `Volume ${formatNumber(channels.sea.volume)}`,
     },
     {
       label: "Mots-clés hybrides",
